@@ -77,9 +77,22 @@ async function findOwned(id, ownerId) {
     return rows[0];
 }
 
-function readinessProblems(release) {
+async function readinessProblems(release) {
     const problems = [];
     if (!release.release_date) problems.push('Release date is required.');
+
+    const { rows } = await pool.query(
+        `SELECT t.track_number, t.title, (a.track_id IS NOT NULL) AS has_audio
+         FROM tracks t
+         LEFT JOIN audio_specs a ON a.track_id = t.id
+         WHERE t.release_id = $1
+         ORDER BY t.track_number`,
+        [release.id]
+    );
+    if (rows.length === 0) problems.push('At least one track is required.');
+    for (const r of rows) {
+        if (!r.has_audio) problems.push(`Track ${r.track_number} ("${r.title}") has no audio file.`);
+    }
     return problems;
 }
 
@@ -193,7 +206,7 @@ async function markReady(req, res) {
             return res.status(409).json({ error: 'Release is already ready.' });
         }
 
-        const problems = readinessProblems(release);
+        const problems = await readinessProblems(release);
         if (problems.length > 0) {
             return res.status(400).json({ error: 'Release is not ready.', problems });
         }
@@ -243,7 +256,7 @@ async function deleteRelease(req, res) {
         await pool.query('DELETE FROM releases WHERE id = $1 AND owner_id = $2', [release.id, req.user.id]);
         return res.status(204).end();
     } catch (err) {
-        if (err.code === '23503') {
+        if (err.code === '23503') { 
             return res.status(409).json({ error: 'Release has tracks with disputes and cannot be deleted.' });
         }
         console.error('deleteRelease error:', err);

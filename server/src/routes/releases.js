@@ -6,8 +6,10 @@ const {
 } = require('../controllers/releaseController');
 
 const router = express.Router();
+const trackRoutes = require('./tracks');
 
 router.use(authToken);
+router.use('/:releaseId/tracks', trackRoutes);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 router.param('id', (req, res, next, id) => {
