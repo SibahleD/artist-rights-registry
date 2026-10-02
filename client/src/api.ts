@@ -8,7 +8,6 @@ export class ApiError extends Error {
 export const getToken = () => localStorage.getItem('token')
 export const setToken = (t: string | null) => (t ? localStorage.setItem('token', t) : localStorage.removeItem('token'))
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function api<T = any>(path: string, method = 'GET', body?: unknown): Promise<T> {
   let res: Response
   try {

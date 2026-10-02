@@ -4,6 +4,8 @@ import Layout from './components/Layout'
 import { Loading } from './components/ui'
 import AuthPage from './pages/Auth'
 import Home from './pages/Home'
+import Discography from './pages/Discography'
+import ListingForm from './pages/ListingForm'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -20,6 +22,9 @@ export default function App() {
           <Route path="/register" element={<AuthPage mode="register" />} />
           <Route element={<Protected />}>
             <Route path="/" element={<Home />} />
+            <Route path="/discography" element={<Discography />} />
+            <Route path="/new/song" element={<ListingForm mode="song" />} />
+            <Route path="/new/album" element={<ListingForm mode="album" />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

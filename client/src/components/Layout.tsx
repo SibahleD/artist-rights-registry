@@ -3,14 +3,13 @@ import { useAuth } from '../auth'
 
 import homeIco from '../assets/ico/home.svg'
 import discogIco from '../assets/ico/discog.svg'
-import cmoIco from '../assets/ico/home.svg'
-import disputeIco from '../assets/ico/home.svg'
 import profileIco from '../assets/ico/user.svg'
 import infoIco from '../assets/ico/info.svg'
+import settingsIco from '../assets/ico/settings.svg'
 import expandIco from '../assets/ico/reduce.svg'
 
 const links = [
-  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/cmo', 'CMO', cmoIco], ['/disputes', 'Split Disputes', disputeIco], ['/info', 'Info', infoIco], ['/profile', 'Artist Profile', profileIco],
+  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/info', 'Info', infoIco], ['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
 
 export default function Layout() {
@@ -20,11 +19,11 @@ export default function Layout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-header" >
-        <div className="brand">Royalty Registry<small>{user?.artistName}</small></div>
-        <button className="expand" onClick={() => document.body.classList.toggle('sidebar-collapsed')}><img className='nav-icon' src={expandIco}/></button>
+          <div className="brand">Royalty Registry<small>{user?.artist_name}</small></div>
+          <button className="expand" onClick={() => document.body.classList.toggle('sidebar-collapsed')}><img className='nav-icon' src={expandIco} /></button>
         </div>
         <nav>
-          {links.map(([to, label, icon]) => <NavLink key={to} to={to} end={to === '/'}><img className="nav-icon" src={icon}/>{label}</NavLink>)}
+          {links.map(([to, label, icon]) => <NavLink key={to} to={to} end={to === '/'}><img className="nav-icon" src={icon} />{label}</NavLink>)}
           <button className="linklike" onClick={() => { logout(); nav('/login') }}>Log Off</button>
         </nav>
       </aside>
