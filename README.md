@@ -242,6 +242,16 @@ https://www.figma.com/design/GydtWf28Zd0euZayfW1RPL/Untitled?node-id=2046-262&t=
 Login, Home, Discography, Artist Profile, Release (album, EP and single) edit, Track edit, and Settings.
 All sthe aforementioned screens are available in the `docs/designs/` directory.
 
+### Circuit Diagram
+
+The circuit diagram can be found in the `docs/` directory.
+
+The diagram shows three tiers. The React client in the browser sends JSON over HTTP to the Express API, and the API's controllers run SQL against PostgreSQL through a connection pool.
+
+Auth: the login token travels as a Bearer header on every request except register and login. The auth routes also have a rate limiter, preventing multiple requests from the same IP.
+Routes: the API mounts four route groups under /api: auth, users, releases and shared-tracks. Tracks and collaborators sit under releases.
+
+
 ## 5. Deployment plan
 
 The app is not deployed yet. This is the plan for taking it live. It uses managed services with free tiers, so there are no servers to maintain.
