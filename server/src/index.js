@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const releaseRoutes = require('./routes/releases');
 
 const app = express();
 
@@ -14,7 +15,8 @@ app.use(express.json());
 app.get('/health', (_req, res) => res.json({ status: 'ok'}));
 
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes)
+app.use('/api/users', userRoutes);
+app.use('/api/releases', releaseRoutes);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`)); 
