@@ -37,7 +37,7 @@
   --link-blue: #6fa2ff;
 
   /* Hero banner */
-  --hero-bg: linear-gradient(135deg, rgba(6, 28, 86, 0.95), rgba(14, 52, 140, 0.65));
+  --hero-bg: linear-gradient(135deg, rgba(6, 28, 86, 0.95), rgba(9, 30, 77, 0.65));
   --hero-border: #20449a;
 
   /* Status */
@@ -540,6 +540,7 @@ body.sidebar-collapsed .sidebar a {
 .clickable {
   cursor: pointer;
   user-select: none;
+  margin-bottom: 0.7rem;
 }
 
 .ok {
