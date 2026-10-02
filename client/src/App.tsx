@@ -1,6 +1,15 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { AuthProvider } from './auth'
+import { AuthProvider, useAuth } from './auth'
+import Layout from './components/Layout'
+import { Loading } from './components/ui'
 import AuthPage from './pages/Auth'
+import Home from './pages/Home'
+
+function Protected() {
+  const { user, loading } = useAuth()
+  if (loading) return <Loading what="Signing you in" />
+  return user ? <Layout /> : <Navigate to="/login" replace />
+}
 
 export default function App() {
   return (
@@ -9,6 +18,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<AuthPage mode="login" />} />
           <Route path="/register" element={<AuthPage mode="register" />} />
+          <Route element={<Protected />}>
+            <Route path="/" element={<Home />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
