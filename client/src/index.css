@@ -1,9 +1,20 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
+  --active :#383838;
+
+  --input-bg: #303030;
+  --sidemenu-bg: #1E1E1E;
+
+  --pri-font: #FFFFFF;
+  --sec-font: #CACACA;
+
+  --border-light: #767676;
+  --border-mid: #4d4d4d;
+  --border-dark: #3f3f3f;
+
+  --btn-accent: #8b9fb387;
+
+
+  --bg-light-faded :#30303083;
   --accent: #aa3bff;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
@@ -11,15 +22,15 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Poppins', system-ui, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  font: 18px/145% var(--font-body);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
+  background: url('./assets/background.jpg') center / cover no-repeat fixed;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -68,31 +79,31 @@ body {
 
 h1,
 h2 {
-  font-family: var(--heading);
+  font-family: var(--font-heading);
   font-weight: 500;
   color: var(--text-h);
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
   font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
+  margin: 0;
   @media (max-width: 1024px) {
     font-size: 20px;
+    margin: 0;
+  }
+}
+
+h2 {
+  font-size: 20px;
+  line-height: 118%;
+  margin: 0;
+  @media (max-width: 1024px) {
+    font-size: 16px;
   }
 }
 p {
   margin: 0;
+  font-size: 15px;
 }
 
 code,
@@ -108,4 +119,61 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+.auth {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+    background: url('./assets/login-background.jpg') center / cover no-repeat fixed;
+  padding: 1rem;
+}
+.auth form {
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+    padding: 20px;
+  border-radius: 8px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 5px 6px;
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: var(--pri-font);
+  text-align: left;
+}
+
+.faded {
+  color: var(--sec-font);
+}
+
+input {
+  padding: 5px 6px;
+  color: var(--pri-font);
+  font-family: var(--font-body);
+  background-color: var(--input-bg);
+  border-radius: 4px;
+  border: 1.5px solid var(--border-light);
+}
+
+button {
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pri-font);
+  background-color: var(--btn-accent);
+  border-radius: 8px;
+  border: 1.5px solid var(--sec-font);
+}
+
+.card {
+  background-color: var(--bg-light-faded);
+  border: 1.5px solid var(--border-light);
+  backdrop-filter: blur(2px);
 }
