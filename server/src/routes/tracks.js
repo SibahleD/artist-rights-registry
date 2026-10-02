@@ -4,6 +4,8 @@ const {
     upsertAudio, deleteAudio,
 } = require('../controllers/trackController');
 
+const collaboratorRoutes = require('./collaborators');
+
 const router = express.Router({ mergeParams: true });
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -16,6 +18,8 @@ router.param('trackId', (req, res, next, id) => {
     if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Track not found.' });
     next();
 });
+
+router.use('/:trackId/collaborators', collaboratorRoutes);
 
 router.post('/', createTrack);
 router.get('/', listTracks);

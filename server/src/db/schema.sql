@@ -1,6 +1,4 @@
 
-
-
 -- ---------------------------------------------------------------------
 -- Users
 -- ---------------------------------------------------------------------
@@ -118,21 +116,8 @@ CREATE TABLE collaborators (
 CREATE INDEX idx_collaborators_track ON collaborators (track_id);
 CREATE INDEX idx_collaborators_user  ON collaborators (user_id) WHERE user_id IS NOT NULL;
 CREATE INDEX idx_collaborators_email ON collaborators (invited_email) WHERE invited_email IS NOT NULL;
-
--- ---------------------------------------------------------------------
--- Credits
--- ---------------------------------------------------------------------
-
-CREATE TABLE credits (
-    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    track_id     UUID NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
-    person_name  TEXT NOT NULL CHECK (length(btrim(person_name)) > 0),
-    role         TEXT NOT NULL CHECK (role IN
-                 ('composer','songwriter','producer','mixing_engineer','mastering_engineer',
-                  'recording_engineer','featured_artist','session_musician','other')),
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX idx_credits_track ON credits (track_id);
+CREATE UNIQUE INDEX uq_collaborators_track_user  ON collaborators (track_id, user_id)       WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX uq_collaborators_track_email ON collaborators (track_id, invited_email) WHERE invited_email IS NOT NULL;
 
 -- ---------------------------------------------------------------------
 -- Media

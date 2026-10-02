@@ -82,7 +82,8 @@ async function readinessProblems(release) {
     if (!release.release_date) problems.push('Release date is required.');
 
     const { rows } = await pool.query(
-        `SELECT t.track_number, t.title, (a.track_id IS NOT NULL) AS has_audio
+        `SELECT t.track_number, t.title, (a.track_id IS NOT NULL) AS has_audio,
+                (SELECT COALESCE(SUM(c.ownership_percent), 0) FROM collaborators c WHERE c.track_id = t.id) AS split_total
          FROM tracks t
          LEFT JOIN audio_specs a ON a.track_id = t.id
          WHERE t.release_id = $1
@@ -92,6 +93,9 @@ async function readinessProblems(release) {
     if (rows.length === 0) problems.push('At least one track is required.');
     for (const r of rows) {
         if (!r.has_audio) problems.push(`Track ${r.track_number} ("${r.title}") has no audio file.`);
+        if (Math.round(Number(r.split_total) * 100) !== 10000) {
+            problems.push(`Track ${r.track_number} ("${r.title}") splits must total 100% (currently ${Number(r.split_total)}%).`);
+        }
     }
     return problems;
 }
@@ -230,6 +234,14 @@ async function revertToDraft(req, res) {
         if (!release) return res.status(404).json({ error: 'Release not found.' });
         if (release.status === 'draft') {
             return res.status(409).json({ error: 'Release is already a draft.' });
+        }
+
+        const disputed = await pool.query(
+            `SELECT 1 FROM disputes d JOIN tracks t ON t.id = d.track_id WHERE t.release_id = $1 LIMIT 1`,
+            [release.id]
+        );
+        if (disputed.rowCount > 0) {
+            return res.status(409).json({ error: 'Ownership cannot be reverted once a dispute has been raised on this release.' });
         }
 
         const { rows } = await pool.query(
