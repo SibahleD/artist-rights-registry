@@ -146,6 +146,18 @@ a {
   font-size: 13px;
 }
 
+.banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e6d28a;
+  background: #fff7e0;
+  border-radius: 8px;
+}
+
 small {
   font-size: 12px;
 }

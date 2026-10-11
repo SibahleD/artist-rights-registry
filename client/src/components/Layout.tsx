@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { api } from '../api'
+
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 
@@ -11,6 +14,28 @@ import expandIco from '../assets/ico/reduce.svg'
 const links = [
   ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/info', 'Info', infoIco], ['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
+
+function VerifyBanner() {
+  const { user, refresh } = useAuth()
+  const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false)
+  if (!user || user.email_verified_at) return null
+
+  async function resend() {
+    setBusy(true); setMsg('')
+    try { await api('/auth/resend-verification', 'POST'); setMsg('Verification email sent. Check your inbox.') }
+    catch (e) { setMsg((e as Error).message) }
+    finally { setBusy(false) }
+  }
+  return (
+    <div className="banner">
+      <span>Confirm your email ({user.email}) so songs you're credited on can be linked to your account.</span>
+      <button className="ghost" disabled={busy} onClick={resend}>Resend email</button>
+      <button className="ghost" onClick={() => refresh()}>I've confirmed</button>
+      {msg && <small>{msg}</small>}
+    </div>
+  )
+}
 
 export default function Layout() {
   const { user, logout } = useAuth()
@@ -27,7 +52,7 @@ export default function Layout() {
           <button className="linklike" onClick={() => { logout(); nav('/login') }}>Log Off</button>
         </nav>
       </aside>
-      <main className="content"><Outlet /></main>
+      <main className="content"><VerifyBanner /><Outlet /></main>
     </div>
   )
 }

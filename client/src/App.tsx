@@ -10,6 +10,7 @@ import { Profile } from './pages/Misc'
 import ReleaseView from './pages/ReleaseView'
 import SharedTrackView from './pages/SharedTrackView'
 import SongView from './pages/SongView'
+import VerifyEmail from './pages/VerifyEmail'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -24,6 +25,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<AuthPage mode="login" />} />
           <Route path="/register" element={<AuthPage mode="register" />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route element={<Protected />}>
             <Route path="/" element={<Home />} />
             <Route path="/discography" element={<Discography />} />

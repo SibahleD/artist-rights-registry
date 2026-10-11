@@ -1,4 +1,3 @@
-// ── Constants (mirror the backend validators) ────────────────────────────────
 export const RELEASE_TYPES = ['single', 'ep', 'album'] as const
 export const COLLABORATOR_ROLES = ['composer', 'songwriter', 'publisher', 'producer', 'performer', 'other'] as const
 export const EXPLICIT_VALUES = ['explicit', 'not_explicit', 'cleaned'] as const
@@ -10,7 +9,6 @@ export type CollaboratorRole = (typeof COLLABORATOR_ROLES)[number]
 export type ExplicitValue = (typeof EXPLICIT_VALUES)[number]
 export type AudioFormat = (typeof AUDIO_FORMATS)[number]
 
-// ── Responses (snake_case, exactly as the API returns them) ──────────────────
 export interface User {
   id: string
   email: string
@@ -20,6 +18,7 @@ export interface User {
   last_name?: string | null
   username?: string | null
   created_at: string
+  email_verified_at?: string | null
 }
 
 export interface ArtistLink { platform: string; url: string }
@@ -39,7 +38,7 @@ export interface Release {
   status: ReleaseStatus
   created_at: string
   ready_at: string | null
-  track_count?: number // only on GET /releases
+  track_count?: number
 }
 
 export interface AudioSpec {
@@ -54,7 +53,7 @@ export interface AudioSpec {
 
 export interface Track {
   id: string
-  release_id?: string // not returned by GET /releases/:id
+  release_id?: string
   track_number: number
   title: string
   composition_title?: string | null
@@ -69,7 +68,7 @@ export interface Track {
   recording_copyright_year?: number | null
   recording_copyright?: string | null
   created_at?: string
-  audio?: AudioSpec | null // present on /tracks endpoints
+  audio?: AudioSpec | null
 }
 
 export interface Collaborator {
@@ -79,11 +78,10 @@ export interface Collaborator {
   invited_email: string | null
   legal_name: string
   role: CollaboratorRole
-  ownership_percent: number | string // NUMERIC comes back as a string
+  ownership_percent: number | string
   created_at: string
 }
 
-// GET /shared-tracks (tracks you collaborate on; only on ready releases)
 export interface SharedTrack {
   id: string
   title: string
@@ -99,7 +97,6 @@ export interface SharedTrack {
   ownership_percent: number | string
 }
 
-// GET /shared-tracks/:trackId
 export interface SharedTrackDetail {
   track: Omit<SharedTrack, 'role' | 'ownership_percent'> & {
     composition_title: string | null
@@ -110,7 +107,6 @@ export interface SharedTrackDetail {
   splits: { legal_name: string; role: CollaboratorRole; ownership_percent: number | string; is_you: boolean }[]
 }
 
-// ── Request bodies (camelCase, as the controllers expect) ────────────────────
 export interface ReleaseInput {
   title?: string
   releaseType?: ReleaseType
@@ -148,12 +144,11 @@ export interface AudioInput {
 
 export interface CollaboratorInput {
   legalName: string
-  role?: CollaboratorRole // defaults to 'songwriter'
-  ownershipPercent: number // 0-100, max 2 decimals; all entries must total 100
+  role?: CollaboratorRole
+  ownershipPercent: number
   invitedEmail?: string | null
 }
 
-// ── Kept from the old file: no endpoints for these in the backend files shared so far ──
 export interface Credit { id?: string; userId?: string | null; email?: string | null; personName: string; role: string }
 export interface DisputeSplit { collaboratorId: string; legalName: string; role: string; currentPercent: number; beforePercent: number; proposedPercent: number }
 export interface Dispute {
@@ -163,10 +158,9 @@ export interface Dispute {
   responses: { id: string; responderId: string; responderName: string; action: string; message: string | null; createdAt: string }[]
 }
 
-// ── Form state for the create/edit listing screens (editable strings, not API shapes) ──
 export interface TrackForm {
-  id?: string // set once the track exists on the server
-  hadAudio?: boolean // true if the server already holds an audio spec for this track
+  id?: string 
+  hadAudio?: boolean
   title: string
   compositionTitle: string
   artistName: string

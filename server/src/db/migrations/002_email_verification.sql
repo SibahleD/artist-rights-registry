@@ -1,7 +1,5 @@
 ALTER TABLE users
   ADD COLUMN email_verified_at TIMESTAMPTZ,
-  ADD COLUMN terms_accepted_at TIMESTAMPTZ,
-  ADD COLUMN terms_version     TEXT;
 
 CREATE TABLE email_tokens (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),

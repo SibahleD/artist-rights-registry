@@ -4,6 +4,7 @@ const { ROLES, parseCollaborators } = require('../lib/splits');
 
 
 async function claimInvites(user) {
+    if (!user.emailVerified) return;
     await pool.query(
         `UPDATE collaborators c SET user_id = $1
          WHERE c.user_id IS NULL AND c.invited_email = $2
@@ -62,7 +63,9 @@ async function replaceCollaborators(req, res) {
 
         const emails = data.map((c) => c.email).filter(Boolean);
         const users = emails.length
-            ? await client.query('SELECT id, email FROM users WHERE email = ANY($1) AND deleted_at IS NULL', [emails])
+            ? await client.query(
+                'SELECT id, email FROM users WHERE email = ANY($1) AND deleted_at IS NULL AND email_verified_at IS NOT NULL',
+                [emails])
             : { rows: [] };
         const idByEmail = new Map(users.rows.map((u) => [u.email, u.id]));
 
