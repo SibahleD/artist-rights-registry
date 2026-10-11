@@ -18,7 +18,7 @@ async function authToken(req, res, next) {
 
     try {
         const { rows } = await pool.query(
-            'SELECT id, email, artist_name FROM users WHERE id = $1 AND deleted_at IS NULL',
+            'SELECT id, email, artist_name, email_verified_at FROM users WHERE id = $1 AND deleted_at IS NULL',
             [payload.sub]
         );
         if (!rows[0]) {
@@ -29,6 +29,7 @@ async function authToken(req, res, next) {
             id: rows[0].id,
             email: rows[0].email,
             artistName: rows[0].artist_name,
+            emailVerified: payload.emailVerified || false,
         };
         return next();
     } catch (err) {

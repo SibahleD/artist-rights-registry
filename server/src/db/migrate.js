@@ -6,7 +6,7 @@ const path = require('path');
 const pool = require('./pool');
 
 const DIR = path.join(__dirname, 'migrations');
-const BASELINE = '001_initial.sql';
+const BASELINE = '001_baseline.sql';
 const LOCK_KEY = 727001;
 
 function listFiles() {

@@ -21,6 +21,6 @@ export async function api<T = any>(path: string, method = 'GET', body?: unknown)
   }
   const data = await res.json().catch(() => ({}))
   if (res.status === 401 && getToken()) { setToken(null); window.location.href = '/login' }
-  if (!res.ok) throw new ApiError(data.error || 'Something went wrong.', data.details)
+  if (!res.ok) throw new ApiError(data.error || 'Something went wrong.', data.details ?? data.problems)
   return data as T
 }

@@ -100,7 +100,6 @@ async function readinessProblems(release) {
     return problems;
 }
 
-
 async function createRelease(req, res) {
     const { data, error } = parseBody(req.body);
     if (error) return res.status(400).json({ error });
@@ -278,5 +277,5 @@ async function deleteRelease(req, res) {
 
 module.exports = {
     createRelease, listReleases, getRelease, updateRelease,
-    markReady, revertToDraft, deleteRelease,
+    markReady, revertToDraft, deleteRelease, readinessProblems
 };
