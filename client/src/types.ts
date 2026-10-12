@@ -38,6 +38,7 @@ export interface Release {
   status: ReleaseStatus
   created_at: string
   ready_at: string | null
+  unconfirmed_acknowledged_at?: string | null
   track_count?: number
 }
 
@@ -79,6 +80,7 @@ export interface Collaborator {
   legal_name: string
   role: CollaboratorRole
   ownership_percent: number | string
+  removed_by_writer?: boolean
   created_at: string
 }
 
@@ -147,6 +149,38 @@ export interface CollaboratorInput {
   role?: CollaboratorRole
   ownershipPercent: number
   invitedEmail?: string | null
+  // A co-writer who removed themselves. The line is locked: send it back unchanged,
+  // or add discard: true to drop it and free its share.
+  id?: string
+  removedByWriter?: boolean
+  discard?: boolean
+}
+
+export type NoticeStatus = 'pending' | 'confirmed' | 'disputed' | 'removed' | 'expired' | 'cancelled'
+export interface Notice {
+  id: string
+  track_id: string
+  co_writer_name: string | null // cleared once expired or removed
+  email: string | null
+  role: CollaboratorRole
+  share_percent: number | string
+  status: NoticeStatus
+  note: string | null
+  sent_at: string
+  reminder_sent_at: string | null
+  expires_at: string
+  responded_at: string | null
+}
+
+// What a co-writer sees at /notice/:token (no login).
+export interface PublicNotice {
+  status: NoticeStatus
+  artist_name?: string
+  track_title?: string
+  release_title?: string
+  role?: CollaboratorRole
+  share_percent?: number | string
+  co_writer_name?: string
 }
 
 export interface Credit { id?: string; userId?: string | null; email?: string | null; personName: string; role: string }

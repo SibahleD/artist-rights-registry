@@ -1,5 +1,5 @@
 ALTER TABLE users
-  ADD COLUMN email_verified_at TIMESTAMPTZ,
+  ADD COLUMN email_verified_at TIMESTAMPTZ;
 
 CREATE TABLE email_tokens (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),

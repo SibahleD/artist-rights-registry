@@ -4,6 +4,7 @@ import { api, ApiError } from '../api'
 import { useAuth } from '../auth'
 import TrackEditor from '../components/TrackEditor'
 import { ErrorBox, Loading, Modal } from '../components/ui'
+import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import type {
   Collaborator, CollaboratorInput, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
 } from '../types'
@@ -57,6 +58,7 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
     ? collabs.map((c) => ({
         legalName: c.legal_name, role: c.role, ownershipPercent: Number(c.ownership_percent),
         invitedEmail: c.invited_email,
+        ...(c.removed_by_writer ? { id: c.id, removedByWriter: true } : {}),
       }))
     : [{ ...owner }],
 })
@@ -66,8 +68,6 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const { user } = useAuth()
   const nav = useNavigate()
 
-  // The owner is listed as a collaborator with no email: linking their own email would make
-  // their own releases show up under "Collaborations".
   const owner = useMemo<CollaboratorInput>(() => ({
     legalName: [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.artist_name || '',
     role: 'songwriter',
@@ -79,11 +79,12 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
     releaseDate: '', upc: '', tracks: [emptyTrack(owner)],
   })
   const [releaseId, setReleaseId] = useState<string | undefined>(id)
-  const [removed, setRemoved] = useState<string[]>([]) // server track ids to delete on save
+  const [removed, setRemoved] = useState<string[]>([])
   const [active, setActive] = useState(0)
   const [err, setErr] = useState<{ error: string; details?: string[] } | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(false)
+  const [ack, setAck] = useState<{ rid: string; list: string[] } | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -111,9 +112,19 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const isSong = form.releaseType === 'single'
   const setTrack = (i: number, t: TrackForm) => setForm({ ...form, tracks: form.tracks.map((x, j) => (j === i ? t : x)) })
 
-  // Release -> tracks -> audio -> collaborators, then (optionally) mark ready.
-  // Ids are remembered as we go, so a retry after a partial failure updates instead of duplicating.
-  async function submit(save: 'draft' | 'release') {
+  async function confirmAck() {
+    if (!ack) return
+    setBusy(true)
+    try {
+      await acknowledgeUnconfirmed(ack.rid)
+      const r = await tryMarkReady(ack.rid)
+      if (!r.ok) { setAck(null); setErr({ error: r.error, details: r.problems }); return }
+      nav(`/releases/${ack.rid}`)
+    } catch (e) { setAck(null); setErr({ error: (e as Error).message }) } finally { setBusy(false) }
+  }
+
+  // Release -> tracks -> audio -> collaborators, then (optionally) ask co-writers or mark ready.
+  async function submit(save: 'draft' | 'notify' | 'release') {
     if (!form) return
     setBusy(true); setErr(null)
     const tracks = form.tracks.map((t) => ({ ...t }))
@@ -159,7 +170,20 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         await api(`${base}/${t.id}/collaborators`, 'PUT', { collaborators: t.collaborators })
       }
 
-      if (save === 'release') await api(`/releases/${rid}/ready`, 'POST')
+      if (save === 'notify') {
+        await api(`/releases/${rid}/notices/send`, 'POST')
+        return nav(`/releases/${rid}`)
+      }
+      if (save === 'release') {
+        const r = await tryMarkReady(rid!)
+        if (!r.ok) {
+          setForm({ ...form, tracks })
+          setConfirm(false)
+          if (r.unconfirmed) { setAck({ rid: rid!, list: r.unconfirmed }); return }
+          setErr({ error: r.error, details: r.problems })
+          return
+        }
+      }
       nav(save === 'draft' ? '/discography' : `/releases/${rid}`)
     } catch (e) {
       const ae = e as ApiError & { problems?: string[] }
@@ -173,8 +197,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
   // Collaborators other than the owner, so their emails can be confirmed before the release is locked.
   const people = form.tracks.flatMap((t, ti) =>
-    t.collaborators.map((c, i) => ({ ti, i, name: c.legalName, email: c.invitedEmail ?? '' })),
-  ).filter((p) => p.name.trim().toLowerCase() !== owner.legalName.trim().toLowerCase())
+    t.collaborators.map((c, i) => ({ ti, i, name: c.legalName, email: c.invitedEmail ?? '', skip: !!c.removedByWriter })),
+  ).filter((p) => !p.skip && p.name.trim().toLowerCase() !== owner.legalName.trim().toLowerCase())
   const setEmail = (p: (typeof people)[number], email: string) => {
     const t = form.tracks[p.ti]
     setTrack(p.ti, { ...t, collaborators: t.collaborators.map((c, j) => (j === p.i ? { ...c, invitedEmail: email } : c)) })
@@ -220,13 +244,17 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       <div className="row actions">
         <button disabled={busy} onClick={() => setConfirm(true)}>Save Release</button>
+        {people.some((p) => p.email.trim()) &&
+          <button className="secondary" disabled={busy} onClick={() => submit('notify')}>Save &amp; ask co-writers to confirm</button>}
         <button className="secondary" disabled={busy} onClick={() => submit('draft')}>Save as Draft</button>
         <button className="ghost" onClick={() => nav('/discography')}>Cancel</button>
       </div>
 
+      {ack && <AckModal list={ack.list} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
+
       {confirm && (
         <Modal title="Confirm release" onClose={() => setConfirm(false)}>
-          <p>Saving marks this release as ready and locks the ownership splits. Collaborators whose email matches an account will see the song under Collaborations when they log in, including people who sign up later with that email.</p>
+          <p>This marks the release as ready and locks the ownership splits. If co-writers haven't confirmed their share you'll be asked to acknowledge that first. Collaborators whose email matches an account will see the song under Collaborations when they log in, including people who sign up later with that email.</p>
           {people.length === 0 && <p className="muted">You haven't added anyone else, so nobody else will see this release.</p>}
           {people.map((p) => (
             <label key={`${p.ti}-${p.i}`}>{p.name || '(unnamed)'}

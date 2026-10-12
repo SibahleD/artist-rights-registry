@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!getToken()) return
-    api<{ user: User }>('/auth/me').then((r: any) => setUser(r.user)).catch(() => setToken(null)).finally(() => setLoading(false))
+    api<{ user: User }>('/users/me').then((r) => setUser(r.user)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const finish = (r: { user: User; token: string }) => { setToken(r.token); setUser(r.user) }

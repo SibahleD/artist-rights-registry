@@ -11,6 +11,7 @@ import ReleaseView from './pages/ReleaseView'
 import SharedTrackView from './pages/SharedTrackView'
 import SongView from './pages/SongView'
 import VerifyEmail from './pages/VerifyEmail'
+import CoWriterNotice from './pages/CoWriterNotice'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/login" element={<AuthPage mode="login" />} />
           <Route path="/register" element={<AuthPage mode="register" />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/notice/:token" element={<CoWriterNotice />} />
           <Route element={<Protected />}>
             <Route path="/" element={<Home />} />
             <Route path="/discography" element={<Discography />} />

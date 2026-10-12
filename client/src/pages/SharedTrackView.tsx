@@ -1,107 +1,80 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
-import { Badge, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
-import type { Collaborator, Release, Track } from '../types'
+import { ErrorBox, fmtDate, fmtDuration, Loading } from '../components/ui'
+import type { SharedTrackDetail } from '../types'
 
-export function downloadJson(name: string, data: unknown) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
-  const a = Object.assign(document.createElement('a'), { href: url, download: name })
-  a.click(); URL.revokeObjectURL(url)
+const EXPLICIT_LABEL: Record<string, string> = {
+  explicit: 'Explicit',
+  not_explicit: 'Not explicit',
+  cleaned: 'Clean version',
 }
 
-const TYPE_LABEL = { single: 'Single', ep: 'EP', album: 'Album' } as const
-
-export default function ReleaseView() {
+export default function SharedTrackView() {
   const { id } = useParams()
-  const nav = useNavigate()
-  const [r, setR] = useState<Release | null>(null)
-  const [tracks, setTracks] = useState<Track[]>([])
+  const [data, setData] = useState<SharedTrackDetail | null>(null)
   const [err, setErr] = useState('')
-  const [actionErr, setActionErr] = useState('')
-  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    api<{ release: Release; tracks: Track[] }>(`/releases/${id}`)
-      .then((x) => { setR(x.release); setTracks(x.tracks) })
-      .catch((e) => setErr(e.message))
+    let cancelled = false
+    setData(null)
+    setErr('')
+    api<SharedTrackDetail>(`/shared-tracks/${id}`)
+      .then((x) => { if (!cancelled) setData(x) })
+      .catch((e) => { if (!cancelled) setErr(e.message) })
+    return () => { cancelled = true }
   }, [id])
 
-  if (err) return <ErrorBox error={err} />
-  if (!r) return <Loading />
-
-  // There is no export endpoint, so assemble the metadata from the release, track and split endpoints.
-  async function exportMetadata() {
-    if (!r) return
-    setBusy(true); setActionErr('')
-    try {
-      const { tracks: full } = await api<{ tracks: Track[] }>(`/releases/${r.id}/tracks`)
-      const splits = await Promise.all(
-        full.map((t) => api<{ collaborators: Collaborator[] }>(`/releases/${r.id}/tracks/${t.id}/collaborators`)),
-      )
-      downloadJson(`${r.title}.json`, {
-        release: r,
-        tracks: full.map((t, i) => ({ ...t, collaborators: splits[i].collaborators })),
-      })
-    } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
+  if (err) {
+    return (
+      <div className="stack">
+        <Link to="/discography" className="back">← Back to Discography</Link>
+        <ErrorBox error={err} />
+      </div>
+    )
   }
+  if (!data) return <Loading what="Loading this song" />
 
-  async function revert() {
-    if (!r) return
-    setBusy(true); setActionErr('')
-    try {
-      await api(`/releases/${r.id}/revert`, 'POST')
-      nav(`/releases/${r.id}/edit`)
-    } catch (e) { setActionErr((e as Error).message); setBusy(false) }
-  }
-
-  async function remove() {
-    if (!r || !window.confirm(`Delete "${r.title}"? This can't be undone.`)) return
-    setBusy(true); setActionErr('')
-    try {
-      await api(`/releases/${r.id}`, 'DELETE')
-      nav('/discography')
-    } catch (e) { setActionErr((e as Error).message); setBusy(false) }
-  }
+  const { track: t, splits } = data
 
   return (
     <div className="stack">
       <div className="hero">
         <Link to="/discography" className="back">← Back to Discography</Link>
-        <h1>{r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.status} /></h1>
-        <div className="sub">Artist: {r.album_artist}</div>
-        <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
-        <div className="row actions">
-          <button className="secondary" disabled={busy} onClick={exportMetadata}>Export metadata (JSON)</button>
-          {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
-          {r.status === 'ready' && <button className="secondary" disabled={busy} onClick={revert}>Revert to draft</button>}
-          {r.status === 'draft' && <button className="danger" disabled={busy} onClick={remove}>Delete release</button>}
-        </div>
+        <h1>{t.title}</h1>
+        <div className="sub">From “{t.release_title}” by {t.album_artist}</div>
+        <div className="sub">Release owner: {t.owner_artist_name}</div>
+        <div className="sub">Release date: {t.release_date ? fmtDate(t.release_date) : '—'}</div>
       </div>
-      {actionErr && <ErrorBox error={actionErr} />}
 
       <div className="card grid2">
-        <div><span className="muted">Album artist</span><br />{r.album_artist}</div>
-        <div><span className="muted">Genre</span><br />{r.genre || '—'}</div>
-        <div><span className="muted">Release date</span><br />{r.release_date ? fmtDate(r.release_date) : '—'}</div>
-        <div><span className="muted">UPC</span><br />{r.upc || '—'}</div>
-        <div><span className="muted">℗ line</span><br />{r.p_line || '—'}</div>
-        <div><span className="muted">© line</span><br />{r.c_line || '—'}</div>
-        <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
-        <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
+        <div><span className="muted">Track number</span><br />{t.track_number}</div>
+        <div><span className="muted">Performing artist</span><br />{t.artist_name || t.album_artist}</div>
+        <div><span className="muted">Composition title</span><br />{t.composition_title || '—'}</div>
+        <div><span className="muted">Duration</span><br />{fmtDuration(t.duration_seconds)}</div>
+        <div><span className="muted">ISRC</span><br />{t.isrc || '—'}</div>
+        <div><span className="muted">ISWC</span><br />{t.iswc || '—'}</div>
+        <div><span className="muted">Content rating</span><br />{t.explicit ? EXPLICIT_LABEL[t.explicit] ?? t.explicit : '—'}</div>
       </div>
 
-      <h2>{r.release_type === 'single' ? 'Song' : 'Tracklist'}</h2>
-      <table><thead><tr><th>#</th><th>Title</th><th>ISRC</th><th>Duration</th></tr></thead>
-        <tbody>{tracks.map((t) => (
-          <tr key={t.id}>
-            <td>{t.track_number}</td>
-            <td><Link to={`/releases/${r.id}/tracks/${t.id}`}>{t.title}</Link></td>
-            <td>{t.isrc || '—'}</td>
-            <td>{fmtDuration(t.duration_seconds)}</td>
-          </tr>
-        ))}</tbody></table>
-      {tracks.length === 0 && <p className="muted">No songs on this release yet.</p>}
+      <h2>Credits and splits</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Role</th><th>Share</th></tr>
+        </thead>
+        <tbody>
+          {splits.map((s, i) => (
+            <tr key={i}>
+              <td>{s.legal_name}{s.is_you && <> <strong>(you)</strong></>}</td>
+              <td>{s.role}</td>
+              <td>{Number(s.ownership_percent)}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted">
+        This is a read-only record of what {t.owner_artist_name} has listed. Only the release owner can change it.
+      </p>
     </div>
   )
 }

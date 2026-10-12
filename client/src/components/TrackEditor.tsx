@@ -6,7 +6,7 @@ const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
   explicit: 'Explicit', not_explicit: 'Not explicit', cleaned: 'Cleaned',
 }
 
-const sumPct = (t: TrackForm) => t.collaborators.reduce((s, c) => s + Math.round((Number(c.ownershipPercent) || 0) * 100), 0) / 100
+const sumPct = (t: TrackForm) => t.collaborators.filter((c) => !c.discard).reduce((s, c) => s + Math.round((Number(c.ownershipPercent) || 0) * 100), 0) / 100
 const toInt = (s: string) => (s.trim() && /^\d+$/.test(s.trim()) ? parseInt(s, 10) : null)
 
 export const parseDuration = (s: string) => {
@@ -24,7 +24,6 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
   }
   const total = sumPct(track)
 
-  // Only the file's metadata is recorded (name, size, format); the file itself is not uploaded.
   const pickFile = (f?: File) => {
     if (!f) return
     const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
@@ -92,7 +91,12 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
       <section className="card">
         <h4>Royalty splits <small className="muted">(legal names)</small></h4>
         <Hint>Ownership must total exactly 100%, with at most 2 decimals. Once the release is marked ready, splits are locked. Revert it to draft to edit them (not possible after a dispute is raised).</Hint>
-        {track.collaborators.map((c, i) => (
+        {track.collaborators.map((c, i) => c.removedByWriter ? (
+          <div className="row" key={i}>
+            <span className="muted">Removed by writer: {c.ownershipPercent}% {c.discard ? 'will be freed on save' : 'is held until you discard this line'}</span>
+            <button type="button" className="ghost" onClick={() => setCollab(i, { discard: !c.discard })}>{c.discard ? 'Keep' : 'Discard'}</button>
+          </div>
+        ) : (
           <div className="row" key={i}>
             <input placeholder="Legal name" value={c.legalName} onChange={(e) => setCollab(i, { legalName: e.target.value })} />
             <select value={c.role ?? 'songwriter'} onChange={(e) => setCollab(i, { role: e.target.value as CollaboratorInput['role'] })}>

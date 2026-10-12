@@ -29,7 +29,7 @@ async function authToken(req, res, next) {
             id: rows[0].id,
             email: rows[0].email,
             artistName: rows[0].artist_name,
-            emailVerified: rows[0].emailVerified || false,
+            emailVerified: !!rows[0].email_verified_at,
         };
         return next();
     } catch (err) {

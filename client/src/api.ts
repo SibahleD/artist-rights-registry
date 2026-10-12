@@ -2,6 +2,7 @@ const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'
 
 export class ApiError extends Error {
   details?: string[]
+  data?: any
   constructor(message: string, details?: string[]) { super(message); this.details = details }
 }
 
