@@ -4,6 +4,9 @@ const {
     createRelease, listReleases, getRelease, updateRelease,
     markReady, revertToDraft, deleteRelease,
 } = require('../controllers/releaseController');
+const { 
+    sendNotices, listNotices, remindNotice, acknowledgeUnconfirmed 
+} = require('../controllers/noticesController');
 
 const router = express.Router();
 const trackRoutes = require('./tracks');
@@ -16,6 +19,10 @@ router.param('id', (req, res, next, id) => {
     if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Release not found.' });
     next();
 });
+router.param('noticeId', (req, res, next, id) => {
+    if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Notice not found.' });
+    next();
+});
 
 router.post('/', createRelease);
 router.get('/', listReleases);
@@ -24,5 +31,9 @@ router.patch('/:id', updateRelease);
 router.delete('/:id', deleteRelease);
 router.post('/:id/ready', markReady);
 router.post('/:id/revert', revertToDraft);
+router.post('/:id/notices/send', sendNotices);
+router.get('/:id/notices', listNotices);
+router.post('/:id/notices/:noticeId/remind', remindNotice);
+router.post('/:id/acknowledge-unconfirmed', acknowledgeUnconfirmed);
 
 module.exports = router;

@@ -7,6 +7,9 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const releaseRoutes = require('./routes/releases');
 const sharedTrackRoutes = require('./routes/sharedTracks');
+const publicNoticeRoutes = require('./routes/publicNotices');
+
+const { sweepNotices } = require('./services/notices');
 
 const app = express();
 
@@ -19,6 +22,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/releases', releaseRoutes);
 app.use('/api/shared-tracks', sharedTrackRoutes);
+app.use('/api/notices', publicNoticeRoutes);
+if (process.env.DEV_OUTBOX === 'true') {
+    if (process.env.NODE_ENV === 'production') throw new Error('DEV_OUTBOX must never be enabled in production.');
+    app.use('/api/dev', require('./routes/dev'));
+}
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`)); 
+
+sweepNotices().catch((e) => console.error('sweep failed:', e.message));
+setInterval(() => sweepNotices().catch((e) => console.error('sweep failed:', e.message)), 60 * 60 * 1000).unref();
+

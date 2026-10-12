@@ -14,7 +14,7 @@ async function claimInvites(user) {
     );
 }
 
-const COLLAB_COLS = 'id, track_id, user_id, invited_email, legal_name, role, ownership_percent, created_at';
+const COLLAB_COLS = 'id, track_id, user_id, invited_email, legal_name, role, ownership_percent, removed_by_writer, created_at';
 
 async function listCollaborators(req, res) {
     try {
