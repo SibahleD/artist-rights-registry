@@ -1,6 +1,7 @@
 const pool = require('../db/pool');
 
 const { ROLES, parseCollaborators } = require('../lib/splits');
+const { emailHash } = require('../services/notices');
 
 
 async function claimInvites(user) {
@@ -38,9 +39,6 @@ async function listCollaborators(req, res) {
 }
 
 async function replaceCollaborators(req, res) {
-    const { data, error } = parseCollaborators(req.body);
-    if (error) return res.status(400).json({ error });
-
     let client;
     try {
         client = await pool.connect();
@@ -61,15 +59,29 @@ async function replaceCollaborators(req, res) {
             return res.status(409).json({ error: 'Ready releases are locked. Revert to draft to edit.' });
         }
 
+        const { rows: removedRows } = await client.query(
+            `SELECT id, ownership_percent FROM collaborators WHERE track_id = $1 AND removed_by_writer`,
+            [found[0].id]
+        );
+        const { data, discardIds, error } = parseCollaborators(
+            req.body,
+            removedRows.map((r) => ({ id: r.id, cents: Math.round(Number(r.ownership_percent) * 100) }))
+        );
+        if (error) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error });
+        }
+
         const emails = data.map((c) => c.email).filter(Boolean);
         const users = emails.length
-            ? await client.query(
-                'SELECT id, email FROM users WHERE email = ANY($1) AND deleted_at IS NULL AND email_verified_at IS NOT NULL',
-                [emails])
+            ? await client.query('SELECT id, email FROM users WHERE email = ANY($1) AND deleted_at IS NULL AND email_verified_at IS NOT NULL', [emails])
             : { rows: [] };
         const idByEmail = new Map(users.rows.map((u) => [u.email, u.id]));
 
-        await client.query('DELETE FROM collaborators WHERE track_id = $1', [found[0].id]);
+        await client.query(
+            `DELETE FROM collaborators WHERE track_id = $1 AND (removed_by_writer = false OR id = ANY($2::uuid[]))`,
+            [found[0].id, discardIds]
+        );
         for (const c of data) {
             await client.query(
                 `INSERT INTO collaborators (track_id, user_id, invited_email, legal_name, role, ownership_percent)
@@ -78,9 +90,19 @@ async function replaceCollaborators(req, res) {
             );
         }
 
+        await client.query(
+            `UPDATE collaborator_notices
+                SET status = 'cancelled', email = NULL, co_writer_name = NULL, consent_at = NULL
+              WHERE track_id = $1 AND status IN ('pending','confirmed','disputed')
+                AND NOT (email_hash = ANY($2::text[]))`,
+            [found[0].id, emails.map(emailHash)]
+        );
+        
+        await client.query('UPDATE releases SET unconfirmed_acknowledged_at = NULL WHERE id = $1', [req.params.releaseId]);
+
         const { rows } = await client.query(
             `SELECT ${COLLAB_COLS} FROM collaborators WHERE track_id = $1
-             ORDER BY ownership_percent DESC, created_at`,
+             ORDER BY removed_by_writer, ownership_percent DESC, created_at`,
             [found[0].id]
         );
         await client.query('COMMIT');

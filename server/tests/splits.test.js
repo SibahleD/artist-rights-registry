@@ -46,3 +46,23 @@ test('rejects an invalid email and an empty list', () => {
   assert.match(parseCollaborators(body(person('Ada Obi', 100, { invitedEmail: 'nope' }))).error, /invalid email/);
   assert.match(parseCollaborators({ collaborators: [] }).error, /1 to 50/);
 });
+test('removed lines are ignored and their locked share counts toward 100', () => {
+  const removed = [{ id: 'r1', cents: 3000 }];
+  const ok = parseCollaborators(body(person('Ada Obi', 70), { id: 'r1', removedByWriter: true }), removed);
+  assert.equal(ok.error, undefined);
+  assert.deepEqual(ok.keepIds, ['r1']);
+  const bad = parseCollaborators(body(person('Ada Obi', 100), { id: 'r1', removedByWriter: true }), removed);
+  assert.match(bad.error, /should total 70%/);
+});
+
+test('discard frees the share of a removed line', () => {
+  const removed = [{ id: 'r1', cents: 3000 }];
+  const r = parseCollaborators(body(person('Ada Obi', 100), { id: 'r1', removedByWriter: true, discard: true }), removed);
+  assert.equal(r.error, undefined);
+  assert.deepEqual(r.discardIds, ['r1']);
+});
+
+test('omitting a removed line does not free its share', () => {
+  const r = parseCollaborators(body(person('Ada Obi', 100)), [{ id: 'r1', cents: 3000 }]);
+  assert.match(r.error, /should total 70%/);
+});

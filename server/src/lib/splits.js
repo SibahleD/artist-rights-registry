@@ -1,9 +1,8 @@
-
 const ROLES = ['composer', 'songwriter', 'publisher', 'producer', 'performer', 'other'];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function parseCollaborators(body) {
+function parseCollaborators(body, existingRemoved = []) {
     const list = body && body.collaborators;
     if (!Array.isArray(list) || list.length === 0 || list.length > 50) {
         return { error: 'collaborators must be a list of 1 to 50 entries.' };
@@ -12,11 +11,17 @@ function parseCollaborators(body) {
     const data = [];
     const seenEmails = new Set();
     const seenNames = new Set();
+    const discardIds = new Set();
     let totalCents = 0;
 
     for (const [i, c] of list.entries()) {
         const n = i + 1;
         if (!c || typeof c !== 'object') return { error: `Collaborator ${n} is invalid.` };
+
+        if (c.removedByWriter === true) {
+            if (c.discard === true && typeof c.id === 'string') discardIds.add(c.id);
+            continue;
+        }
 
         const legalName = typeof c.legalName === 'string' ? c.legalName.trim() : '';
         if (!legalName || legalName.length > 200) {
@@ -56,10 +61,16 @@ function parseCollaborators(body) {
         data.push({ legalName, role, percent: cents / 100, email });
     }
 
-    if (totalCents !== 10000) {
-        return { error: `Splits must total exactly 100% (currently ${totalCents / 100}%).` };
+    const lockedCents = existingRemoved
+        .filter((r) => !discardIds.has(r.id))
+        .reduce((sum, r) => sum + r.cents, 0);
+    const keepIds = existingRemoved.filter((r) => !discardIds.has(r.id)).map((r) => r.id);
+    const expected = 10000 - lockedCents;
+    if (totalCents !== expected) {
+        const note = lockedCents ? ` (${lockedCents / 100}% is held by a removed co-writer)` : '';
+        return { error: `Splits must total exactly 100%${note}. Your lines total ${totalCents / 100}%, they should total ${expected / 100}%.` };
     }
-    return { data };
+    return { data, discardIds: [...discardIds], keepIds };
 }
 
 module.exports = { ROLES, parseCollaborators };

@@ -2,7 +2,8 @@ const pool = require('../db/pool');
 
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
-    upc, p_line, c_line, status, created_at, ready_at`;
+    upc, p_line, c_line, status, created_at, ready_at, unconfirmed_acknowledged_at`;
+const { noticeReadiness } = require('../services/notices');
 const RELEASE_TYPES = ['single', 'ep', 'album'];
 
 function requiredText(label, max) {
@@ -97,6 +98,7 @@ async function readinessProblems(release) {
             problems.push(`Track ${r.track_number} ("${r.title}") splits must total 100% (currently ${Number(r.split_total)}%).`);
         }
     }
+    problems.push(...(await noticeReadiness(release)).errors);
     return problems;
 }
 
@@ -212,6 +214,13 @@ async function markReady(req, res) {
         const problems = await readinessProblems(release);
         if (problems.length > 0) {
             return res.status(400).json({ error: 'Release is not ready.', problems });
+        }
+        const { unconfirmed } = await noticeReadiness(release);
+        if (unconfirmed.length > 0 && !release.unconfirmed_acknowledged_at) {
+            return res.status(409).json({
+                error: 'Some co-writers have not confirmed. Acknowledge this to continue.',
+                needsAcknowledgement: true, unconfirmed,
+            });
         }
 
         const { rows } = await pool.query(
