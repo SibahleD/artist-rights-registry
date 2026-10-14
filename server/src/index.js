@@ -8,6 +8,7 @@ const userRoutes = require('./routes/users');
 const releaseRoutes = require('./routes/releases');
 const sharedTrackRoutes = require('./routes/sharedTracks');
 const publicNoticeRoutes = require('./routes/publicNotices');
+const mediaRoutes = require('./routes/media');
 
 const { sweepNotices } = require('./services/notices');
 
@@ -23,6 +24,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/releases', releaseRoutes);
 app.use('/api/shared-tracks', sharedTrackRoutes);
 app.use('/api/notices', publicNoticeRoutes);
+app.use('/api/media', mediaRoutes);
+
 if (process.env.DEV_OUTBOX === 'true') {
     if (process.env.NODE_ENV === 'production') throw new Error('DEV_OUTBOX must never be enabled in production.');
     app.use('/api/dev', require('./routes/dev'));

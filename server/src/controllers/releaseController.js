@@ -2,7 +2,8 @@ const pool = require('../db/pool');
 
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
-    upc, p_line, c_line, status, created_at, ready_at, unconfirmed_acknowledged_at`;
+    upc, p_line, c_line, status, created_at, ready_at, unconfirmed_acknowledged_at,
+    (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
 const { noticeReadiness } = require('../services/notices');
 const RELEASE_TYPES = ['single', 'ep', 'album'];
 

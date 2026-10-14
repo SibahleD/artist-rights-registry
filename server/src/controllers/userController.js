@@ -1,6 +1,6 @@
 const pool = require('../db/pool');
 
-const USER_COLUMNS = 'id, email, artist_name, contact_info, first_name, last_name, username, created_at, email_verified_at';
+const USER_COLUMNS = 'id, email, artist_name, contact_info, first_name, last_name, username, created_at, email_verified_at, (SELECT id FROM media WHERE owner_id = users.id AND kind = \'avatar\') AS avatar_id';
 const PLATFORMS = ['spotify', 'apple_music', 'soundcloud', 'youtube', 'instagram', 'tiktok', 'x'];
 const USERNAME_RE = /^[a-z0-9_.]{3,30}$/;
 

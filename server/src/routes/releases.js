@@ -7,6 +7,7 @@ const {
 const { 
     sendNotices, listNotices, remindNotice, acknowledgeUnconfirmed 
 } = require('../controllers/noticesController');
+const { putArtwork, deleteArtwork } = require('../controllers/imageController')
 
 const router = express.Router();
 const trackRoutes = require('./tracks');
@@ -35,5 +36,7 @@ router.post('/:id/notices/send', sendNotices);
 router.get('/:id/notices', listNotices);
 router.post('/:id/notices/:noticeId/remind', remindNotice);
 router.post('/:id/acknowledge-unconfirmed', acknowledgeUnconfirmed);
+router.put('/:id/artwork', putArtwork)
+router.delete('/:id/artwork', deleteArtwork)
 
 module.exports = router;
