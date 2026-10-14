@@ -12,6 +12,7 @@ import SharedTrackView from './pages/SharedTrackView'
 import SongView from './pages/SongView'
 import VerifyEmail from './pages/VerifyEmail'
 import CoWriterNotice from './pages/CoWriterNotice'
+import Glossary from './pages/Glossary'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/releases/:releaseId/tracks/:trackId" element={<SongView />} />
             <Route path="/shared-tracks/:id" element={<SharedTrackView />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/Glossary" element={<Glossary />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

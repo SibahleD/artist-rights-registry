@@ -72,7 +72,6 @@ export default function DiscographyPage() {
   if (err) return <ErrorBox error={err} />
   if (!releases || !shared) return <Loading what="Loading your discography" />
 
-  // The backend has no /discography endpoint: split the owner's releases by status here.
   const ready = releases.filter((r) => r.status === 'ready')
   const drafts = releases.filter((r) => r.status === 'draft')
 

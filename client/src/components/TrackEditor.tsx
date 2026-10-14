@@ -1,6 +1,7 @@
 import { AUDIO_FORMATS, COLLABORATOR_ROLES, EXPLICIT_VALUES } from '../types'
 import type { AudioFormat, AudioInput, CollaboratorInput, TrackForm } from '../types'
 import { Hint } from './ui'
+import backIco from '../assets/ico/chevron-down.svg'
 
 const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
   explicit: 'Explicit', not_explicit: 'Not explicit', cleaned: 'Cleaned',
@@ -34,7 +35,11 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
   return (
     <div className="stack">
       <section className="card">
-        <h4>General info</h4>
+        <div className="row section-title">
+          <img className="collapse-icon" src={backIco}/>
+          <h4>General info</h4>
+        </div>
+        
         <div className="grid2">
           {!hideTitle && <label>Song title<input value={track.title} onChange={(e) => set('title', e.target.value)} /></label>}
           <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
@@ -50,7 +55,10 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
       </section>
 
       <section className="card">
-        <h4>Audio file</h4>
+        <div className="row section-title">
+          <img className="collapse-icon" src={backIco}/>
+          <h4>Audio file</h4>
+        </div>
         <Hint>A release can't be marked ready until every song has an audio file recorded.</Hint>
         <div className="row">
           <input type="file" accept="audio/*,.mp3,.flac,.wav,.aac" onChange={(e) => pickFile(e.target.files?.[0])} />
@@ -73,7 +81,11 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
       </section>
 
       <section className="card">
-        <h4>Publishing info</h4>
+        <div className="row section-title">
+          <img className="collapse-icon" src={backIco}/>
+          <h4>Publishing info</h4>
+        </div>
+        
         <div className="grid2">
           <label>Composition title<input value={track.compositionTitle} onChange={(e) => set('compositionTitle', e.target.value)} />
             <Hint>The name of the underlying song (words and music), which can differ from the recording title, e.g. for remixes.</Hint></label>
@@ -89,7 +101,10 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
       </section>
 
       <section className="card">
-        <h4>Royalty splits <small className="muted">(legal names)</small></h4>
+        <div className="row section-title">
+          <img className="collapse-icon" src={backIco}/>
+          <h4>Royalty splits <small className="muted">(legal names)</small></h4>
+        </div>
         <Hint>Ownership must total exactly 100%, with at most 2 decimals. Once the release is marked ready, splits are locked. Revert it to draft to edit them (not possible after a dispute is raised).</Hint>
         {track.collaborators.map((c, i) => c.removedByWriter ? (
           <div className="row" key={i}>

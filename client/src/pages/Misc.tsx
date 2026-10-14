@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import type { ArtistLink, User } from '../types'
+import backIco from '../assets/ico/chevron-down.svg'
 
 type Platforms = readonly (readonly [string, string])[]
 
@@ -93,8 +94,10 @@ export function Profile() {
         <h1>Artist Profile</h1>
         <div className="sub">Artist: {user?.artist_name}</div>
       </div>
-
-      <h2>General Info</h2>
+      <div className="row section-title">
+        <img className="collapse-icon" src={backIco}/>
+        <h2>General Info</h2>
+      </div>
       <form className="card stack" onSubmit={save}>
         <h4>Artist Profile</h4>
         <label>Artist name<input value={f.artistName} onChange={(e) => setF({ ...f, artistName: e.target.value })} /></label>
@@ -106,8 +109,11 @@ export function Profile() {
         <label>Contact info<input value={f.contactInfo} onChange={(e) => setF({ ...f, contactInfo: e.target.value })} /></label>
         <div className="row actions"><button>Save</button><span className="muted">{msg}</span></div>
       </form>
-
-      <h2>Links</h2>
+      
+      <div className="row section-title">
+        <img className="collapse-icon" src={backIco}/>
+        <h2>Links</h2>
+      </div>
       <div className="grid2">
         <LinksCard title="Artist Streaming Links" platforms={STREAMING} saved={links} onSaved={setLinks} />
         <LinksCard title="Social Links" platforms={SOCIAL} saved={links} onSaved={setLinks} />

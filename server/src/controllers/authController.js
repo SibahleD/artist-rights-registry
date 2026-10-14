@@ -46,7 +46,7 @@ async function register(req, res) {
         const result = await pool.query(
             `INSERT INTO users (email, password_hash, artist_name, contact_info)
              VALUES ($1, $2, $3, $4)
-             RETURNING id, email, artist_name, contact_info, created_at`,
+             RETURNING id, email, artist_name, contact_info, email_verified_at, created_at`,
             [email, hashedPassword, artistName, contactInfo ?? null]
         );
 

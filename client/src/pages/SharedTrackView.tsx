@@ -73,7 +73,7 @@ export default function SharedTrackView() {
         </tbody>
       </table>
       <p className="muted">
-        This is a read-only record of what {t.owner_artist_name} has listed. Only the release owner can change it.
+        NOTE: This is a read-only record of what {t.owner_artist_name} has listed. Only the release owner can change it.
       </p>
     </div>
   )

@@ -12,7 +12,7 @@ import settingsIco from '../assets/ico/settings.svg'
 import expandIco from '../assets/ico/reduce.svg'
 
 const links = [
-  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/info', 'Info', infoIco], ['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
+  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/glossary', 'Glossary', infoIco], ['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
 
 function VerifyBanner() {

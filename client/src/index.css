@@ -380,6 +380,7 @@ body.sidebar-collapsed .sidebar a {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 22px;
+  margin-top: 8px ;
 }
 
 /* Release / song cards */
