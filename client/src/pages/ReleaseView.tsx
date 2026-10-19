@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { AuthImage } from '../components/files'
 import { useAuth } from '../auth'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import { Badge, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
@@ -159,6 +160,7 @@ export default function ReleaseView() {
       {ack && <AckModal list={ack} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
       <div className="hero">
         <Link to="/discography" className="back">← Back to Discography</Link>
+        <div className="cover" style={{ width: 120, height: 120 }}><AuthImage mediaId={r.artwork_id} alt="Cover art" fallback={r.title.slice(0, 1).toUpperCase()} /></div>
         <h1>{r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.status} /></h1>
         <div className="sub">Artist: {r.album_artist}</div>
         <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>

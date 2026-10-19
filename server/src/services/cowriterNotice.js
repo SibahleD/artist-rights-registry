@@ -1,5 +1,5 @@
 const PLATFORM = process.env.PLATFORM_NAME || 'Artist Rights Registry';
-const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 const RWANDA_LINK = process.env.RWANDA_GUIDE_URL || `${APP_URL}/info`;
 const LEARN_LINK = process.env.LEARN_URL || `${APP_URL}/info`;
 const RETENTION = process.env.NOTICE_RETENTION_TEXT || 'while this song is on the platform';

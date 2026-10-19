@@ -1,0 +1,2 @@
+# Netlify: send every /app/* deep link to the app's index.html (single-page app fallback)
+/app/*  /app/index.html  200

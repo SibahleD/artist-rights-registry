@@ -13,6 +13,7 @@ import SongView from './pages/SongView'
 import VerifyEmail from './pages/VerifyEmail'
 import CoWriterNotice from './pages/CoWriterNotice'
 import Glossary from './pages/Glossary'
+import RegisterRights from './pages/RegisterRights'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -22,7 +23,7 @@ function Protected() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<AuthPage mode="login" />} />
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="/shared-tracks/:id" element={<SharedTrackView />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/Glossary" element={<Glossary />} />
+            <Route path="/register-rights" element={<RegisterRights />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { Badge, ErrorBox, fmtDate, Loading } from '../components/ui'
+import { AuthImage } from '../components/files'
 import type { Release, SharedTrack } from '../types'
 
 function ReleaseCard({ r }: { r: Release }) {
   const to = r.status === 'draft' ? `/releases/${r.id}/edit` : `/releases/${r.id}`
   return (
     <Link to={to} className="card release">
-      <div className="cover">{r.title.slice(0, 1).toUpperCase()}</div>
+      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={r.title.slice(0, 1).toUpperCase()} /></div>
       <div>
         <strong>{r.title}</strong>
         <div className="muted">{r.album_artist}</div>

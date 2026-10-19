@@ -157,4 +157,31 @@ async function deleteLink(req, res) {
     }
 }
 
-module.exports = { getMe, updateMe, listLinks, upsertLink, deleteLink };
+async function getUsage(req, res) {
+    try {
+        const limits = require('../limits');
+        const q = (sql) => pool.query(sql, [req.user.id]).then((r) => Number(r.rows[0].n));
+        const [releases, audio, images] = await Promise.all([
+            q('SELECT count(*) AS n FROM releases WHERE owner_id = $1'),
+            q('SELECT COALESCE(SUM(size_bytes), 0) AS n FROM audio_files WHERE owner_id = $1'),
+            q('SELECT COALESCE(SUM(size_bytes), 0) AS n FROM media WHERE owner_id = $1'),
+        ]);
+        const on = limits.enabled;
+        return res.json({
+            enabled: on,
+            releases: { used: releases, max: on ? limits.maxReleasesPerUser : null },
+            bytes: { audio, images, used: audio + images, max: on ? limits.maxUserBytes : null },
+            limits: {
+                maxTracksPerRelease: on ? limits.maxTracksPerRelease : null,
+                maxAudioBytes: on ? limits.maxAudioBytes : 100 * 1024 * 1024,
+                maxCoverBytes: on ? limits.maxCoverBytes : 10 * 1024 * 1024,
+                maxAvatarBytes: on ? limits.maxAvatarBytes : 2 * 1024 * 1024,
+            },
+        });
+    } catch (err) {
+        console.error('getUsage error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+module.exports = { getMe, updateMe, getUsage, listLinks, upsertLink, deleteLink };

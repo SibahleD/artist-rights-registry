@@ -1,6 +1,8 @@
-import { AUDIO_FORMATS, COLLABORATOR_ROLES, EXPLICIT_VALUES } from '../types'
-import type { AudioFormat, AudioInput, CollaboratorInput, TrackForm } from '../types'
+import { useState } from 'react'
+import { COLLABORATOR_ROLES, EXPLICIT_VALUES } from '../types'
+import type { CollaboratorInput, TrackForm } from '../types'
 import { Hint } from './ui'
+import { checkAudio, fmtBytes } from './files'
 import backIco from '../assets/ico/chevron-down.svg'
 
 const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
@@ -16,20 +18,19 @@ export const parseDuration = (s: string) => {
 }
 export const showDuration = (n?: number | null) => (n ? `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}` : '')
 
-export default function TrackEditor({ track, onChange, hideTitle }: { track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean }) {
+export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 5 * 1024 * 1024 }: { track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean; maxAudioBytes?: number }) {
+  const [audioErr, setAudioErr] = useState('')
   const set = <K extends keyof TrackForm>(k: K, v: TrackForm[K]) => onChange({ ...track, [k]: v })
   const setCollab = (i: number, patch: Partial<CollaboratorInput>) =>
     set('collaborators', track.collaborators.map((x, j) => (j === i ? { ...x, ...patch } : x)))
-  const setAudio = (patch: Partial<AudioInput>) => {
-    if (track.audio) set('audio', { ...track.audio, ...patch })
-  }
   const total = sumPct(track)
 
   const pickFile = (f?: File) => {
     if (!f) return
-    const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
-    const format: AudioFormat = (AUDIO_FORMATS as readonly string[]).includes(ext) ? (ext as AudioFormat) : 'other'
-    set('audio', { ...track.audio, fileName: f.name, format, sizeBytes: f.size })
+    const problem = checkAudio(f, maxAudioBytes)
+    if (problem) { setAudioErr(problem); return }
+    setAudioErr('')
+    set('audioFile', f)
   }
 
   return (
@@ -59,23 +60,23 @@ export default function TrackEditor({ track, onChange, hideTitle }: { track: Tra
           <img className="collapse-icon" src={backIco}/>
           <h4>Audio file</h4>
         </div>
-        <Hint>A release can't be marked ready until every song has an audio file recorded.</Hint>
+        <Hint>This is a small reference copy (MP3, WAV, FLAC or AAC, up to {fmtBytes(maxAudioBytes)}). Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
         <div className="row">
-          <input type="file" accept="audio/*,.mp3,.flac,.wav,.aac" onChange={(e) => pickFile(e.target.files?.[0])} />
-          {track.audio && <button type="button" className="ghost" onClick={() => set('audio', null)}>Remove audio</button>}
+          <input type="file" accept=".mp3,.aac,.m4a,.wav,.flac,audio/*" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
+          {(track.audio || track.audioFile) && (
+            <button type="button" className="ghost" onClick={() => { setAudioErr(''); onChange({ ...track, audio: null, audioFile: undefined }) }}>Remove audio</button>
+          )}
         </div>
-        {track.audio && (
+        {audioErr && <small className="warn">{audioErr}</small>}
+        {track.audioFile && <small className="muted">Selected: {track.audioFile.name} ({fmtBytes(track.audioFile.size)}). It uploads when you save, and the details below are then read from the file.</small>}
+        {track.audio && !track.audioFile && (
           <div className="grid2">
-            <label>File name<input value={track.audio.fileName} onChange={(e) => setAudio({ fileName: e.target.value })} /></label>
-            <label>Format
-              <select value={track.audio.format} onChange={(e) => setAudio({ format: e.target.value as AudioFormat })}>
-                {AUDIO_FORMATS.map((f) => <option key={f} value={f}>{f.toUpperCase()}</option>)}
-              </select>
-            </label>
-            <label>Bitrate (kbps, optional)<input inputMode="numeric" value={track.audio.bitrateKbps ?? ''} onChange={(e) => setAudio({ bitrateKbps: toInt(e.target.value) })} /></label>
-            <label>Sample rate (Hz, optional)<input inputMode="numeric" value={track.audio.sampleRateHz ?? ''} onChange={(e) => setAudio({ sampleRateHz: toInt(e.target.value) })} placeholder="44100" /></label>
-            <label>Channels (optional)<input inputMode="numeric" value={track.audio.channels ?? ''} onChange={(e) => setAudio({ channels: toInt(e.target.value) })} placeholder="2" /></label>
-            <label>Size (bytes)<input inputMode="numeric" value={track.audio.sizeBytes ?? ''} onChange={(e) => setAudio({ sizeBytes: toInt(e.target.value) })} /></label>
+            <div><span className="muted">File name</span><br />{track.audio.fileName}</div>
+            <div><span className="muted">Format</span><br />{track.audio.format.toUpperCase()}</div>
+            <div><span className="muted">Bitrate</span><br />{track.audio.bitrateKbps ? `${track.audio.bitrateKbps} kbps` : '—'}</div>
+            <div><span className="muted">Sample rate</span><br />{track.audio.sampleRateHz ? `${track.audio.sampleRateHz} Hz` : '—'}</div>
+            <div><span className="muted">Channels</span><br />{track.audio.channels ?? '—'}</div>
+            <div><span className="muted">Size</span><br />{track.audio.sizeBytes ? fmtBytes(track.audio.sizeBytes) : '—'}</div>
           </div>
         )}
       </section>

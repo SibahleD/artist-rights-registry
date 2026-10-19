@@ -7,7 +7,7 @@ const { newToken, hashToken } = require('../services/tokens');
 const { sendMail } = require('../services/mailer');
 const verifyEmailMessage = require('../services/verifyEmail');
 
-const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 
 const SALT_ROUNDS = 10;
 const JWT_EXPIRE = '7d';

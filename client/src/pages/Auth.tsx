@@ -30,6 +30,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           <label>Email<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
         <label>Password<input type="password" required minLength={mode === 'register' ? 8 : undefined} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
         </label>
+        
         </>}
         {mode ==='login' && <>
         <label>Email<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>

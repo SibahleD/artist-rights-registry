@@ -31,6 +31,14 @@ if (process.env.DEV_OUTBOX === 'true') {
     app.use('/api/dev', require('./routes/dev'));
 }
 
+  app.use((err, _req, res, _next) => {
+      console.error('Unhandled error:', err);
+      if (res.headersSent) return;
+      res.status(err.status || 500).json({ error: 'Internal server error' });
+  });
+  process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e));
+  process.on('uncaughtException', (e) => console.error('uncaughtException:', e));
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`)); 
 

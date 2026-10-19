@@ -1,4 +1,6 @@
 const pool = require('../db/pool');
+const limits = require('../limits');
+const storage = require('../services/storage');
 
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
@@ -116,10 +118,14 @@ async function createRelease(req, res) {
     try {
         const { rows } = await pool.query(
             `INSERT INTO releases (${columns.join(', ')})
-             VALUES (${placeholders.join(', ')})
+             SELECT ${placeholders.join(', ')}
+             WHERE (SELECT count(*) FROM releases WHERE owner_id = $1) < $${values.length + 1}
              RETURNING ${RELEASE_COLUMNS}`,
-            values
+            [...values, limits.enabled ? limits.maxReleasesPerUser : 1e9]
         );
+        if (rows.length === 0) {
+            return res.status(409).json({ error: `You've reached the test limit of ${limits.maxReleasesPerUser} releases. Delete a draft you no longer need to add another.` });
+        }
         return res.status(201).json({ release: rows[0] });
     } catch (err) {
         console.error('createRelease error:', err);
@@ -274,7 +280,14 @@ async function deleteRelease(req, res) {
             return res.status(409).json({ error: 'Only draft releases can be deleted. Revert to draft first.' });
         }
 
+        // Remember the stored audio files, so they can be removed once the rows are gone.
+        const keys = (await pool.query(
+            `SELECT f.storage_key FROM audio_files f JOIN tracks t ON t.id = f.track_id WHERE t.release_id = $1`,
+            [release.id]
+        )).rows.map((r) => r.storage_key);
+
         await pool.query('DELETE FROM releases WHERE id = $1 AND owner_id = $2', [release.id, req.user.id]);
+        await Promise.all(keys.map((k) => storage.delete(k)));
         return res.status(204).end();
     } catch (err) {
         if (err.code === '23503') { 

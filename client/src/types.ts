@@ -19,6 +19,7 @@ export interface User {
   username?: string | null
   created_at: string
   email_verified_at?: string | null
+  avatar_id?: string | null
 }
 
 export interface ArtistLink { platform: string; url: string }
@@ -39,6 +40,7 @@ export interface Release {
   created_at: string
   ready_at: string | null
   unconfirmed_acknowledged_at?: string | null
+  artwork_id?: string | null
   track_count?: number
 }
 
@@ -50,6 +52,7 @@ export interface AudioSpec {
   channels: number | null
   size_bytes: number | null
   recorded_at?: string
+  has_file?: boolean
 }
 
 export interface Track {
@@ -149,8 +152,6 @@ export interface CollaboratorInput {
   role?: CollaboratorRole
   ownershipPercent: number
   invitedEmail?: string | null
-  // A co-writer who removed themselves. The line is locked: send it back unchanged,
-  // or add discard: true to drop it and free its share.
   id?: string
   removedByWriter?: boolean
   discard?: boolean
@@ -160,7 +161,7 @@ export type NoticeStatus = 'pending' | 'confirmed' | 'disputed' | 'removed' | 'e
 export interface Notice {
   id: string
   track_id: string
-  co_writer_name: string | null // cleared once expired or removed
+  co_writer_name: string | null
   email: string | null
   role: CollaboratorRole
   share_percent: number | string
@@ -172,7 +173,6 @@ export interface Notice {
   responded_at: string | null
 }
 
-// What a co-writer sees at /notice/:token (no login).
 export interface PublicNotice {
   status: NoticeStatus
   artist_name?: string
@@ -192,6 +192,13 @@ export interface Dispute {
   responses: { id: string; responderId: string; responderName: string; action: string; message: string | null; createdAt: string }[]
 }
 
+export interface Usage {
+  enabled: boolean
+  releases: { used: number; max: number | null }
+  bytes: { audio: number; images: number; used: number; max: number | null }
+  limits: { maxTracksPerRelease: number | null; maxAudioBytes: number; maxCoverBytes: number; maxAvatarBytes: number }
+}
+
 export interface TrackForm {
   id?: string 
   hadAudio?: boolean
@@ -207,7 +214,9 @@ export interface TrackForm {
   compositionCopyright: string
   recordingCopyrightYear: number | null
   recordingCopyright: string
-  audio: AudioInput | null
+  audio: AudioInput | null 
+  audioHasFile?: boolean 
+  audioFile?: File
   collaborators: CollaboratorInput[]
 }
 

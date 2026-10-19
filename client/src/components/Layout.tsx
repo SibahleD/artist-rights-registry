@@ -10,9 +10,10 @@ import profileIco from '../assets/ico/user.svg'
 import infoIco from '../assets/ico/info.svg'
 import settingsIco from '../assets/ico/settings.svg'
 import expandIco from '../assets/ico/reduce.svg'
+import moneyIco from '../assets/ico/money.svg'
 
 const links = [
-  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/glossary', 'Glossary', infoIco], ['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
+  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
 
 function VerifyBanner() {

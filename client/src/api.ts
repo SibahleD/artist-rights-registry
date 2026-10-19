@@ -9,6 +9,27 @@ export class ApiError extends Error {
 export const getToken = () => localStorage.getItem('token')
 export const setToken = (t: string | null) => (t ? localStorage.setItem('token', t) : localStorage.removeItem('token'))
 
+export async function upload<T = any>(path: string, file: File, method = 'PUT'): Promise<T> {
+  const body = new FormData()
+  body.append('file', file)
+  let res: Response
+  try {
+    res = await fetch(BASE + path, { method, headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {}, body })
+  } catch {
+    throw new ApiError('Cannot reach the server. Check your connection and try again.')
+  }
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401 && getToken()) { setToken(null); window.location.href = `${import.meta.env.BASE_URL}login` }
+  if (!res.ok) throw new ApiError(data.error || 'The upload failed.', data.details ?? data.problems, data)
+  return data as T
+}
+
+export async function fetchBlob(path: string): Promise<Blob> {
+  const res = await fetch(BASE + path, { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} })
+  if (!res.ok) throw new ApiError('Could not load the file.')
+  return res.blob()
+}
+
 export async function api<T = any>(path: string, method = 'GET', body?: unknown): Promise<T> {
   let res: Response
   try {
@@ -21,7 +42,7 @@ export async function api<T = any>(path: string, method = 'GET', body?: unknown)
     throw new ApiError('Cannot reach the server. Check your connection and try again.')
   }
   const data = await res.json().catch(() => ({}))
-  if (res.status === 401 && getToken()) { setToken(null); window.location.href = '/login' }
+  if (res.status === 401 && getToken()) { setToken(null); window.location.href = `${import.meta.env.BASE_URL}login` }
   if (!res.ok) throw new ApiError(data.error || 'Something went wrong.', data.details ?? data.problems, data)
   return data as T
 }

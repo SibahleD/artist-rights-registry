@@ -1,4 +1,6 @@
 const pool = require('../db/pool');
+const limits = require('../limits');
+const storage = require('../services/storage');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EXPLICIT_VALUES = ['explicit', 'not_explicit', 'cleaned'];
@@ -142,17 +144,22 @@ async function createTrack(req, res) {
         if (!release) return;
 
         const cols = Object.keys(data);
-        const values = [release.id, ...Object.values(data)];
+        const maxTracks = limits.enabled ? limits.maxTracksPerRelease : 1e9;
+        const values = [release.id, ...Object.values(data), maxTracks];
         const placeholders = cols.map((_, i) => `$${i + 2}`);
 
         const { rows } = await pool.query(
             `INSERT INTO tracks (release_id, track_number, ${cols.join(', ')})
-             VALUES ($1,
-                     (SELECT COALESCE(MAX(track_number), 0) + 1 FROM tracks WHERE release_id = $1),
-                     ${placeholders.join(', ')})
+             SELECT $1,
+                    (SELECT COALESCE(MAX(track_number), 0) + 1 FROM tracks WHERE release_id = $1),
+                    ${placeholders.join(', ')}
+             WHERE (SELECT count(*) FROM tracks WHERE release_id = $1) < $${cols.length + 2}
              RETURNING ${PLAIN}`,
             values
         );
+        if (rows.length === 0) {
+            return res.status(409).json({ error: `You've reached the test limit of ${limits.maxTracksPerRelease} tracks on this release.` });
+        }
         return res.status(201).json({ track: { ...rows[0], audio: null } });
     } catch (err) {
         if (handleDbError(err, res)) return;
@@ -235,6 +242,12 @@ async function deleteTrack(req, res) {
         client = await pool.connect();
         await client.query('BEGIN');
 
+        // Remember the stored audio file, so it can be removed once the rows are gone.
+        const keys = (await client.query(
+            `SELECT f.storage_key FROM audio_files f JOIN tracks t ON t.id = f.track_id
+             WHERE t.id = $1 AND t.release_id = $2`, [req.params.trackId, release.id]
+        )).rows.map((r) => r.storage_key);
+
         const del = await client.query('DELETE FROM tracks WHERE id = $1 AND release_id = $2', [
             req.params.trackId,
             release.id,
@@ -253,6 +266,7 @@ async function deleteTrack(req, res) {
         );
 
         await client.query('COMMIT');
+        await Promise.all(keys.map((k) => storage.delete(k)));
         return res.status(204).end();
     } catch (err) {
         if (client) await client.query('ROLLBACK').catch(() => {});
@@ -380,12 +394,20 @@ async function deleteAudio(req, res) {
         const release = await ownedRelease(req, res, { requireDraft: true });
         if (!release) return;
 
+        // Removes the audio details and the stored file together.
         const result = await pool.query(
             `DELETE FROM audio_specs a USING tracks t
              WHERE a.track_id = t.id AND t.id = $1 AND t.release_id = $2`,
             [req.params.trackId, release.id]
         );
-        if (result.rowCount === 0) return res.status(404).json({ error: 'Audio spec not found.' });
+        const files = await pool.query(
+            `DELETE FROM audio_files f USING tracks t
+             WHERE f.track_id = t.id AND t.id = $1 AND t.release_id = $2
+             RETURNING f.storage_key`,
+            [req.params.trackId, release.id]
+        );
+        await Promise.all(files.rows.map((r) => storage.delete(r.storage_key)));
+        if (result.rowCount === 0 && files.rowCount === 0) return res.status(404).json({ error: 'Audio spec not found.' });
         return res.status(204).end();
     } catch (err) {
         console.error('deleteAudio error:', err);

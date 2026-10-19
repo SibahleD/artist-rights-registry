@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { api, ApiError } from '../api'
+import { api, ApiError, upload } from '../api'
 import { useAuth } from '../auth'
 import TrackEditor from '../components/TrackEditor'
+import ImagePicker from '../components/ImagePicker'
+import { UsageLine, useUsage } from '../components/files'
 import { ErrorBox, Loading, Modal } from '../components/ui'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import type {
@@ -85,12 +87,18 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [ack, setAck] = useState<{ rid: string; list: string[] } | null>(null)
+  const [artworkFile, setArtworkFile] = useState<File | undefined>()
+  const [artworkId, setArtworkId] = useState<string | null>(null)   // cover already stored on the server
+  const [artworkCleared, setArtworkCleared] = useState(false)
+  const [usageKey, setUsageKey] = useState(0)
+  const usage = useUsage(usageKey)
 
   useEffect(() => {
     if (!id) return
     ;(async () => {
       const { release } = await api<{ release: Release }>(`/releases/${id}`)
       if (release.status !== 'draft') return nav(`/releases/${id}`)
+      setArtworkId(release.artwork_id ?? null)
       const { tracks } = await api<{ tracks: Track[] }>(`/releases/${id}/tracks`)
       const splits = await Promise.all(
         tracks.map((t) => api<{ collaborators: Collaborator[] }>(`/releases/${id}/tracks/${t.id}/collaborators`)),
@@ -146,6 +154,14 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         setReleaseId(rid)
       }
 
+      if (artworkFile) {
+        await upload(`/releases/${rid}/artwork`, artworkFile)
+        setArtworkFile(undefined); setArtworkCleared(false)
+      } else if (artworkCleared && artworkId) {
+        await api(`/releases/${rid}/artwork`, 'DELETE')
+        setArtworkId(null); setArtworkCleared(false)
+      }
+
       const base = `/releases/${rid}/tracks`
       while (pending.length) {
         await api(`${base}/${pending[0]}`, 'DELETE')
@@ -160,10 +176,17 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           const r = await api<{ track: Track }>(base, 'POST', toTrackInput(t))
           t.id = r.track.id
         }
-        if (t.audio) {
-          await api(`${base}/${t.id}/audio`, 'PUT', t.audio)
+        if (t.audioFile) {
+          // The server reads the real format, bitrate and length from the file.
+          const r = await upload<{ audio: Record<string, any>; durationSeconds: number | null }>(`${base}/${t.id}/audio/file`, t.audioFile)
+          t.audio = {
+            fileName: r.audio.file_name, format: r.audio.format, bitrateKbps: r.audio.bitrate_kbps,
+            sampleRateHz: r.audio.sample_rate_hz, channels: r.audio.channels, sizeBytes: r.audio.size_bytes,
+          }
+          if (r.durationSeconds) t.durationSeconds = r.durationSeconds
+          t.audioFile = undefined
           t.hadAudio = true
-        } else if (t.hadAudio) {
+        } else if (!t.audio && t.hadAudio) {
           await api(`${base}/${t.id}/audio`, 'DELETE')
           t.hadAudio = false
         }
@@ -191,6 +214,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       setRemoved(pending)
       setErr({ error: ae.message, details: ae.details ?? ae.problems })
       setConfirm(false)
+      setUsageKey((k) => k + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally { setBusy(false) }
   }
@@ -228,6 +252,10 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           <label>Release date (to streaming services)<input type="date" value={form.releaseDate} onChange={(e) => setForm({ ...form, releaseDate: e.target.value })} /></label>
           {!isSong && <label>UPC (optional)<input value={form.upc} onChange={(e) => setForm({ ...form, upc: e.target.value })} placeholder="12 or 13 digits" /></label>}
         </div>
+        <ImagePicker label="Cover art" hint="Square JPEG or PNG, at least 1400 x 1400 pixels for most stores."
+          mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 1024 * 1024}
+          onPick={(f) => { setArtworkFile(f); setArtworkCleared(false) }}
+          onClear={() => { setArtworkFile(undefined); setArtworkCleared(true) }} />
       </section>
 
       {!isSong && (
@@ -237,7 +265,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         </div>
       )}
 
-      <TrackEditor key={active} track={form.tracks[active]} onChange={(t) => setTrack(active, t)} hideTitle={false} />
+      <TrackEditor key={active} track={form.tracks[active]} onChange={(t) => setTrack(active, t)} hideTitle={false} maxAudioBytes={usage?.limits.maxAudioBytes} />
+      <UsageLine usage={usage} />
       {!isSong && form.tracks.length > 1 && (
         <button className="ghost danger" onClick={removeActive}>Remove this song</button>
       )}

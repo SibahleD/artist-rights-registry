@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { api } from '../api'
+import { api, upload } from '../api'
+import ImagePicker from '../components/ImagePicker'
+import { useUsage } from '../components/files'
 import { useAuth } from '../auth'
 import type { ArtistLink, User } from '../types'
 import backIco from '../assets/ico/chevron-down.svg'
@@ -71,6 +73,9 @@ export function Profile() {
   })
   const [msg, setMsg] = useState('')
   const [links, setLinks] = useState<Record<string, string>>({})
+  const [avatarFile, setAvatarFile] = useState<File | undefined>()
+  const [avatarCleared, setAvatarCleared] = useState(false)
+  const usage = useUsage()
 
   useEffect(() => {
     api<{ user: User; links: ArtistLink[] }>('/users/me')
@@ -82,8 +87,13 @@ export function Profile() {
     e.preventDefault()
     setMsg('')
     try {
-      const r = await api<{ user: User }>('/users/me', 'PATCH', f)
-      setUser(r.user)
+      if (avatarFile) await upload('/users/me/avatar', avatarFile)
+      else if (avatarCleared && user?.avatar_id) await api('/users/me/avatar', 'DELETE')
+      await api<{ user: User }>('/users/me', 'PATCH', f)
+      // PATCH does not return the picture id, so reload the profile to pick up the new one.
+      const fresh = await api<{ user: User }>('/users/me')
+      setUser(fresh.user)
+      setAvatarFile(undefined); setAvatarCleared(false)
       setMsg('Saved.')
     } catch (x) { setMsg((x as Error).message) }
   }
@@ -100,6 +110,10 @@ export function Profile() {
       </div>
       <form className="card stack" onSubmit={save}>
         <h4>Artist Profile</h4>
+        <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
+          mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 300 * 1024}
+          onPick={(f) => { setAvatarFile(f); setAvatarCleared(false) }}
+          onClear={() => { setAvatarFile(undefined); setAvatarCleared(true) }} />
         <label>Artist name<input value={f.artistName} onChange={(e) => setF({ ...f, artistName: e.target.value })} /></label>
         <div className="grid2">
           <label>First name<input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} /></label>
