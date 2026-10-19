@@ -15,7 +15,7 @@ async function claimInvites(user) {
     );
 }
 
-const COLLAB_COLS = 'id, track_id, user_id, invited_email, legal_name, role, ownership_percent, removed_by_writer, created_at';
+const COLLAB_COLS = 'id, track_id, user_id, invited_email, legal_name, role, ownership_percent, removed_by_writer,\n    ipi, writer_status, publisher_name, is_self_published, created_at';
 
 async function listCollaborators(req, res) {
     try {
@@ -84,9 +84,11 @@ async function replaceCollaborators(req, res) {
         );
         for (const c of data) {
             await client.query(
-                `INSERT INTO collaborators (track_id, user_id, invited_email, legal_name, role, ownership_percent)
-                 VALUES ($1, $2, $3, $4, $5, $6)`,
-                [found[0].id, c.email ? idByEmail.get(c.email) || null : null, c.email, c.legalName, c.role, c.percent]
+                `INSERT INTO collaborators (track_id, user_id, invited_email, legal_name, role, ownership_percent,
+                                            ipi, writer_status, publisher_name, is_self_published)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                [found[0].id, c.email ? idByEmail.get(c.email) || null : null, c.email, c.legalName, c.role, c.percent,
+                 c.ipi, c.writerStatus, c.publisherName, c.isSelfPublished]
             );
         }
 

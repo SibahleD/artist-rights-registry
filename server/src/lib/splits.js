@@ -1,4 +1,6 @@
-const ROLES = ['composer', 'songwriter', 'publisher', 'producer', 'performer', 'other'];
+const { WRITER_STATUSES, optionalIpi, optionalName } = require('./codes');
+
+const ROLES = ['composer', 'songwriter', 'lyricist', 'arranger', 'publisher', 'producer', 'performer', 'other'];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -50,6 +52,24 @@ function parseCollaborators(body, existingRemoved = []) {
             }
         }
 
+        const ipi = optionalIpi(`Collaborator ${n}: IPI`)(c.ipi);
+        if (ipi.error) return { error: ipi.error };
+
+        let writerStatus = null;
+        if (c.writerStatus !== undefined && c.writerStatus !== null && c.writerStatus !== '') {
+            if (!WRITER_STATUSES.includes(c.writerStatus)) {
+                return { error: `Collaborator ${n}: writer status must be one of: ${WRITER_STATUSES.join(', ')}.` };
+            }
+            writerStatus = c.writerStatus;
+        }
+
+        const isSelfPublished = c.isSelfPublished === true;
+        const pub = optionalName(`Collaborator ${n}: publisher name`, 200)(c.publisherName);
+        if (pub.error) return { error: pub.error };
+        if (isSelfPublished && pub.value) {
+            return { error: `Collaborator ${n}: choose either self-published or a publisher name, not both.` };
+        }
+
         const nameKey = legalName.toLowerCase();
         if (seenNames.has(nameKey) || (email && seenEmails.has(email))) {
             return { error: `Collaborator ${n}: each person can only appear once per track. Combine their share into one entry.` };
@@ -58,7 +78,7 @@ function parseCollaborators(body, existingRemoved = []) {
         if (email) seenEmails.add(email);
 
         totalCents += cents;
-        data.push({ legalName, role, percent: cents / 100, email });
+        data.push({ legalName, role, percent: cents / 100, email, ipi: ipi.value, writerStatus, publisherName: pub.value, isSelfPublished });
     }
 
     const lockedCents = existingRemoved

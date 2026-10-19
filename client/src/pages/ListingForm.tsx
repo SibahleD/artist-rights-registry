@@ -10,6 +10,7 @@ import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/re
 import type {
   Collaborator, CollaboratorInput, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
 } from '../types'
+import { LANGUAGES } from '../data/options'
 import backIco from '../assets/ico/chevron-down.svg'
 
 const emptyTrack = (owner: CollaboratorInput): TrackForm => ({
@@ -17,6 +18,7 @@ const emptyTrack = (owner: CollaboratorInput): TrackForm => ({
   durationSeconds: null, explicit: '',
   compositionCopyrightYear: null, compositionCopyright: '',
   recordingCopyrightYear: null, recordingCopyright: '',
+  origin: 'original', versionTitle: '', language: '',
   audio: null, collaborators: [{ ...owner }],
 })
 
@@ -33,6 +35,9 @@ const toTrackInput = (t: TrackForm): TrackInput => ({
   compositionCopyright: t.compositionCopyright || null,
   recordingCopyrightYear: t.recordingCopyrightYear,
   recordingCopyright: t.recordingCopyright || null,
+  origin: t.origin,
+  versionTitle: t.versionTitle || null,
+  language: t.language || null,
 })
 
 const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorInput): TrackForm => ({
@@ -50,6 +55,9 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
   compositionCopyright: t.composition_copyright ?? '',
   recordingCopyrightYear: t.recording_copyright_year ?? null,
   recordingCopyright: t.recording_copyright ?? '',
+  origin: t.origin ?? 'original',
+  versionTitle: t.version_title ?? '',
+  language: t.language ?? '',
   audio: t.audio
     ? {
         fileName: t.audio.file_name, format: t.audio.format, bitrateKbps: t.audio.bitrate_kbps,
@@ -60,6 +68,8 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
     ? collabs.map((c) => ({
         legalName: c.legal_name, role: c.role, ownershipPercent: Number(c.ownership_percent),
         invitedEmail: c.invited_email,
+        ipi: c.ipi ?? '', writerStatus: c.writer_status ?? null,
+        publisherName: c.publisher_name ?? '', isSelfPublished: !!c.is_self_published,
         ...(c.removed_by_writer ? { id: c.id, removedByWriter: true } : {}),
       }))
     : [{ ...owner }],
@@ -74,11 +84,13 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
     legalName: [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.artist_name || '',
     role: 'songwriter',
     ownershipPercent: 100,
+    ipi: user?.ipi ?? '',
+    publisherName: user?.publisher_name ?? '',
   }), [user])
 
   const [form, setForm] = useState<ReleaseForm | null>(id ? null : {
     releaseType: mode === 'song' ? 'single' : 'album', title: '', albumArtist: user?.artist_name ?? '',
-    releaseDate: '', upc: '', tracks: [emptyTrack(owner)],
+    releaseDate: '', upc: '', labelName: '', language: '', tracks: [emptyTrack(owner)],
   })
   const [releaseId, setReleaseId] = useState<string | undefined>(id)
   const [removed, setRemoved] = useState<string[]>([])
@@ -109,6 +121,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         albumArtist: release.album_artist,
         releaseDate: release.release_date ?? '',
         upc: release.upc ?? '',
+        labelName: release.label_name ?? '',
+        language: release.language ?? '',
         tracks: tracks.length
           ? tracks.map((t, i) => fromServerTrack(t, splits[i].collaborators, owner))
           : [emptyTrack(owner)],
@@ -145,6 +159,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         albumArtist: form.albumArtist,
         releaseDate: form.releaseDate || null,
         upc: form.upc || null,
+        labelName: form.labelName || null,
+        language: form.language || null,
       }
       if (rid) {
         await api(`/releases/${rid}`, 'PATCH', body)
@@ -250,6 +266,14 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           {!isSong && <label>Type<select value={form.releaseType} onChange={(e) => setForm({ ...form, releaseType: e.target.value as ReleaseForm['releaseType'] })}><option value="ep">EP</option><option value="album">Album</option></select></label>}
           <label>Main artist name<input value={form.albumArtist} onChange={(e) => setForm({ ...form, albumArtist: e.target.value })} /></label>
           <label>Release date (to streaming services)<input type="date" value={form.releaseDate} onChange={(e) => setForm({ ...form, releaseDate: e.target.value })} /></label>
+          <label>Label (optional)<input value={form.labelName} onChange={(e) => setForm({ ...form, labelName: e.target.value })} placeholder="Leave blank if you release independently" /></label>
+          <label>Main language
+            <select value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+              <option value="">Not specified</option>
+              {LANGUAGES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              {form.language && !LANGUAGES.some(([c]) => c === form.language) && <option value={form.language}>{form.language}</option>}
+            </select>
+          </label>
           {!isSong && <label>UPC (optional)<input value={form.upc} onChange={(e) => setForm({ ...form, upc: e.target.value })} placeholder="12 or 13 digits" /></label>}
         </div>
         <ImagePicker label="Cover art" hint="Square JPEG or PNG, at least 1400 x 1400 pixels for most stores."

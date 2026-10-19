@@ -1,5 +1,7 @@
 export const RELEASE_TYPES = ['single', 'ep', 'album'] as const
-export const COLLABORATOR_ROLES = ['composer', 'songwriter', 'publisher', 'producer', 'performer', 'other'] as const
+import type { TrackOrigin, WriterStatus } from './data/options'
+
+export const COLLABORATOR_ROLES = ['composer', 'songwriter', 'lyricist', 'arranger', 'publisher', 'producer', 'performer', 'other'] as const
 export const EXPLICIT_VALUES = ['explicit', 'not_explicit', 'cleaned'] as const
 export const AUDIO_FORMATS = ['mp3', 'flac', 'wav', 'aac', 'other'] as const
 
@@ -17,6 +19,12 @@ export interface User {
   first_name?: string | null
   last_name?: string | null
   username?: string | null
+  country?: string | null
+  nationality?: string | null
+  roles?: CollaboratorRole[]
+  society_name?: string | null
+  ipi?: string | null
+  publisher_name?: string | null
   created_at: string
   email_verified_at?: string | null
   avatar_id?: string | null
@@ -36,6 +44,8 @@ export interface Release {
   upc: string | null
   p_line: string | null
   c_line: string | null
+  label_name?: string | null
+  language?: string | null
   status: ReleaseStatus
   created_at: string
   ready_at: string | null
@@ -71,6 +81,9 @@ export interface Track {
   composition_copyright?: string | null
   recording_copyright_year?: number | null
   recording_copyright?: string | null
+  origin?: TrackOrigin
+  version_title?: string | null
+  language?: string | null
   created_at?: string
   audio?: AudioSpec | null
 }
@@ -84,6 +97,10 @@ export interface Collaborator {
   role: CollaboratorRole
   ownership_percent: number | string
   removed_by_writer?: boolean
+  ipi?: string | null
+  writer_status?: WriterStatus | null
+  publisher_name?: string | null
+  is_self_published?: boolean
   created_at: string
 }
 
@@ -121,6 +138,8 @@ export interface ReleaseInput {
   upc?: string | null
   pLine?: string | null
   cLine?: string | null
+  labelName?: string | null
+  language?: string | null
 }
 
 export interface TrackInput {
@@ -136,6 +155,9 @@ export interface TrackInput {
   compositionCopyright?: string | null
   recordingCopyrightYear?: number | null
   recordingCopyright?: string | null
+  origin?: TrackOrigin
+  versionTitle?: string | null
+  language?: string | null
 }
 
 export interface AudioInput {
@@ -155,6 +177,10 @@ export interface CollaboratorInput {
   id?: string
   removedByWriter?: boolean
   discard?: boolean
+  ipi?: string | null
+  writerStatus?: WriterStatus | null
+  publisherName?: string | null
+  isSelfPublished?: boolean
 }
 
 export type NoticeStatus = 'pending' | 'confirmed' | 'disputed' | 'removed' | 'expired' | 'cancelled'
@@ -214,6 +240,9 @@ export interface TrackForm {
   compositionCopyright: string
   recordingCopyrightYear: number | null
   recordingCopyright: string
+  origin: TrackOrigin
+  versionTitle: string
+  language: string
   audio: AudioInput | null 
   audioHasFile?: boolean 
   audioFile?: File
@@ -226,5 +255,7 @@ export interface ReleaseForm {
   albumArtist: string
   releaseDate: string
   upc: string
+  labelName: string
+  language: string
   tracks: TrackForm[]
 }

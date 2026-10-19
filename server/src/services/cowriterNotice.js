@@ -5,7 +5,7 @@ const LEARN_LINK = process.env.LEARN_URL || `${APP_URL}/info`;
 const RETENTION = process.env.NOTICE_RETENTION_TEXT || 'while this song is on the platform';
 const EXPIRY_DAYS = Number(process.env.NOTICE_EXPIRY_DAYS) || 14;
 
-const SHARE_ROLES = ['composer', 'songwriter', 'publisher'];  
+const SHARE_ROLES = ['composer', 'songwriter', 'lyricist', 'arranger', 'publisher'];  
 
 module.exports = ({ kind, artistName, coWriterName, role, trackTitle, releaseTitle, sharePercent, link }) => {
     const withShare = SHARE_ROLES.includes(role);

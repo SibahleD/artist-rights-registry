@@ -66,3 +66,23 @@ test('omitting a removed line does not free its share', () => {
   const r = parseCollaborators(body(person('Ada Obi', 100)), [{ id: 'r1', cents: 3000 }]);
   assert.match(r.error, /should total 70%/);
 });
+test('accepts lyricist and arranger roles', () => {
+  const r = parseCollaborators(body(person('Ada Obi', 50, { role: 'lyricist' }), person('Jean Mugisha', 50, { role: 'arranger' })));
+  assert.equal(r.error, undefined);
+  assert.equal(r.data[0].role, 'lyricist');
+});
+
+test('normalises IPI and keeps writer status and publisher fields', () => {
+  const r = parseCollaborators(body(person('Ada Obi', 100, { ipi: '00 123.456 789', writerStatus: 'joined', publisherName: ' Kigali Music ' })));
+  assert.equal(r.error, undefined);
+  assert.equal(r.data[0].ipi, '00123456789');
+  assert.equal(r.data[0].writerStatus, 'joined');
+  assert.equal(r.data[0].publisherName, 'Kigali Music');
+  assert.equal(r.data[0].isSelfPublished, false);
+});
+
+test('rejects a bad IPI, bad writer status, and self-published plus a publisher name', () => {
+  assert.match(parseCollaborators(body(person('Ada Obi', 100, { ipi: '123' }))).error, /IPI/);
+  assert.match(parseCollaborators(body(person('Ada Obi', 100, { writerStatus: 'maybe' }))).error, /writer status/);
+  assert.match(parseCollaborators(body(person('Ada Obi', 100, { isSelfPublished: true, publisherName: 'X' }))).error, /not both/);
+});

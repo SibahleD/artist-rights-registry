@@ -3,7 +3,10 @@ import { api, upload } from '../api'
 import ImagePicker from '../components/ImagePicker'
 import { useUsage } from '../components/files'
 import { useAuth } from '../auth'
-import type { ArtistLink, User } from '../types'
+import { COLLABORATOR_ROLES } from '../types'
+import type { ArtistLink, CollaboratorRole, User } from '../types'
+import { COUNTRIES } from '../data/options'
+import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
 import backIco from '../assets/ico/chevron-down.svg'
 
 type Platforms = readonly (readonly [string, string])[]
@@ -70,6 +73,12 @@ export function Profile() {
     firstName: user?.first_name ?? '',
     lastName: user?.last_name ?? '',
     contactInfo: user?.contact_info ?? '',
+    country: user?.country ?? '',
+    nationality: user?.nationality ?? '',
+    societyName: user?.society_name ?? '',
+    ipi: user?.ipi ?? '',
+    publisherName: user?.publisher_name ?? '',
+    roles: (user?.roles ?? []) as CollaboratorRole[],
   })
   const [msg, setMsg] = useState('')
   const [links, setLinks] = useState<Record<string, string>>({})
@@ -121,6 +130,35 @@ export function Profile() {
         </div>
         <label>Email<input value={user?.email ?? ''} disabled /></label>
         <label>Contact info<input value={f.contactInfo} onChange={(e) => setF({ ...f, contactInfo: e.target.value })} /></label>
+        <div className="grid2">
+          <label>Country
+            <select value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })}>
+              <option value="">Not specified</option>
+              {COUNTRIES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              {f.country && !COUNTRIES.some(([c]) => c === f.country) && <option value={f.country}>{f.country}</option>}
+            </select>
+          </label>
+          <label>Nationality<input value={f.nationality} onChange={(e) => setF({ ...f, nationality: e.target.value })} /></label>
+          <label>Rights society (if you belong to one)
+            <input list="society-names" value={f.societyName} onChange={(e) => setF({ ...f, societyName: e.target.value })} placeholder="Leave blank if none" />
+            <datalist id="society-names">
+              {[...new Set(SOCIETY_COUNTRIES.flatMap((c) => c.bodies.map((b) => b.name)))].map((n) => <option key={n} value={n} />)}
+            </datalist>
+          </label>
+          <label>Your IPI number (optional)<input inputMode="numeric" value={f.ipi} onChange={(e) => setF({ ...f, ipi: e.target.value })} placeholder="9 to 11 digits" /></label>
+          <label>Publisher (optional)<input value={f.publisherName} onChange={(e) => setF({ ...f, publisherName: e.target.value })} placeholder="Publishing company, if any" /></label>
+        </div>
+        <fieldset>
+          <legend>What you do</legend>
+          <div className="row">
+            {COLLABORATOR_ROLES.filter((r) => r !== 'other').map((r) => (
+              <label key={r} className="row">
+                <input type="checkbox" checked={f.roles.includes(r)}
+                  onChange={(e) => setF({ ...f, roles: e.target.checked ? [...f.roles, r] : f.roles.filter((x) => x !== r) })} /> {r}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <div className="row actions"><button>Save</button><span className="muted">{msg}</span></div>
       </form>
       

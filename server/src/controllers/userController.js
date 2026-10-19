@@ -1,6 +1,8 @@
 const pool = require('../db/pool');
 
-const USER_COLUMNS = 'id, email, artist_name, contact_info, first_name, last_name, username, created_at, email_verified_at, (SELECT id FROM media WHERE owner_id = users.id AND kind = \'avatar\') AS avatar_id';
+const USER_COLUMNS = 'id, email, artist_name, contact_info, first_name, last_name, username, country, nationality, roles, society_name, ipi, publisher_name,\n    created_at, email_verified_at, (SELECT id FROM media WHERE owner_id = users.id AND kind = \'avatar\') AS avatar_id';
+const { ROLES } = require('../lib/splits');
+const { optionalIpi, optionalCountry } = require('../lib/codes');
 const PLATFORMS = ['spotify', 'apple_music', 'soundcloud', 'youtube', 'instagram', 'tiktok', 'x'];
 const USERNAME_RE = /^[a-z0-9_.]{3,30}$/;
 
@@ -23,6 +25,17 @@ const VALIDATORS = {
     contact_info: optionalText('Contact info', 500),
     first_name: optionalText('First name', 100),
     last_name: optionalText('Last name', 100),
+    country: optionalCountry('Country'),
+    nationality: optionalText('Nationality', 100),
+    society_name: optionalText('Society name', 200),
+    ipi: optionalIpi('IPI'),
+    publisher_name: optionalText('Publisher name', 200),
+    roles: (v) => {
+        if (!Array.isArray(v) || v.length > ROLES.length) return { error: 'Roles must be a list.' };
+        const bad = v.find((r) => !ROLES.includes(r));
+        if (bad !== undefined) return { error: `Roles must be from: ${ROLES.join(', ')}.` };
+        return { value: [...new Set(v)] };
+    },
     username: (v) => {
         if (v === null || v === '') return { value: null };
         if (typeof v !== 'string') return { error: 'Username must be a string.' };
@@ -41,6 +54,12 @@ const BODY_TO_COLUMN = {
     firstName: 'first_name',
     lastName: 'last_name',
     username: 'username',
+    country: 'country',
+    nationality: 'nationality',
+    roles: 'roles',
+    societyName: 'society_name',
+    ipi: 'ipi',
+    publisherName: 'publisher_name',
 };
 
 async function getMe(req, res) {

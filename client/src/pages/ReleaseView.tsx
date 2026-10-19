@@ -181,6 +181,8 @@ export default function ReleaseView() {
         <div><span className="muted">UPC</span><br />{r.upc || '—'}</div>
         <div><span className="muted">℗ line</span><br />{r.p_line || '—'}</div>
         <div><span className="muted">© line</span><br />{r.c_line || '—'}</div>
+        <div><span className="muted">Label</span><br />{r.label_name || '—'}</div>
+        <div><span className="muted">Language</span><br />{r.language || '—'}</div>
         <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
         <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
       </div>

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { COLLABORATOR_ROLES, EXPLICIT_VALUES } from '../types'
 import type { CollaboratorInput, TrackForm } from '../types'
 import { Hint } from './ui'
+import { LANGUAGES, ORIGIN_LABELS, ORIGIN_WARNING, TRACK_ORIGINS, WRITER_STATUSES, WRITER_STATUS_LABELS } from '../data/options'
+import type { WriterStatus } from '../data/options'
 import { checkAudio, fmtBytes } from './files'
 import backIco from '../assets/ico/chevron-down.svg'
 
@@ -20,6 +22,7 @@ export const showDuration = (n?: number | null) => (n ? `${Math.floor(n / 60)}:$
 
 export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 5 * 1024 * 1024 }: { track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean; maxAudioBytes?: number }) {
   const [audioErr, setAudioErr] = useState('')
+  const [open, setOpen] = useState<Record<number, boolean>>({})
   const set = <K extends keyof TrackForm>(k: K, v: TrackForm[K]) => onChange({ ...track, [k]: v })
   const setCollab = (i: number, patch: Partial<CollaboratorInput>) =>
     set('collaborators', track.collaborators.map((x, j) => (j === i ? { ...x, ...patch } : x)))
@@ -46,6 +49,19 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
           <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
           <label>Genre<input value={track.genre} onChange={(e) => set('genre', e.target.value)} placeholder="Afrobeat, Gospel, Hip-hop…" /></label>
           <label>Duration (m:ss)<input defaultValue={showDuration(track.durationSeconds)} onBlur={(e) => set('durationSeconds', parseDuration(e.target.value))} placeholder="3:45" /></label>
+          <label>Version title (optional)<input value={track.versionTitle} onChange={(e) => set('versionTitle', e.target.value)} placeholder="Acoustic, Radio edit, Remix…" /></label>
+          <label>Language of the lyrics
+            <select value={track.language} onChange={(e) => set('language', e.target.value)}>
+              <option value="">Not specified</option>
+              {LANGUAGES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              {track.language && !LANGUAGES.some(([c]) => c === track.language) && <option value={track.language}>{track.language}</option>}
+            </select>
+          </label>
+          <label>Where does the song come from?
+            <select value={track.origin} onChange={(e) => set('origin', e.target.value as TrackForm['origin'])}>
+              {TRACK_ORIGINS.map((o) => <option key={o} value={o}>{ORIGIN_LABELS[o]}</option>)}
+            </select>
+          </label>
           <label>Explicit content
             <select value={track.explicit} onChange={(e) => set('explicit', e.target.value as TrackForm['explicit'])}>
               <option value="">Not specified</option>
@@ -53,6 +69,7 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
             </select>
           </label>
         </div>
+        {track.origin !== 'original' && <small className="warn">{ORIGIN_WARNING}</small>}
       </section>
 
       <section className="card">
@@ -113,14 +130,31 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
             <button type="button" className="ghost" onClick={() => setCollab(i, { discard: !c.discard })}>{c.discard ? 'Keep' : 'Discard'}</button>
           </div>
         ) : (
-          <div className="row" key={i}>
+          <div className="stack" key={i}>
+          <div className="row">
             <input placeholder="Legal name" value={c.legalName} onChange={(e) => setCollab(i, { legalName: e.target.value })} />
             <select value={c.role ?? 'songwriter'} onChange={(e) => setCollab(i, { role: e.target.value as CollaboratorInput['role'] })}>
               {COLLABORATOR_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
             <input type="number" min={0} max={100} step="0.01" className="pct" placeholder="%" value={c.ownershipPercent || ''} onChange={(e) => setCollab(i, { ownershipPercent: Number(e.target.value) })} />
             <input type="email" placeholder="Email" value={c.invitedEmail ?? ''} onChange={(e) => setCollab(i, { invitedEmail: e.target.value })} />
+            <button type="button" className="ghost" onClick={() => setOpen({ ...open, [i]: !open[i] })}>{open[i] ? 'Hide details' : 'Details'}</button>
             <button type="button" className="ghost" onClick={() => set('collaborators', track.collaborators.filter((_, j) => j !== i))}>Remove</button>
+          </div>
+          {open[i] && (
+            <div className="grid2">
+              <label>IPI number (optional)<input inputMode="numeric" value={c.ipi ?? ''} onChange={(e) => setCollab(i, { ipi: e.target.value })} placeholder="9 to 11 digits" />
+                <Hint>Identifies a writer or publisher at rights societies. Only enter it if you have it.</Hint></label>
+              <label>Rights society status
+                <select value={c.writerStatus ?? ''} onChange={(e) => setCollab(i, { writerStatus: (e.target.value || null) as WriterStatus | null })}>
+                  <option value="">Not specified</option>
+                  {WRITER_STATUSES.map((w) => <option key={w} value={w}>{WRITER_STATUS_LABELS[w]}</option>)}
+                </select>
+              </label>
+              <label>Publisher (optional)<input value={c.publisherName ?? ''} disabled={!!c.isSelfPublished} onChange={(e) => setCollab(i, { publisherName: e.target.value })} placeholder="Publishing company name" /></label>
+              <label className="row"><input type="checkbox" checked={!!c.isSelfPublished} onChange={(e) => setCollab(i, { isSelfPublished: e.target.checked, ...(e.target.checked ? { publisherName: '' } : {}) })} /> Self-published</label>
+            </div>
+          )}
           </div>
         ))}
         <div className="row between">

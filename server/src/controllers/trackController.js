@@ -4,13 +4,16 @@ const storage = require('../services/storage');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EXPLICIT_VALUES = ['explicit', 'not_explicit', 'cleaned'];
+const { optionalLanguage } = require('../lib/codes');
+const ORIGINS = ['original', 'cover', 'arrangement', 'sample'];
 const AUDIO_FORMATS = ['mp3', 'flac', 'wav', 'aac', 'other'];
 
 const TRACK_COLS = [
     'id', 'release_id', 'track_number', 'title', 'composition_title', 'artist_name', 'genre',
     'isrc', 'iswc', 'duration_seconds', 'explicit',
     'composition_copyright_year', 'composition_copyright',
-    'recording_copyright_year', 'recording_copyright', 'created_at',
+    'recording_copyright_year', 'recording_copyright',
+    'origin', 'version_title', 'language', 'created_at',
 ];
 const PLAIN = TRACK_COLS.join(', ');
 const ALIASED = TRACK_COLS.map((c) => `t.${c}`).join(', ');
@@ -67,6 +70,12 @@ function optionalIswc(v) {
     return { value: s };
 }
 
+function requiredOrigin(v) {
+    return ORIGINS.includes(v)
+        ? { value: v }
+        : { error: `Origin must be one of: ${ORIGINS.join(', ')}.` };
+}
+
 function optionalExplicit(v) {
     if (v === null || v === '') return { value: null };
     return EXPLICIT_VALUES.includes(v)
@@ -87,6 +96,9 @@ const FIELDS = {
     compositionCopyright:     { column: 'composition_copyright',      validate: optionalText('Composition copyright', 200) },
     recordingCopyrightYear:   { column: 'recording_copyright_year',   validate: optionalInt('Recording copyright year', 1900, 2100) },
     recordingCopyright:       { column: 'recording_copyright',        validate: optionalText('Recording copyright', 200) },
+    origin:                   { column: 'origin',                      validate: requiredOrigin },
+    versionTitle:             { column: 'version_title',               validate: optionalText('Version title', 200) },
+    language:                 { column: 'language',                    validate: optionalLanguage('Language') },
 };
 
 function parseBody(body) {
