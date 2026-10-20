@@ -5,7 +5,7 @@ import { AuthImage, vinylFallback } from '../components/files'
 import { useAuth } from '../auth'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
-import type { Collaborator, Notice, Release, Track } from '../types'
+import type { Collaborator, Notice, ReadinessCheck, ReadinessReport, Release, ReleaseExport, Track } from '../types'
 
 export function downloadJson(name: string, data: unknown) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
@@ -26,8 +26,30 @@ const SEND_TEXT: Record<string, string> = {
   skipped_self: 'that is your own email, skipped',
 }
 
+// One line in the confirmations panel: a sent notice, or someone with an email who has not been invited yet.
 interface Row { key: string; trackId: string; noticeId?: string; name: string; email: string | null; role: string; share: number
   status: string; note: string | null; expiresAt?: string; canRemind: boolean }
+
+const LEVEL_LABEL = { error: 'Fix', warn: 'Check', info: 'Tip' } as const
+
+function ReadinessChecklist({ checks }: { checks: ReadinessCheck[] }) {
+  const blocking = checks.filter((c) => c.level === 'error').length
+  const title = blocking ? `Before you can mark this ready (${blocking} to fix)` : 'Ready to mark ready'
+  return (
+    <Collapsible title={title}>
+      {blocking === 0 && <p className="ok">Everything required is in place. The items below are optional.</p>}
+      <ul className="checklist">
+        {checks.map((c, i) => (
+          <li key={`${c.id}-${c.track ?? ''}-${i}`} className={`check ${c.level}`}>
+            <span className="lvl">{LEVEL_LABEL[c.level]}</span>
+            <span>{c.message}{c.acknowledged && <small className="muted"> (acknowledged)</small>}</span>
+            {c.level !== 'info' && !c.acknowledged && <Link to={c.fix}>Open</Link>}
+          </li>
+        ))}
+      </ul>
+    </Collapsible>
+  )
+}
 
 export default function ReleaseView() {
   const { id } = useParams()
@@ -43,10 +65,13 @@ export default function ReleaseView() {
   const [sent, setSent] = useState<SendResult[] | null>(null)
   const [problems, setProblems] = useState<string[] | undefined>()
   const [ack, setAck] = useState<string[] | null>(null)
+  const [checks, setChecks] = useState<ReadinessCheck[] | null>(null)
 
   async function load() {
     const x = await api<{ release: Release; tracks: Track[] }>(`/releases/${id}`)
     setR(x.release); setTracks(x.tracks)
+    if (x.release.status === 'draft') api<ReadinessReport>(`/releases/${id}/readiness`).then((c) => setChecks(c.checks)).catch(() => setChecks(null))
+    else setChecks(null)
     const [n, c] = await Promise.all([
       api<{ notices: Notice[] }>(`/releases/${id}/notices`),
       Promise.all(x.tracks.map((t) => api<{ collaborators: Collaborator[] }>(`/releases/${id}/tracks/${t.id}/collaborators`))),
@@ -54,23 +79,17 @@ export default function ReleaseView() {
     setNotices(n.notices); setPeople(c.flatMap((z) => z.collaborators))
   }
 
-  useEffect(() => { load().catch((e) => setErr(e.message)) }, [id]) 
+  useEffect(() => { load().catch((e) => setErr(e.message)) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (err) return <ErrorBox error={err} />
   if (!r) return <Loading />
 
+  // One endpoint returns the whole release as clean metadata (no internal ids, no co-writer emails).
   async function exportMetadata() {
     if (!r) return
     setBusy(true); setActionErr('')
     try {
-      const { tracks: full } = await api<{ tracks: Track[] }>(`/releases/${r.id}/tracks`)
-      const splits = await Promise.all(
-        full.map((t) => api<{ collaborators: Collaborator[] }>(`/releases/${r.id}/tracks/${t.id}/collaborators`)),
-      )
-      downloadJson(`${r.title}.json`, {
-        release: r,
-        tracks: full.map((t, i) => ({ ...t, collaborators: splits[i].collaborators })),
-      })
+      downloadJson(`${r.title}.json`, await api<ReleaseExport>(`/releases/${r.id}/export`))
     } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
   }
 
@@ -143,6 +162,7 @@ export default function ReleaseView() {
       expiresAt: n.expires_at,
       canRemind: n.status === 'pending' && !n.reminder_sent_at && !!n.email && new Date(n.expires_at) > new Date(),
     })),
+    // People with an email but no notice yet (the owner's own email never gets one)
     ...people.filter((c) => c.invited_email && !c.removed_by_writer && c.invited_email !== user?.email
       && !notices.some((n) => n.track_id === c.track_id && n.email?.toLowerCase() === c.invited_email!.toLowerCase()))
       .map((c): Row => ({
@@ -169,6 +189,8 @@ export default function ReleaseView() {
         </div>
       </div>
       {actionErr && <ErrorBox error={actionErr} details={problems} />}
+
+      {r.status === 'draft' && checks && <ReadinessChecklist checks={checks} />}
 
       <Collapsible title="General info">
        <div className="split">

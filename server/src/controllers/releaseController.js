@@ -6,7 +6,8 @@ const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
     upc, p_line, c_line, label_name, language, status, created_at, ready_at, unconfirmed_acknowledged_at,
     (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
-const { noticeReadiness } = require('../services/notices');
+const { readinessChecks, readinessProblems, errorsOf, blockingWarnings } = require('../services/readiness');
+const { buildExport } = require('../services/exportRelease');
 const { optionalLanguage } = require('../lib/codes');
 const RELEASE_TYPES = ['single', 'ep', 'album'];
 
@@ -84,28 +85,31 @@ async function findOwned(id, ownerId) {
     return rows[0];
 }
 
-async function readinessProblems(release) {
-    const problems = [];
-    if (!release.release_date) problems.push('Release date is required.');
-
-    const { rows } = await pool.query(
-        `SELECT t.track_number, t.title, (a.track_id IS NOT NULL) AS has_audio,
-                (SELECT COALESCE(SUM(c.ownership_percent), 0) FROM collaborators c WHERE c.track_id = t.id) AS split_total
-         FROM tracks t
-         LEFT JOIN audio_specs a ON a.track_id = t.id
-         WHERE t.release_id = $1
-         ORDER BY t.track_number`,
-        [release.id]
-    );
-    if (rows.length === 0) problems.push('At least one track is required.');
-    for (const r of rows) {
-        if (!r.has_audio) problems.push(`Track ${r.track_number} ("${r.title}") has no audio file.`);
-        if (Math.round(Number(r.split_total) * 100) !== 10000) {
-            problems.push(`Track ${r.track_number} ("${r.title}") splits must total 100% (currently ${Number(r.split_total)}%).`);
-        }
+// The same checks markReady runs, without trying to mark anything ready.
+async function getReadiness(req, res) {
+    try {
+        const release = await findOwned(req.params.id, req.user.id);
+        if (!release) return res.status(404).json({ error: 'Release not found.' });
+        const checks = await readinessChecks(release);
+        const canMarkReady = errorsOf(checks).length === 0
+            && (blockingWarnings(checks).length === 0 || !!release.unconfirmed_acknowledged_at);
+        return res.json({ status: release.status, canMarkReady, checks });
+    } catch (err) {
+        console.error('getReadiness error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
     }
-    problems.push(...(await noticeReadiness(release)).errors);
-    return problems;
+}
+
+// One whitelisted document with the whole release. No internal ids and no co-writer emails.
+async function exportRelease(req, res) {
+    try {
+        const release = await findOwned(req.params.id, req.user.id);
+        if (!release) return res.status(404).json({ error: 'Release not found.' });
+        return res.json(await buildExport(release));
+    } catch (err) {
+        console.error('exportRelease error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
 }
 
 async function createRelease(req, res) {
@@ -221,15 +225,16 @@ async function markReady(req, res) {
             return res.status(409).json({ error: 'Release is already ready.' });
         }
 
-        const problems = await readinessProblems(release);
+        const checks = await readinessChecks(release);
+        const problems = errorsOf(checks);
         if (problems.length > 0) {
-            return res.status(400).json({ error: 'Release is not ready.', problems });
+            return res.status(400).json({ error: 'Release is not ready.', problems, checks });
         }
-        const { unconfirmed } = await noticeReadiness(release);
-        if (unconfirmed.length > 0 && !release.unconfirmed_acknowledged_at) {
+        const waiting = blockingWarnings(checks);
+        if (waiting.length > 0 && !release.unconfirmed_acknowledged_at) {
             return res.status(409).json({
                 error: 'Some co-writers have not confirmed. Acknowledge this to continue.',
-                needsAcknowledgement: true, unconfirmed,
+                needsAcknowledgement: true, unconfirmed: waiting.map((c) => c.message), checks,
             });
         }
 
@@ -303,5 +308,5 @@ async function deleteRelease(req, res) {
 
 module.exports = {
     createRelease, listReleases, getRelease, updateRelease,
-    markReady, revertToDraft, deleteRelease, readinessProblems
+    markReady, revertToDraft, deleteRelease, readinessProblems, getReadiness, exportRelease,
 };

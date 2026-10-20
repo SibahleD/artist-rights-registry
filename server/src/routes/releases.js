@@ -2,7 +2,7 @@ const express = require('express');
 const { authToken } = require('../middleware/auth');
 const {
     createRelease, listReleases, getRelease, updateRelease,
-    markReady, revertToDraft, deleteRelease,
+    markReady, revertToDraft, deleteRelease, getReadiness, exportRelease,
 } = require('../controllers/releaseController');
 const { 
     sendNotices, listNotices, remindNotice, acknowledgeUnconfirmed 
@@ -31,6 +31,8 @@ router.get('/:id', getRelease);
 router.patch('/:id', updateRelease);
 router.delete('/:id', deleteRelease);
 router.post('/:id/ready', markReady);
+router.get('/:id/readiness', getReadiness);
+router.get('/:id/export', exportRelease);
 router.post('/:id/revert', revertToDraft);
 router.post('/:id/notices/send', sendNotices);
 router.get('/:id/notices', listNotices);

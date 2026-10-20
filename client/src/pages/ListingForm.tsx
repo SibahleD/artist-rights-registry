@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError, upload } from '../api'
 import { useAuth } from '../auth'
 import TrackEditor from '../components/TrackEditor'
@@ -77,6 +77,8 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
 
 export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const { id } = useParams()
+  const [params] = useSearchParams()
+  const wantedTrack = Number(params.get('track')) || 0   // from the readiness checklist's "Open" links
   const { user } = useAuth()
   const nav = useNavigate()
 
@@ -111,7 +113,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   useEffect(() => { if (snapshot && baseline === null) setBaseline(snapshot) }, [snapshot, baseline])
   const dirty = snapshot !== null && baseline !== null && snapshot !== baseline
   const { goBack, modal: backModal, backButton } = useBackGuard({
-    dirty, onSave: () => submit('draft'), saveLabel: 'Save as draft', leaveAfterSave: false,
+    dirty, onSave: () => submit('draft'), saveLabel: 'Save as draft',
   })
 
   useEffect(() => {
@@ -136,8 +138,9 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           ? tracks.map((t, i) => fromServerTrack(t, splits[i].collaborators, owner))
           : [emptyTrack(owner)],
       })
+      if (wantedTrack > 0 && tracks.length) setActive(Math.min(wantedTrack, tracks.length) - 1)
     })().catch((e) => setErr({ error: e.message }))
-  }, [id, nav, owner])
+  }, [id, nav, owner, wantedTrack])
 
   if (!form) return err ? <ErrorBox error={err.error} /> : <Loading />
   const isSong = form.releaseType === 'single'
@@ -155,8 +158,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   }
 
   // Release -> tracks -> audio -> collaborators, then (optionally) ask co-writers or mark ready.
-  async function submit(save: 'draft' | 'notify' | 'release'): Promise<boolean> {
-    if (!form) return false
+  async function submit(save: 'draft' | 'notify' | 'release') {
+    if (!form) return
     setBusy(true); setErr(null)
     const tracks = form.tracks.map((t) => ({ ...t }))
     const pending = [...removed]
@@ -220,21 +223,19 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       if (save === 'notify') {
         await api(`/releases/${rid}/notices/send`, 'POST')
-        nav(`/releases/${rid}`)
-        return true
+        return nav(`/releases/${rid}`)
       }
       if (save === 'release') {
         const r = await tryMarkReady(rid!)
         if (!r.ok) {
           setForm({ ...form, tracks })
           setConfirm(false)
-          if (r.unconfirmed) { setAck({ rid: rid!, list: r.unconfirmed }); return false }
+          if (r.unconfirmed) { setAck({ rid: rid!, list: r.unconfirmed }); return }
           setErr({ error: r.error, details: r.problems })
-          return false
+          return
         }
       }
       nav(save === 'draft' ? '/discography' : `/releases/${rid}`)
-      return true
     } catch (e) {
       const ae = e as ApiError & { problems?: string[] }
       setForm({ ...form, tracks })
@@ -243,7 +244,6 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       setConfirm(false)
       setUsageKey((k) => k + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
-      return false
     } finally { setBusy(false) }
   }
 

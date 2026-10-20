@@ -54,6 +54,26 @@ export interface Release {
   track_count?: number
 }
 
+export interface ReadinessCheck {
+  id: string
+  level: 'error' | 'warn' | 'info'
+  message: string
+  fix: string            // client route to fix it, e.g. /releases/:id/edit?track=2
+  track?: number
+  needsAck?: boolean
+  acknowledged?: boolean
+}
+
+export interface ReadinessReport { status: ReleaseStatus; canMarkReady: boolean; checks: ReadinessCheck[] }
+
+// GET /releases/:id/export. Whitelisted metadata only: no internal ids, no co-writer emails.
+export interface ReleaseExport {
+  export_version: number
+  exported_at: string
+  release: Record<string, unknown>
+  tracks: Array<Record<string, unknown> & { track_number: number }>
+}
+
 export interface AudioSpec {
   file_name: string
   format: AudioFormat

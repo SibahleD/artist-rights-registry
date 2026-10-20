@@ -4,7 +4,7 @@ import { api } from '../api'
 import { useAuth } from '../auth'
 import { AuthImage, vinylFallback } from '../components/files'
 import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
-import type { Collaborator, Release, Track } from '../types'
+import type { Collaborator, Release, ReleaseExport, Track } from '../types'
 import { downloadJson } from './ReleaseView'
 
 interface Data { release: Release; track: Track; collaborators: Collaborator[] }
@@ -40,7 +40,13 @@ export default function SongView() {
         <h1>{String(t.track_number).padStart(2, '0')}. {t.title} <Badge status={r.status} /></h1>
         <div className="sub">Artist: {t.artist_name || r.album_artist}</div>
         <div className="row actions">
-          <button className="secondary" onClick={() => downloadJson(`${t.title}.json`, { release: r, track: { ...t, collaborators } })}>Export JSON</button>
+          <button className="secondary" onClick={async () => {
+            try {
+              // Same clean export as the release page, narrowed to this song.
+              const doc = await api<ReleaseExport>(`/releases/${r.id}/export`)
+              downloadJson(`${t.title}.json`, { ...doc, tracks: doc.tracks.filter((x) => x.track_number === t.track_number) })
+            } catch (e) { setErr((e as Error).message) }
+          }}>Export JSON</button>
           {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
         </div>
       </div>
