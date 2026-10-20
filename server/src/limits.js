@@ -9,4 +9,5 @@ module.exports = {
   maxUserBytes: n('MAX_USER_BYTES', 45 * 1024 * 1024),
   maxPlatformBytes: n('MAX_PLATFORM_BYTES', 900 * 1024 * 1024),
   maxNoticesPerDay: n('MAX_NOTICES_PER_DAY', 20),
+  maxReleaseLinks: n('MAX_RELEASE_LINKS', 10),
 };

@@ -49,10 +49,14 @@ export interface Release {
   status: ReleaseStatus
   created_at: string
   ready_at: string | null
+  released_at?: string | null          // set once the release is live on the stores
   unconfirmed_acknowledged_at?: string | null
   artwork_id?: string | null
   track_count?: number
+  pending_notices?: number              // co-writer notices still pending or disputed (list endpoint only)
 }
+
+export interface ReleaseLink { store: string; url: string }
 
 export interface ReadinessCheck {
   id: string

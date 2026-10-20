@@ -3,6 +3,7 @@ const { authToken } = require('../middleware/auth');
 const {
     createRelease, listReleases, getRelease, updateRelease,
     markReady, revertToDraft, deleteRelease, getReadiness, exportRelease,
+    markReleased, unmarkReleased,
 } = require('../controllers/releaseController');
 const { 
     sendNotices, listNotices, remindNotice, acknowledgeUnconfirmed 
@@ -34,6 +35,8 @@ router.post('/:id/ready', markReady);
 router.get('/:id/readiness', getReadiness);
 router.get('/:id/export', exportRelease);
 router.post('/:id/revert', revertToDraft);
+router.put('/:id/released', markReleased);
+router.delete('/:id/released', unmarkReleased);
 router.post('/:id/notices/send', sendNotices);
 router.get('/:id/notices', listNotices);
 router.post('/:id/notices/:noticeId/remind', remindNotice);

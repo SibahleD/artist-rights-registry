@@ -997,3 +997,15 @@ td {
 .check.error .lvl { color: var(--danger); border-color: var(--btn-red-border); }
 .check.warn .lvl { color: var(--warn); border-color: var(--warn); }
 .check.info { color: var(--sec-font); }
+
+/* ---- Release lifecycle ---- */
+
+.badge.released { color: var(--link-blue); border-color: rgba(111, 162, 255, 0.5); }
+
+.badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+.store-row { display: grid; grid-template-columns: minmax(0, 0.4fr) minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+
+.store-links { margin: 0; padding-left: 1.1rem; }
+
+@media (max-width: 760px) { .store-row { grid-template-columns: 1fr; } }

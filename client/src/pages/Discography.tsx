@@ -1,12 +1,15 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
-import { Badge, ErrorBox, fmtDate, Loading } from '../components/ui'
+import { Badge, Collapsible, ErrorBox, fmtDate, Loading } from '../components/ui'
 import { AuthImage, vinylFallback, type RGB } from '../components/files'
+import { groupOf, type Group } from '../lib/groups'
 import type { Release, SharedTrack } from '../types'
 
 function ReleaseCard({ r }: { r: Release }) {
-  const to = r.status === 'draft' ? `/releases/${r.id}/edit` : `/releases/${r.id}`
+  // Every release opens its release page. Drafts are edited from there ("Edit draft").
+  const waiting = r.pending_notices ?? 0
+  const to = `/releases/${r.id}`
   const [tint, setTint] = useState<RGB | null>(null)
   const style = tint ? ({ '--tint': tint.join(', ') } as CSSProperties) : undefined
   return (
@@ -19,7 +22,10 @@ function ReleaseCard({ r }: { r: Release }) {
           {r.release_type.toUpperCase()} · {r.track_count ?? 0} song{r.track_count === 1 ? '' : 's'} ·{' '}
           {r.release_date ? fmtDate(r.release_date) : 'No release date'}
         </div>
-        <Badge status={r.status} />
+        <div className="badges">
+          <Badge status={r.released_at ? 'released' : r.status} />
+          {waiting > 0 && <Badge status="pending" label={r.status === 'draft' ? `${waiting} to confirm` : 'co-writers unconfirmed'} />}
+        </div>
       </div>
     </Link>
   )
@@ -42,14 +48,20 @@ function SharedTrackCard({ t }: { t: SharedTrack }) {
   )
 }
 
+const GROUPS: { key: Group; title: string; empty: string }[] = [
+  { key: 'released', title: 'Releases', empty: 'Nothing is live yet. Mark a ready release as released once it is on the stores.' },
+  { key: 'awaiting', title: 'Awaiting approval', empty: 'No drafts are waiting on co-writers.' },
+  { key: 'draft', title: 'Drafts', empty: 'No drafts.' },
+  { key: 'yet', title: 'Yet to release', empty: 'Nothing is ready and waiting. Finish a draft and mark it ready to see it here.' },
+]
+
 function ReleaseGroup({ title, items, empty }: { title: string; items: Release[]; empty: string }) {
   return (
-    <section>
-      <h2>{title}</h2>
+    <Collapsible title={`${title} (${items.length})`} level="h2" className="">
       {items.length
         ? <div className="cards">{items.map((r) => <ReleaseCard key={r.id} r={r} />)}</div>
         : <p className="muted">{empty}</p>}
-    </section>
+    </Collapsible>
   )
 }
 
@@ -57,7 +69,6 @@ export default function DiscographyPage() {
   const [releases, setReleases] = useState<Release[] | null>(null)
   const [shared, setShared] = useState<SharedTrack[] | null>(null)
   const [err, setErr] = useState('')
-  const [showDrafts, setShowDrafts] = useState(true)
   const nav = useNavigate()
 
   useEffect(() => {
@@ -75,8 +86,6 @@ export default function DiscographyPage() {
   if (err) return <ErrorBox error={err} />
   if (!releases || !shared) return <Loading what="Loading your discography" />
 
-  const ready = releases.filter((r) => r.status === 'ready')
-  const drafts = releases.filter((r) => r.status === 'draft')
 
   return (
     <div className="stack">
@@ -88,27 +97,15 @@ export default function DiscographyPage() {
         </div>
       </div>
 
-      <ReleaseGroup
-        title="My releases"
-        items={ready}
-        empty="Nothing ready yet. Finish a draft and mark it ready to see it here."
-      />
+      {GROUPS.map((g) => (
+        <ReleaseGroup key={g.key} title={g.title} empty={g.empty} items={releases.filter((r) => groupOf(r) === g.key)} />
+      ))}
 
-      <section>
-        <h2>Collaborations</h2>
+      <Collapsible title={`Collaborations (${shared.length})`} level="h2" className="">
         {shared.length
           ? <div className="cards">{shared.map((t) => <SharedTrackCard key={t.id} t={t} />)}</div>
           : <p className="muted">Songs where you are listed as a collaborator will appear here once the release is ready.</p>}
-      </section>
-
-      <section>
-        <h2 className="clickable" onClick={() => setShowDrafts(!showDrafts)}>
-          {showDrafts ? '▾' : '▸'} Drafts ({drafts.length})
-        </h2>
-        {showDrafts && (drafts.length
-          ? <div className="cards">{drafts.map((r) => <ReleaseCard key={r.id} r={r} />)}</div>
-          : <p className="muted">No drafts.</p>)}
-      </section>
+      </Collapsible>
     </div>
   )
 }

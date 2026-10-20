@@ -44,7 +44,7 @@ export function Collapsible({ title, children, defaultOpen = true, actions, leve
   )
 }
 
-export const Badge = ({ status }: { status: string }) => <span className={`badge ${status}`}>{status}</span>
+export const Badge = ({ status, label }: { status: string; label?: string }) => <span className={`badge ${status}`}>{label ?? status}</span>
 
 export const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—')
 export const fmtDateTime = (s?: string | null) => (s ? new Date(s).toLocaleString() : '—')

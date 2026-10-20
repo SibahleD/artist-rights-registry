@@ -4,10 +4,11 @@ const storage = require('../services/storage');
 
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
-    upc, p_line, c_line, label_name, language, status, created_at, ready_at, unconfirmed_acknowledged_at,
+    upc, p_line, c_line, label_name, language, status, created_at, ready_at, released_at, unconfirmed_acknowledged_at,
     (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
 const { readinessChecks, readinessProblems, errorsOf, blockingWarnings } = require('../services/readiness');
 const { buildExport } = require('../services/exportRelease');
+const { setReleased, clearReleased, listLinks } = require('../services/lifecycle');
 const { optionalLanguage } = require('../lib/codes');
 const RELEASE_TYPES = ['single', 'ep', 'album'];
 
@@ -156,7 +157,10 @@ async function listReleases(req, res) {
     try {
         const { rows } = await pool.query(
             `SELECT ${RELEASE_COLUMNS},
-                    (SELECT count(*)::int FROM tracks t WHERE t.release_id = releases.id) AS track_count
+                    (SELECT count(*)::int FROM tracks t WHERE t.release_id = releases.id) AS track_count,
+                    (SELECT count(*)::int FROM collaborator_notices n JOIN tracks t ON t.id = n.track_id
+                      WHERE t.release_id = releases.id AND n.status IN ('pending', 'disputed')
+                        AND NOT (n.status = 'pending' AND n.expires_at < now())) AS pending_notices
              FROM releases
              WHERE ${where}
              ORDER BY created_at DESC`,
@@ -179,7 +183,7 @@ async function getRelease(req, res) {
              FROM tracks WHERE release_id = $1 ORDER BY track_number`,
             [release.id]
         );
-        return res.json({ release, tracks: tracks.rows });
+        return res.json({ release, tracks: tracks.rows, links: await listLinks(release.id) });
     } catch (err) {
         console.error('getRelease error:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -251,12 +255,43 @@ async function markReady(req, res) {
     }
 }
 
+// Owner marks a ready release as live on the stores, with at least one link.
+async function markReleased(req, res) {
+    try {
+        const release = await findOwned(req.params.id, req.user.id);
+        if (!release) return res.status(404).json({ error: 'Release not found.' });
+        const result = await setReleased(release.id, req.body?.links);
+        if (!result.ok) return res.status(result.status).json({ error: result.error });
+        return res.json({ released_at: result.released_at, links: result.links });
+    } catch (err) {
+        console.error('markReleased error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+async function unmarkReleased(req, res) {
+    try {
+        const release = await findOwned(req.params.id, req.user.id);
+        if (!release) return res.status(404).json({ error: 'Release not found.' });
+        const result = await clearReleased(release.id);
+        if (!result.ok) return res.status(result.status).json({ error: result.error });
+        return res.status(204).end();
+    } catch (err) {
+        console.error('unmarkReleased error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 async function revertToDraft(req, res) {
     try {
         const release = await findOwned(req.params.id, req.user.id);
         if (!release) return res.status(404).json({ error: 'Release not found.' });
         if (release.status === 'draft') {
             return res.status(409).json({ error: 'Release is already a draft.' });
+        }
+
+        if (release.released_at) {
+            return res.status(409).json({ error: 'This release is marked as released and is locked. Mark it as not released first if you need to change it.' });
         }
 
         const disputed = await pool.query(
@@ -309,4 +344,5 @@ async function deleteRelease(req, res) {
 module.exports = {
     createRelease, listReleases, getRelease, updateRelease,
     markReady, revertToDraft, deleteRelease, readinessProblems, getReadiness, exportRelease,
+    markReleased, unmarkReleased,
 };

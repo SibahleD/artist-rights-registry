@@ -78,7 +78,7 @@ async function respond(req, res) {
                   WHERE id = $1`,
                 [n.id, choice === 'unrecognized' ? 'unrecognized' : (message || null)]);
             if (n.release_status === 'ready') {
-                await client.query(`UPDATE releases SET status = 'draft', ready_at = NULL WHERE id = $1`, [n.release_id]);
+                await client.query(`UPDATE releases SET status = 'draft', ready_at = NULL, released_at = NULL WHERE id = $1`, [n.release_id]);
             }
             status = 'removed';
         }
