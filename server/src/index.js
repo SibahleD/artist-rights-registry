@@ -31,7 +31,6 @@ if (process.env.DEV_OUTBOX === 'true') {
     app.use('/api/dev', require('./routes/dev'));
 }
 
-// Last: turns anything a route throws into a JSON error and logs it.
 app.use((err, _req, res, _next) => {
     console.error('Unhandled error:', err);
     if (res.headersSent) return;
