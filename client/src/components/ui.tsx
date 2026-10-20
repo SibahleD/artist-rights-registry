@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import chevron from '../assets/ico/chevron-down.svg'
 
 export function Loading({ what = 'Loading' }: { what?: string }) {
   const [slow, setSlow] = useState(false)
@@ -20,6 +21,26 @@ export function Modal({ title, children, onClose }: { title: string; children: R
         <h3>{title}</h3>{children}
       </div>
     </div>
+  )
+}
+
+// A section whose body can be minimised by clicking its title. The body stays mounted while hidden so form state survives.
+export function Collapsible({ title, children, defaultOpen = true, actions, level = 'h4', className = 'card' }: {
+  title: ReactNode; children: ReactNode; defaultOpen?: boolean; actions?: ReactNode; level?: 'h2' | 'h4'; className?: string
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  const Heading = level
+  return (
+    <section className={className}>
+      <div className="section-head">
+        <button type="button" className="section-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <img className={`collapse-icon${open ? '' : ' closed'}`} src={chevron} alt="" />
+          <Heading>{title}</Heading>
+        </button>
+        {actions}
+      </div>
+      <div className="collapse-body" hidden={!open}>{children}</div>
+    </section>
   )
 }
 

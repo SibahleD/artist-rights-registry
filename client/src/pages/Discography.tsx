@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { Badge, ErrorBox, fmtDate, Loading } from '../components/ui'
-import { AuthImage } from '../components/files'
+import { AuthImage, vinylFallback, type RGB } from '../components/files'
 import type { Release, SharedTrack } from '../types'
 
 function ReleaseCard({ r }: { r: Release }) {
   const to = r.status === 'draft' ? `/releases/${r.id}/edit` : `/releases/${r.id}`
+  const [tint, setTint] = useState<RGB | null>(null)
+  const style = tint ? ({ '--tint': tint.join(', ') } as CSSProperties) : undefined
   return (
-    <Link to={to} className="card release">
-      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={r.title.slice(0, 1).toUpperCase()} /></div>
+    <Link to={to} className="card release" style={style}>
+      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={vinylFallback} onColor={setTint} /></div>
       <div>
         <strong>{r.title}</strong>
         <div className="muted">{r.album_artist}</div>
@@ -27,7 +29,7 @@ function SharedTrackCard({ t }: { t: SharedTrack }) {
   const pct = Number(t.ownership_percent)
   return (
     <Link to={`/shared-tracks/${t.id}`} className="card release">
-      <div className="cover">{t.title.slice(0, 1).toUpperCase()}</div>
+      <div className="cover">{vinylFallback}</div>
       <div>
         <strong>{t.title}</strong>
         <div className="muted">{t.release_title} · {t.album_artist}</div>

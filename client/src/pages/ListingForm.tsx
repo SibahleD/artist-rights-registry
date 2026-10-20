@@ -5,13 +5,13 @@ import { useAuth } from '../auth'
 import TrackEditor from '../components/TrackEditor'
 import ImagePicker from '../components/ImagePicker'
 import { UsageLine, useUsage } from '../components/files'
-import { ErrorBox, Loading, Modal } from '../components/ui'
+import { Collapsible, ErrorBox, Loading, Modal } from '../components/ui'
+import { useBackGuard } from '../components/UnsavedGuard'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import type {
   Collaborator, CollaboratorInput, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
 } from '../types'
 import { LANGUAGES } from '../data/options'
-import backIco from '../assets/ico/chevron-down.svg'
 
 const emptyTrack = (owner: CollaboratorInput): TrackForm => ({
   title: '', compositionTitle: '', artistName: '', genre: '', isrc: '', iswc: '',
@@ -105,6 +105,15 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const [usageKey, setUsageKey] = useState(0)
   const usage = useUsage(usageKey)
 
+  // Unsaved-changes tracking: compare against a snapshot taken once the form has loaded.
+  const snapshot = form ? JSON.stringify([form, removed, !!artworkFile, artworkCleared]) : null
+  const [baseline, setBaseline] = useState<string | null>(null)
+  useEffect(() => { if (snapshot && baseline === null) setBaseline(snapshot) }, [snapshot, baseline])
+  const dirty = snapshot !== null && baseline !== null && snapshot !== baseline
+  const { goBack, modal: backModal, backButton } = useBackGuard({
+    dirty, onSave: () => submit('draft'), saveLabel: 'Save as draft', leaveAfterSave: false,
+  })
+
   useEffect(() => {
     if (!id) return
     ;(async () => {
@@ -146,8 +155,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   }
 
   // Release -> tracks -> audio -> collaborators, then (optionally) ask co-writers or mark ready.
-  async function submit(save: 'draft' | 'notify' | 'release') {
-    if (!form) return
+  async function submit(save: 'draft' | 'notify' | 'release'): Promise<boolean> {
+    if (!form) return false
     setBusy(true); setErr(null)
     const tracks = form.tracks.map((t) => ({ ...t }))
     const pending = [...removed]
@@ -211,19 +220,21 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       if (save === 'notify') {
         await api(`/releases/${rid}/notices/send`, 'POST')
-        return nav(`/releases/${rid}`)
+        nav(`/releases/${rid}`)
+        return true
       }
       if (save === 'release') {
         const r = await tryMarkReady(rid!)
         if (!r.ok) {
           setForm({ ...form, tracks })
           setConfirm(false)
-          if (r.unconfirmed) { setAck({ rid: rid!, list: r.unconfirmed }); return }
+          if (r.unconfirmed) { setAck({ rid: rid!, list: r.unconfirmed }); return false }
           setErr({ error: r.error, details: r.problems })
-          return
+          return false
         }
       }
       nav(save === 'draft' ? '/discography' : `/releases/${rid}`)
+      return true
     } catch (e) {
       const ae = e as ApiError & { problems?: string[] }
       setForm({ ...form, tracks })
@@ -232,6 +243,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       setConfirm(false)
       setUsageKey((k) => k + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      return false
     } finally { setBusy(false) }
   }
 
@@ -253,14 +265,12 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
   return (
     <div className="stack">
+      {backButton}
       <h1>{id ? 'Edit draft' : isSong ? 'New Song Listing' : 'New Album / EP Listing'}</h1>
       {err && <ErrorBox error={err.error} details={err.details} />}
 
-      <section className="card">
-        <div className="row section-title">
-            <img className="collapse-icon" src={backIco}/>
-        <h4>Release info</h4>
-        </div>
+      <Collapsible title="Release info">
+        <div className="split">
         <div className="grid2">
           {!isSong && <label>Release title<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
           {!isSong && <label>Type<select value={form.releaseType} onChange={(e) => setForm({ ...form, releaseType: e.target.value as ReleaseForm['releaseType'] })}><option value="ep">EP</option><option value="album">Album</option></select></label>}
@@ -280,7 +290,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 1024 * 1024}
           onPick={(f) => { setArtworkFile(f); setArtworkCleared(false) }}
           onClear={() => { setArtworkFile(undefined); setArtworkCleared(true) }} />
-      </section>
+        </div>
+      </Collapsible>
 
       {!isSong && (
         <div className="tabs">
@@ -300,9 +311,10 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         {people.some((p) => p.email.trim()) &&
           <button className="secondary" disabled={busy} onClick={() => submit('notify')}>Save &amp; ask co-writers to confirm</button>}
         <button className="secondary" disabled={busy} onClick={() => submit('draft')}>Save as Draft</button>
-        <button className="ghost" onClick={() => nav('/discography')}>Cancel</button>
+        <button className="ghost" onClick={goBack}>Cancel</button>
       </div>
 
+      {backModal}
       {ack && <AckModal list={ack.list} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
 
       {confirm && (

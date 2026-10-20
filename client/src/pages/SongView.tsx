@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { Badge, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
+import { AuthImage, vinylFallback } from '../components/files'
+import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
 import type { Collaborator, Release, Track } from '../types'
 import { downloadJson } from './ReleaseView'
 
@@ -44,20 +45,33 @@ export default function SongView() {
         </div>
       </div>
 
-      <div className="card grid2">
-        <div><span className="muted">Album artist</span><br />{r.album_artist}</div>
-        <div><span className="muted">Composition title</span><br />{t.composition_title || '—'}</div>
-        <div><span className="muted">ISRC</span><br />{t.isrc || '—'}</div>
-        <div><span className="muted">ISWC</span><br />{t.iswc || '—'}</div>
-        <div><span className="muted">Genre / duration</span><br />{t.genre || '—'} · {fmtDuration(t.duration_seconds)}</div>
-        <div><span className="muted">Explicit content</span><br />{t.explicit ? EXPLICIT_LABEL[t.explicit] : '—'}</div>
-        <div><span className="muted">Composition ©</span><br />{[t.composition_copyright_year, t.composition_copyright].filter(Boolean).join(' ') || '—'}</div>
-        <div><span className="muted">Recording ℗</span><br />{[t.recording_copyright_year, t.recording_copyright].filter(Boolean).join(' ') || '—'}</div>
-        <div><span className="muted">Audio file</span><br />{t.audio ? `${t.audio.file_name} (${t.audio.format.toUpperCase()})` : '—'}</div>
-        <div><span className="muted">Release date / ready</span><br />{r.release_date ? fmtDate(r.release_date) : '—'}<br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
-      </div>
+      <Collapsible title="General info">
+        <div className="split">
+          <div className="grid2">
+            <div><span className="muted">Album artist</span><br />{r.album_artist}</div>
+            <div><span className="muted">Genre / duration</span><br />{t.genre || '—'} · {fmtDuration(t.duration_seconds)}</div>
+            <div><span className="muted">Explicit content</span><br />{t.explicit ? EXPLICIT_LABEL[t.explicit] : '—'}</div>
+            <div><span className="muted">Release date / ready</span><br />{r.release_date ? fmtDate(r.release_date) : '—'}<br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
+          </div>
+          <div className="cover-side"><div className="cover"><AuthImage mediaId={r.artwork_id} alt="Cover art" fallback={vinylFallback} /></div></div>
+        </div>
+      </Collapsible>
 
-      <h2>Royalty splits</h2>
+      <Collapsible title="Audio file">
+        <div><span className="muted">File</span><br />{t.audio ? `${t.audio.file_name} (${t.audio.format.toUpperCase()})` : '—'}</div>
+      </Collapsible>
+
+      <Collapsible title="Publishing info">
+        <div className="grid2">
+          <div><span className="muted">Composition title</span><br />{t.composition_title || '—'}</div>
+          <div><span className="muted">ISRC</span><br />{t.isrc || '—'}</div>
+          <div><span className="muted">ISWC</span><br />{t.iswc || '—'}</div>
+          <div><span className="muted">Composition ©</span><br />{[t.composition_copyright_year, t.composition_copyright].filter(Boolean).join(' ') || '—'}</div>
+          <div><span className="muted">Recording ℗</span><br />{[t.recording_copyright_year, t.recording_copyright].filter(Boolean).join(' ') || '—'}</div>
+        </div>
+      </Collapsible>
+
+      <Collapsible title="Royalty splits">
       <table><thead><tr><th>Legal name</th><th>Role</th><th>Share</th></tr></thead>
         <tbody>{collaborators.map((c) => (
           <tr key={c.id}>
@@ -69,6 +83,7 @@ export default function SongView() {
             <td>{Number(c.ownership_percent)}%</td>
           </tr>
         ))}</tbody></table>
+      </Collapsible>
     </div>
   )
 }

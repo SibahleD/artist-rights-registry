@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api, upload } from '../api'
 import ImagePicker from '../components/ImagePicker'
 import { useUsage } from '../components/files'
+import { Collapsible } from '../components/ui'
+import { useBackGuard } from '../components/UnsavedGuard'
 import { useAuth } from '../auth'
 import { COLLABORATOR_ROLES } from '../types'
 import type { ArtistLink, CollaboratorRole, User } from '../types'
 import { COUNTRIES } from '../data/options'
 import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
-import backIco from '../assets/ico/chevron-down.svg'
 
 type Platforms = readonly (readonly [string, string])[]
 
@@ -81,6 +82,7 @@ export function Profile() {
     roles: (user?.roles ?? []) as CollaboratorRole[],
   })
   const [msg, setMsg] = useState('')
+  const [baseline, setBaseline] = useState(() => JSON.stringify(f))
   const [links, setLinks] = useState<Record<string, string>>({})
   const [avatarFile, setAvatarFile] = useState<File | undefined>()
   const [avatarCleared, setAvatarCleared] = useState(false)
@@ -92,8 +94,12 @@ export function Profile() {
       .catch(() => {})
   }, [])
 
-  async function save(e: FormEvent) {
-    e.preventDefault()
+  const dirty = JSON.stringify(f) !== baseline || !!avatarFile || avatarCleared
+  const { modal: backModal, backButton } = useBackGuard({ dirty, onSave: () => doSave(), fallback: '/' })
+
+  function save(e: FormEvent) { e.preventDefault(); void doSave() }
+
+  async function doSave(): Promise<boolean> {
     setMsg('')
     try {
       if (avatarFile) await upload('/users/me/avatar', avatarFile)
@@ -103,26 +109,25 @@ export function Profile() {
       const fresh = await api<{ user: User }>('/users/me')
       setUser(fresh.user)
       setAvatarFile(undefined); setAvatarCleared(false)
+      setBaseline(JSON.stringify(f))   // what was just saved is the new starting point
       setMsg('Saved.')
-    } catch (x) { setMsg((x as Error).message) }
+      return true
+    } catch (x) { setMsg((x as Error).message); return false }
   }
 
   return (
     <div className="stack">
+      {backModal}
       <div className="hero">
+        {backButton}
         <h1>Artist Profile</h1>
         <div className="sub">Artist: {user?.artist_name}</div>
       </div>
-      <div className="row section-title">
-        <img className="collapse-icon" src={backIco}/>
-        <h2>General Info</h2>
-      </div>
+      <Collapsible title="General Info" level="h2" className="">
       <form className="card stack" onSubmit={save}>
         <h4>Artist Profile</h4>
-        <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
-          mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 300 * 1024}
-          onPick={(f) => { setAvatarFile(f); setAvatarCleared(false) }}
-          onClear={() => { setAvatarFile(undefined); setAvatarCleared(true) }} />
+        <div className="split">
+        <div className="stack">
         <label>Artist name<input value={f.artistName} onChange={(e) => setF({ ...f, artistName: e.target.value })} /></label>
         <div className="grid2">
           <label>First name<input value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} /></label>
@@ -152,24 +157,29 @@ export function Profile() {
           <legend>What you do</legend>
           <div className="row">
             {COLLABORATOR_ROLES.filter((r) => r !== 'other').map((r) => (
-              <label key={r} className="row">
+              <label key={r} className="check">
                 <input type="checkbox" checked={f.roles.includes(r)}
                   onChange={(e) => setF({ ...f, roles: e.target.checked ? [...f.roles, r] : f.roles.filter((x) => x !== r) })} /> {r}
               </label>
             ))}
           </div>
         </fieldset>
+        </div>
+        <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
+          mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 300 * 1024}
+          onPick={(f) => { setAvatarFile(f); setAvatarCleared(false) }}
+          onClear={() => { setAvatarFile(undefined); setAvatarCleared(true) }} />
+        </div>
         <div className="row actions"><button>Save</button><span className="muted">{msg}</span></div>
       </form>
-      
-      <div className="row section-title">
-        <img className="collapse-icon" src={backIco}/>
-        <h2>Links</h2>
-      </div>
+      </Collapsible>
+
+      <Collapsible title="Links" level="h2" className="">
       <div className="grid2">
         <LinksCard title="Artist Streaming Links" platforms={STREAMING} saved={links} onSaved={setLinks} />
         <LinksCard title="Social Links" platforms={SOCIAL} saved={links} onSaved={setLinks} />
       </div>
+      </Collapsible>
     </div>
   )
 }

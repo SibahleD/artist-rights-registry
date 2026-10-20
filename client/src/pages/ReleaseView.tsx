@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import { AuthImage } from '../components/files'
+import { AuthImage, vinylFallback } from '../components/files'
 import { useAuth } from '../auth'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
-import { Badge, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
+import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
 import type { Collaborator, Notice, Release, Track } from '../types'
 
 export function downloadJson(name: string, data: unknown) {
@@ -26,7 +26,6 @@ const SEND_TEXT: Record<string, string> = {
   skipped_self: 'that is your own email, skipped',
 }
 
-// One line in the confirmations panel: a sent notice, or someone with an email who has not been invited yet.
 interface Row { key: string; trackId: string; noticeId?: string; name: string; email: string | null; role: string; share: number
   status: string; note: string | null; expiresAt?: string; canRemind: boolean }
 
@@ -55,12 +54,11 @@ export default function ReleaseView() {
     setNotices(n.notices); setPeople(c.flatMap((z) => z.collaborators))
   }
 
-  useEffect(() => { load().catch((e) => setErr(e.message)) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load().catch((e) => setErr(e.message)) }, [id]) 
 
   if (err) return <ErrorBox error={err} />
   if (!r) return <Loading />
 
-  // There is no export endpoint, so assemble the metadata from the release, track and split endpoints.
   async function exportMetadata() {
     if (!r) return
     setBusy(true); setActionErr('')
@@ -145,7 +143,6 @@ export default function ReleaseView() {
       expiresAt: n.expires_at,
       canRemind: n.status === 'pending' && !n.reminder_sent_at && !!n.email && new Date(n.expires_at) > new Date(),
     })),
-    // People with an email but no notice yet (the owner's own email never gets one)
     ...people.filter((c) => c.invited_email && !c.removed_by_writer && c.invited_email !== user?.email
       && !notices.some((n) => n.track_id === c.track_id && n.email?.toLowerCase() === c.invited_email!.toLowerCase()))
       .map((c): Row => ({
@@ -160,7 +157,6 @@ export default function ReleaseView() {
       {ack && <AckModal list={ack} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
       <div className="hero">
         <Link to="/discography" className="back">← Back to Discography</Link>
-        <div className="cover" style={{ width: 120, height: 120 }}><AuthImage mediaId={r.artwork_id} alt="Cover art" fallback={r.title.slice(0, 1).toUpperCase()} /></div>
         <h1>{r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.status} /></h1>
         <div className="sub">Artist: {r.album_artist}</div>
         <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
@@ -174,7 +170,9 @@ export default function ReleaseView() {
       </div>
       {actionErr && <ErrorBox error={actionErr} details={problems} />}
 
-      <div className="card grid2">
+      <Collapsible title="General info">
+       <div className="split">
+        <div className="grid2">
         <div><span className="muted">Album artist</span><br />{r.album_artist}</div>
         <div><span className="muted">Genre</span><br />{r.genre || '—'}</div>
         <div><span className="muted">Release date</span><br />{r.release_date ? fmtDate(r.release_date) : '—'}</div>
@@ -185,16 +183,17 @@ export default function ReleaseView() {
         <div><span className="muted">Language</span><br />{r.language || '—'}</div>
         <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
         <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
-      </div>
+        </div>
+        <div className="cover-side"><div className="cover"><AuthImage mediaId={r.artwork_id} alt="Cover art" fallback={vinylFallback} /></div></div>
+       </div>
+      </Collapsible>
 
       {(rows.length > 0 || removedLines.length > 0) && (
-        <section className="card">
-          <div className="row between">
-            <h4>Co-writer confirmations</h4>
-            <button className="secondary" disabled={busy} onClick={sendInvitations}>
-              {notices.length ? 'Send / update invitations' : 'Send invitations'}
-            </button>
-          </div>
+        <Collapsible title="Co-writer confirmations" actions={
+          <button className="secondary" disabled={busy} onClick={sendInvitations}>
+            {notices.length ? 'Send / update invitations' : 'Send invitations'}
+          </button>
+        }>
           {r.status === 'draft' && <small className="hint">Co-writers confirm their share from an emailed link, no account needed. You can mark the release ready without them, but you'll be asked to acknowledge it.</small>}
           {sent && <ul>{sent.map((s, i) => <li key={i}>{s.name || s.email}: {SEND_TEXT[s.action] ?? s.action}</li>)}</ul>}
           {removedLines.length > 0 && (
@@ -217,10 +216,10 @@ export default function ReleaseView() {
                 : <span />}
             </div>
           ))}
-        </section>
+        </Collapsible>
       )}
 
-      <h2>{r.release_type === 'single' ? 'Song' : 'Tracklist'}</h2>
+      <Collapsible title={r.release_type === 'single' ? 'Song' : 'Tracklist'} level="h2" className="">
       <table><thead><tr><th>#</th><th>Title</th><th>ISRC</th><th>Duration</th></tr></thead>
         <tbody>{tracks.map((t) => (
           <tr key={t.id}>
@@ -231,6 +230,7 @@ export default function ReleaseView() {
           </tr>
         ))}</tbody></table>
       {tracks.length === 0 && <p className="muted">No songs on this release yet.</p>}
+      </Collapsible>
     </div>
   )
 }

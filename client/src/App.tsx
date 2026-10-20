@@ -41,7 +41,7 @@ export default function App() {
             <Route path="/shared-tracks/:id" element={<SharedTrackView />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/Glossary" element={<Glossary />} />
-            <Route path="/register-rights" element={<RegisterRights />} />
+            <Route path="/royalty-rights" element={<RegisterRights />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

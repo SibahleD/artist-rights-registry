@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { AuthImage, checkImage, fmtBytes } from './files'
+import { AuthImage, checkImage, fmtBytes, vinylFallback } from './files'
 import { Hint } from './ui'
 
 // Chooses a JPEG or PNG and previews it. Nothing is uploaded here: the parent uploads on save.
@@ -13,7 +13,7 @@ export default function ImagePicker({ label, hint, mediaId, file, maxBytes, shap
   return (
     <div className="image-picker">
       <div className={`cover${shape === 'round' ? ' round' : ''}`}>
-        <AuthImage mediaId={mediaId} file={file} alt={label} fallback={<span>+</span>} />
+        <AuthImage mediaId={mediaId} file={file} alt={label} fallback={shape === 'round' ? <span>+</span> : vinylFallback} />
       </div>
       <div className="stack">
         <strong>{label}</strong>

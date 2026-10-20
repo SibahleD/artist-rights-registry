@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { COLLABORATOR_ROLES, EXPLICIT_VALUES } from '../types'
 import type { CollaboratorInput, TrackForm } from '../types'
-import { Hint } from './ui'
+import { Collapsible, Hint } from './ui'
 import { LANGUAGES, ORIGIN_LABELS, ORIGIN_WARNING, TRACK_ORIGINS, WRITER_STATUSES, WRITER_STATUS_LABELS } from '../data/options'
 import type { WriterStatus } from '../data/options'
 import { checkAudio, fmtBytes } from './files'
-import backIco from '../assets/ico/chevron-down.svg'
 
 const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
   explicit: 'Explicit', not_explicit: 'Not explicit', cleaned: 'Cleaned',
@@ -38,11 +37,7 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
 
   return (
     <div className="stack">
-      <section className="card">
-        <div className="row section-title">
-          <img className="collapse-icon" src={backIco}/>
-          <h4>General info</h4>
-        </div>
+      <Collapsible title={<>General info</>}>
         
         <div className="grid2">
           {!hideTitle && <label>Song title<input value={track.title} onChange={(e) => set('title', e.target.value)} /></label>}
@@ -70,13 +65,9 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
           </label>
         </div>
         {track.origin !== 'original' && <small className="warn">{ORIGIN_WARNING}</small>}
-      </section>
+      </Collapsible>
 
-      <section className="card">
-        <div className="row section-title">
-          <img className="collapse-icon" src={backIco}/>
-          <h4>Audio file</h4>
-        </div>
+      <Collapsible title={<>Audio file</>}>
         <Hint>This is a small reference copy (MP3, WAV, FLAC or AAC, up to {fmtBytes(maxAudioBytes)}). Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
         <div className="row">
           <input type="file" accept=".mp3,.aac,.m4a,.wav,.flac,audio/*" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
@@ -96,13 +87,9 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
             <div><span className="muted">Size</span><br />{track.audio.sizeBytes ? fmtBytes(track.audio.sizeBytes) : '—'}</div>
           </div>
         )}
-      </section>
+      </Collapsible>
 
-      <section className="card">
-        <div className="row section-title">
-          <img className="collapse-icon" src={backIco}/>
-          <h4>Publishing info</h4>
-        </div>
+      <Collapsible title={<>Publishing info</>}>
         
         <div className="grid2">
           <label>Composition title<input value={track.compositionTitle} onChange={(e) => set('compositionTitle', e.target.value)} />
@@ -116,13 +103,9 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
           <label>Sound recording copyright line<input value={track.recordingCopyright} onChange={(e) => set('recordingCopyright', e.target.value)} placeholder="℗ Your Legal Name" /></label>
           <label>Sound recording copyright year<input inputMode="numeric" value={track.recordingCopyrightYear ?? ''} onChange={(e) => set('recordingCopyrightYear', toInt(e.target.value))} placeholder="2026" /></label>
         </div>
-      </section>
+      </Collapsible>
 
-      <section className="card">
-        <div className="row section-title">
-          <img className="collapse-icon" src={backIco}/>
-          <h4>Royalty splits <small className="muted">(legal names)</small></h4>
-        </div>
+      <Collapsible title={<>Royalty splits <small className="muted">(legal names)</small></>}>
         <Hint>Ownership must total exactly 100%, with at most 2 decimals. Once the release is marked ready, splits are locked. Revert it to draft to edit them (not possible after a dispute is raised).</Hint>
         {track.collaborators.map((c, i) => c.removedByWriter ? (
           <div className="row" key={i}>
@@ -152,7 +135,7 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
                 </select>
               </label>
               <label>Publisher (optional)<input value={c.publisherName ?? ''} disabled={!!c.isSelfPublished} onChange={(e) => setCollab(i, { publisherName: e.target.value })} placeholder="Publishing company name" /></label>
-              <label className="row"><input type="checkbox" checked={!!c.isSelfPublished} onChange={(e) => setCollab(i, { isSelfPublished: e.target.checked, ...(e.target.checked ? { publisherName: '' } : {}) })} /> Self-published</label>
+              <label className="check"><input type="checkbox" checked={!!c.isSelfPublished} onChange={(e) => setCollab(i, { isSelfPublished: e.target.checked, ...(e.target.checked ? { publisherName: '' } : {}) })} /> Self-published</label>
             </div>
           )}
           </div>
@@ -161,7 +144,7 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
           <button type="button" className="ghost" onClick={() => set('collaborators', [...track.collaborators, { legalName: '', role: 'songwriter', ownershipPercent: 0 }])}>+ Add split holder</button>
           <strong className={total === 100 ? 'ok' : 'warn'}>Total: {total}%</strong>
         </div>
-      </section>
+      </Collapsible>
     </div>
   )
 }

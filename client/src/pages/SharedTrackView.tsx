@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
-import { ErrorBox, fmtDate, fmtDuration, Loading } from '../components/ui'
+import { Collapsible, ErrorBox, fmtDate, fmtDuration, Loading } from '../components/ui'
 import type { SharedTrackDetail } from '../types'
 
 const EXPLICIT_LABEL: Record<string, string> = {
@@ -47,7 +47,8 @@ export default function SharedTrackView() {
         <div className="sub">Release date: {t.release_date ? fmtDate(t.release_date) : '—'}</div>
       </div>
 
-      <div className="card grid2">
+      <Collapsible title="General info">
+      <div className="grid2">
         <div><span className="muted">Track number</span><br />{t.track_number}</div>
         <div><span className="muted">Performing artist</span><br />{t.artist_name || t.album_artist}</div>
         <div><span className="muted">Composition title</span><br />{t.composition_title || '—'}</div>
@@ -56,8 +57,9 @@ export default function SharedTrackView() {
         <div><span className="muted">ISWC</span><br />{t.iswc || '—'}</div>
         <div><span className="muted">Content rating</span><br />{t.explicit ? EXPLICIT_LABEL[t.explicit] ?? t.explicit : '—'}</div>
       </div>
+      </Collapsible>
 
-      <h2>Credits and splits</h2>
+      <Collapsible title="Credits and splits">
       <table>
         <thead>
           <tr><th>Name</th><th>Role</th><th>Share</th></tr>
@@ -72,6 +74,7 @@ export default function SharedTrackView() {
           ))}
         </tbody>
       </table>
+      </Collapsible>
       <p className="muted">
         NOTE: This is a read-only record of what {t.owner_artist_name} has listed. Only the release owner can change it.
       </p>
