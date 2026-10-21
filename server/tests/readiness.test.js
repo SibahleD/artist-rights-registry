@@ -42,6 +42,12 @@ test('track without audio or splits', { skip }, async () => {
 
 test('complete release has no problems', { skip }, async () => {
   await pool.query(`INSERT INTO audio_specs (track_id, file_name, format) VALUES ($1,'a.mp3','mp3')`, [trackId]);
+  // typed specs alone are not an audio file, and there is still no cover art
+  let p0 = await readinessProblems({ id: releaseId, release_date: '2026-12-01' });
+  assert.ok(p0.some((m) => m.includes('no audio file')));
+  assert.ok(p0.some((m) => m.includes('Cover art is required')));
+  await pool.query(`INSERT INTO audio_files (track_id, owner_id, storage_key, mime_type, size_bytes) VALUES ($1,$2,'audio/00000000-0000-0000-0000-000000000001.mp3','audio/mpeg',1000)`, [trackId, userId]);
+  await pool.query(`INSERT INTO media (kind, owner_id, release_id, mime_type, width, height, size_bytes, data) VALUES ('artwork',$1,$2,'image/png',1400,1400,4,decode('89504e47','hex'))`, [userId, releaseId]);
   await pool.query(
     `INSERT INTO collaborators (track_id, legal_name, ownership_percent) VALUES ($1,'Ada Obi',100)`, [trackId]
   );

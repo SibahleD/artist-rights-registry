@@ -56,15 +56,20 @@ async function readinessChecks(release) {
     if (!release.release_date) add('error', 'release-date', 'Release date is required.', edit);
 
     const { rows: tracks } = await pool.query(
-        `SELECT t.track_number, t.title, t.artist_name, t.isrc, t.iswc, (a.track_id IS NOT NULL) AS has_audio,
+        `SELECT t.track_number, t.title, t.artist_name, t.isrc, t.iswc,
+                EXISTS (SELECT 1 FROM audio_files f WHERE f.track_id = t.id) AS has_audio,
                 (SELECT COALESCE(SUM(c.ownership_percent), 0) FROM collaborators c WHERE c.track_id = t.id) AS split_total
          FROM tracks t
-         LEFT JOIN audio_specs a ON a.track_id = t.id
          WHERE t.release_id = $1
          ORDER BY t.track_number`,
         [release.id]
     );
     if (tracks.length === 0) add('error', 'no-tracks', 'At least one track is required.', edit);
+
+    // Cover art is an uploaded image, stored in `media`.
+    const { rowCount: artworkCount } = await pool.query(
+        `SELECT 1 FROM media WHERE release_id = $1 AND kind = 'artwork'`, [release.id]);
+    if (artworkCount === 0) add('error', 'release-artwork', 'Cover art is required. Upload a square JPEG or PNG.', edit);
     for (const t of tracks) {
         const fix = `${edit}?track=${t.track_number}`;
         if (!t.has_audio) add('error', 'track-audio', `Track ${t.track_number} ("${t.title}") has no audio file.`, fix, { track: t.track_number });

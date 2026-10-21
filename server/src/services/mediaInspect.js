@@ -21,12 +21,17 @@ async function inspectAudio(buffer) {
     else if (/AAC/.test(codec) && /ADTS|M4A|MPEG-4/.test(container + codec)) { format = 'aac'; mime = 'audio/aac'; ext = 'aac'; }
     else return { error: 'Only MP3, WAV, FLAC and AAC files are accepted.' };
 
+    const durationSeconds = f.duration ? Math.round(f.duration) : 0;
+    if (durationSeconds < 1) {
+        return { error: 'We could not work out how long that file is. Export it again as an MP3, WAV, FLAC or AAC file.' };
+    }
+
     return {
         format, mime, ext,
         bitrateKbps: f.bitrate ? Math.round(f.bitrate / 1000) : null,
         sampleRateHz: f.sampleRate ? Math.round(f.sampleRate) : null,
         channels: f.numberOfChannels || null,
-        durationSeconds: f.duration ? Math.round(f.duration) : null,
+        durationSeconds,
     };
 }
 

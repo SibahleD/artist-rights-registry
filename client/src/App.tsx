@@ -9,6 +9,7 @@ import ListingForm from './pages/ListingForm'
 import { Profile } from './pages/Misc'
 import ReleaseView from './pages/ReleaseView'
 import SharedTrackView from './pages/SharedTrackView'
+import Splits from './pages/Splits'
 import SongView from './pages/SongView'
 import VerifyEmail from './pages/VerifyEmail'
 import CoWriterNotice from './pages/CoWriterNotice'
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/new/album" element={<ListingForm mode="album" />} />
             <Route path="/releases/:id" element={<ReleaseView />} />
             <Route path="/releases/:id/edit" element={<ListingForm mode="song" />} />
+            <Route path="/releases/:id/splits" element={<Splits />} />
             <Route path="/releases/:releaseId/tracks/:trackId" element={<SongView />} />
             <Route path="/shared-tracks/:id" element={<SharedTrackView />} />
             <Route path="/profile" element={<Profile />} />

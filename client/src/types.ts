@@ -173,7 +173,6 @@ export interface TrackInput {
   genre?: string | null
   isrc?: string | null
   iswc?: string | null
-  durationSeconds?: number | null
   explicit?: ExplicitValue | null
   compositionCopyrightYear?: number | null
   compositionCopyright?: string | null
@@ -221,6 +220,9 @@ export interface Notice {
   reminder_sent_at: string | null
   expires_at: string
   responded_at: string | null
+  resolution: 'kept' | 'adopted' | null
+  resolution_note: string | null
+  resolved_at: string | null
 }
 
 export interface PublicNotice {

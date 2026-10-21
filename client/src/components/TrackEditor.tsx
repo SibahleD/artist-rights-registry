@@ -13,11 +13,17 @@ const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
 const sumPct = (t: TrackForm) => t.collaborators.filter((c) => !c.discard).reduce((s, c) => s + Math.round((Number(c.ownershipPercent) || 0) * 100), 0) / 100
 const toInt = (s: string) => (s.trim() && /^\d+$/.test(s.trim()) ? parseInt(s, 10) : null)
 
-export const parseDuration = (s: string) => {
-  const m = s.trim().match(/^(\d+):([0-5]?\d)$/)
-  return m ? parseInt(m[1]) * 60 + parseInt(m[2]) : s.trim() && /^\d+$/.test(s.trim()) ? parseInt(s) : null
-}
 export const showDuration = (n?: number | null) => (n ? `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}` : '')
+
+const previewDuration = (f: File) => new Promise<number | null>((resolve) => {
+  const url = URL.createObjectURL(f)
+  const a = new Audio()
+  const done = (n: number | null) => { URL.revokeObjectURL(url); resolve(n) }
+  a.preload = 'metadata'
+  a.onloadedmetadata = () => done(Number.isFinite(a.duration) && a.duration >= 1 ? Math.round(a.duration) : null)
+  a.onerror = () => done(null)
+  a.src = url
+})
 
 export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 5 * 1024 * 1024 }: { track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean; maxAudioBytes?: number }) {
   const [audioErr, setAudioErr] = useState('')
@@ -27,12 +33,12 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
     set('collaborators', track.collaborators.map((x, j) => (j === i ? { ...x, ...patch } : x)))
   const total = sumPct(track)
 
-  const pickFile = (f?: File) => {
+  const pickFile = async (f?: File) => {
     if (!f) return
     const problem = checkAudio(f, maxAudioBytes)
     if (problem) { setAudioErr(problem); return }
     setAudioErr('')
-    set('audioFile', f)
+    onChange({ ...track, audioFile: f, durationSeconds: await previewDuration(f) })
   }
 
   return (
@@ -40,23 +46,23 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
       <Collapsible title={<>General info</>}>
         
         <div className="grid2">
-          {!hideTitle && <label>Song title<input value={track.title} onChange={(e) => set('title', e.target.value)} /></label>}
-          <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
+          {!hideTitle && <label>Song Title<input value={track.title} onChange={(e) => set('title', e.target.value)} /></label>}
+          <label>Main Artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
           <label>Genre<input value={track.genre} onChange={(e) => set('genre', e.target.value)} placeholder="Afrobeat, Gospel, Hip-hop…" /></label>
-          <label>Duration (m:ss)<input defaultValue={showDuration(track.durationSeconds)} onBlur={(e) => set('durationSeconds', parseDuration(e.target.value))} placeholder="3:45" /></label>
-          <label>Version title (optional)<input value={track.versionTitle} onChange={(e) => set('versionTitle', e.target.value)} placeholder="Acoustic, Radio edit, Remix…" /></label>
-          <label>Language of the lyrics
+          <label>Primary Language
             <select value={track.language} onChange={(e) => set('language', e.target.value)}>
               <option value="">Not specified</option>
               {LANGUAGES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
               {track.language && !LANGUAGES.some(([c]) => c === track.language) && <option value={track.language}>{track.language}</option>}
             </select>
           </label>
-          <label>Where does the song come from?
+          <label>Song Origin
             <select value={track.origin} onChange={(e) => set('origin', e.target.value as TrackForm['origin'])}>
               {TRACK_ORIGINS.map((o) => <option key={o} value={o}>{ORIGIN_LABELS[o]}</option>)}
             </select>
           </label>
+          <label>Version title (optional)<input value={track.versionTitle} onChange={(e) => set('versionTitle', e.target.value)} placeholder="Acoustic, Radio edit, Remix…" /></label>
+          
           <label>Explicit content
             <select value={track.explicit} onChange={(e) => set('explicit', e.target.value as TrackForm['explicit'])}>
               <option value="">Not specified</option>
@@ -72,7 +78,7 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
         <div className="row">
           <input type="file" accept=".mp3,.aac,.m4a,.wav,.flac,audio/*" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
           {(track.audio || track.audioFile) && (
-            <button type="button" className="ghost" onClick={() => { setAudioErr(''); onChange({ ...track, audio: null, audioFile: undefined }) }}>Remove audio</button>
+            <button type="button" className="ghost" onClick={() => { setAudioErr(''); onChange({ ...track, audio: null, audioFile: undefined, durationSeconds: null }) }}>Remove audio</button>
           )}
         </div>
         {audioErr && <small className="warn">{audioErr}</small>}

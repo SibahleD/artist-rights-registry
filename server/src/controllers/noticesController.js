@@ -70,6 +70,7 @@ async function sendNotices(req, res) {
                             SET email = $2, co_writer_name = $3, role = $4, share_percent = $5, token_hash = $6,
                                 notice_version = $7, sent_by = $8, status = 'pending', note = NULL,
                                 sent_at = now(), reminder_sent_at = NULL, responded_at = NULL, consent_at = NULL,
+                                resolution = NULL, resolution_note = NULL, resolved_at = NULL,
                                 expires_at = now() + make_interval(days => $9)
                           WHERE id = $1`,
                         [prev.id, s.invited_email, s.legal_name, s.role, s.ownership_percent,
@@ -116,7 +117,8 @@ async function listNotices(req, res) {
         await sweepNotices();
         const { rows } = await pool.query(
             `SELECT n.id, n.track_id, n.co_writer_name, n.email, n.role, n.share_percent, n.status, n.note,
-                    n.sent_at, n.reminder_sent_at, n.expires_at, n.responded_at
+                    n.sent_at, n.reminder_sent_at, n.expires_at, n.responded_at,
+                    n.resolution, n.resolution_note, n.resolved_at
              FROM collaborator_notices n JOIN tracks t ON t.id = n.track_id
              WHERE t.release_id = $1 ORDER BY t.track_number, n.sent_at`,
             [req.params.id]
@@ -160,6 +162,75 @@ async function remindNotice(req, res) {
     }
 }
 
+// The artist's decision on a disputed notice. Either way the notice is closed (status 'cancelled', personal data
+// wiped like any other dead notice) so the same or updated details can be sent again.
+//   keep       - keep my numbers: only while the credit still matches what the co-writer disputed
+//   use_theirs - the artist has already changed the credit in the track editor to match the correction
+async function resolveNotice(req, res) {
+    const decision = req.body && req.body.decision;
+    if (!['keep', 'use_theirs'].includes(decision)) {
+        return res.status(400).json({ error: "Decision must be 'keep' or 'use_theirs'." });
+    }
+    const rawNote = req.body.note;
+    if (rawNote != null && typeof rawNote !== 'string') return res.status(400).json({ error: 'Note must be text.' });
+    const note = rawNote ? rawNote.trim().slice(0, 1000) : '';
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const { rows } = await client.query(
+            `SELECT n.* FROM collaborator_notices n
+               JOIN tracks t ON t.id = n.track_id JOIN releases r ON r.id = t.release_id
+              WHERE n.id = $1 AND r.id = $2 AND r.owner_id = $3
+              FOR UPDATE OF n`,
+            [req.params.noticeId, req.params.id, req.user.id]
+        );
+        const n = rows[0];
+        if (!n) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Notice not found.' }); }
+        if (n.status !== 'disputed') {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'Only a disputed notice can be resolved.' });
+        }
+
+        const { rows: cw } = await client.query(
+            `SELECT role, ownership_percent FROM collaborators
+              WHERE track_id = $1 AND invited_email = $2 AND removed_by_writer = false`,
+            [n.track_id, n.email]
+        );
+        const c = cw[0];
+        if (!c) { await client.query('ROLLBACK'); return res.status(409).json({ error: 'This person is no longer on the track.' }); }
+        const unchanged = c.role === n.role && Number(c.ownership_percent) === Number(n.share_percent);
+
+        if (decision === 'keep' && !unchanged) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: "You have changed this person's role or share since the notice. Choose 'use theirs', or put the details back first." });
+        }
+        if (decision === 'use_theirs' && unchanged) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: "Change this person's role or share in the track editor first, then mark the dispute resolved." });
+        }
+
+        const done = await client.query(
+            `UPDATE collaborator_notices
+                SET status = 'cancelled', email = NULL, co_writer_name = NULL, consent_at = NULL,
+                    resolution = $2, resolution_note = $3, resolved_at = now()
+              WHERE id = $1
+          RETURNING id, status, resolution, resolution_note, resolved_at`,
+            [n.id, decision === 'keep' ? 'kept' : 'adopted', note || null]
+        );
+        // Whoever releases with this person unconfirmed has to say so again, knowingly.
+        await client.query('UPDATE releases SET unconfirmed_acknowledged_at = NULL WHERE id = $1', [req.params.id]);
+        await client.query('COMMIT');
+        return res.json({ notice: done.rows[0] });
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('resolveNotice error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+}
+
 async function acknowledgeUnconfirmed(req, res) {
     try {
         const { rowCount } = await pool.query(
@@ -174,4 +245,4 @@ async function acknowledgeUnconfirmed(req, res) {
     }
 }
 
-module.exports = { sendNotices, listNotices, remindNotice, acknowledgeUnconfirmed };
+module.exports = { sendNotices, listNotices, remindNotice, resolveNotice, acknowledgeUnconfirmed };

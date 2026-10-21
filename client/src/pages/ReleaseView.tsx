@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { AuthImage, vinylFallback } from '../components/files'
 import { useAuth } from '../auth'
+import { buildRows, summarize } from '../lib/splitRows'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Hint, Loading } from '../components/ui'
 import type { Collaborator, Notice, ReadinessCheck, ReadinessReport, Release, ReleaseExport, ReleaseLink, Track } from '../types'
@@ -14,21 +15,6 @@ export function downloadJson(name: string, data: unknown) {
 }
 
 const TYPE_LABEL = { single: 'Single', ep: 'EP', album: 'Album' } as const
-
-type SendResult = { trackId: string; name: string; email: string; action: string }
-const SEND_TEXT: Record<string, string> = {
-  sent: 'invitation sent',
-  updated: 'details changed, updated invitation sent',
-  resent: 'invitation sent again',
-  unchanged: 'already invited, nothing to send',
-  blocked: 'removed themselves and cannot be invited again',
-  limit: 'daily invitation limit reached, try again tomorrow',
-  skipped_self: 'that is your own email, skipped',
-}
-
-// One line in the confirmations panel: a sent notice, or someone with an email who has not been invited yet.
-interface Row { key: string; trackId: string; noticeId?: string; name: string; email: string | null; role: string; share: number
-  status: string; note: string | null; expiresAt?: string; canRemind: boolean }
 
 const STORES = ['Spotify', 'Apple Music', 'YouTube Music', 'Boomplay', 'Audiomack', 'Deezer', 'Tidal', 'Amazon Music', 'SoundCloud']
 
@@ -132,7 +118,6 @@ export default function ReleaseView() {
   const { user } = useAuth()
   const [notices, setNotices] = useState<Notice[]>([])
   const [people, setPeople] = useState<Collaborator[]>([])
-  const [sent, setSent] = useState<SendResult[] | null>(null)
   const [problems, setProblems] = useState<string[] | undefined>()
   const [ack, setAck] = useState<string[] | null>(null)
   const [checks, setChecks] = useState<ReadinessCheck[] | null>(null)
@@ -161,25 +146,6 @@ export default function ReleaseView() {
     setBusy(true); setActionErr('')
     try {
       downloadJson(`${r.title}.json`, await api<ReleaseExport>(`/releases/${r.id}/export`))
-    } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
-  }
-
-  async function sendInvitations() {
-    if (!r) return
-    setBusy(true); setActionErr(''); setSent(null)
-    try {
-      const res = await api<{ results: SendResult[] }>(`/releases/${r.id}/notices/send`, 'POST')
-      setSent(res.results)
-      await load()
-    } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
-  }
-
-  async function remind(noticeId: string) {
-    if (!r) return
-    setBusy(true); setActionErr('')
-    try {
-      await api(`/releases/${r.id}/notices/${noticeId}/remind`, 'POST')
-      await load()
     } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
   }
 
@@ -224,24 +190,15 @@ export default function ReleaseView() {
     } catch (e) { setActionErr((e as Error).message); setBusy(false) }
   }
 
-  const trackTitle = (tid: string) => tracks.find((t) => t.id === tid)?.title ?? 'Song'
-  const rows: Row[] = [
-    ...notices.map((n): Row => ({
-      key: n.id, trackId: n.track_id, noticeId: n.id,
-      name: n.co_writer_name ?? (n.status === 'removed' ? 'Removed by writer' : 'Email removed'),
-      email: n.email, role: n.role, share: Number(n.share_percent), status: n.status, note: n.note,
-      expiresAt: n.expires_at,
-      canRemind: n.status === 'pending' && !n.reminder_sent_at && !!n.email && new Date(n.expires_at) > new Date(),
-    })),
-    // People with an email but no notice yet (the owner's own email never gets one)
-    ...people.filter((c) => c.invited_email && !c.removed_by_writer && c.invited_email !== user?.email
-      && !notices.some((n) => n.track_id === c.track_id && n.email?.toLowerCase() === c.invited_email!.toLowerCase()))
-      .map((c): Row => ({
-        key: c.id, trackId: c.track_id, name: c.legal_name, email: c.invited_email, role: c.role,
-        share: Number(c.ownership_percent), status: 'not_sent', note: null, canRemind: false,
-      })),
-  ].sort((a, b) => trackTitle(a.trackId).localeCompare(trackTitle(b.trackId)))
+  const rows = buildRows(notices, people, tracks, user?.email)
   const removedLines = people.filter((c) => c.removed_by_writer)
+  const sum = summarize(rows, removedLines.length)
+  const splitsSummary = [
+    sum.confirmed && `${sum.confirmed} confirmed`,
+    sum.awaiting && `${sum.awaiting} awaiting approval`,
+    sum.disputed && `${sum.disputed} disputed`,
+    sum.removed && `${sum.removed} removed ${sum.removed === 1 ? 'line' : 'lines'}`,
+  ].filter(Boolean).join(' · ')
 
   return (
     <div className="stack">
@@ -283,34 +240,12 @@ export default function ReleaseView() {
       </Collapsible>
 
       {(rows.length > 0 || removedLines.length > 0) && (
-        <Collapsible title="Co-writer confirmations" actions={
-          <button className="secondary" disabled={busy} onClick={sendInvitations}>
-            {notices.length ? 'Send / update invitations' : 'Send invitations'}
-          </button>
-        }>
-          {r.status === 'draft' && <small className="hint">Co-writers confirm their share from an emailed link, no account needed. You can mark the release ready without them, but you'll be asked to acknowledge it.</small>}
-          {sent && <ul>{sent.map((s, i) => <li key={i}>{s.name || s.email}: {SEND_TEXT[s.action] ?? s.action}</li>)}</ul>}
-          {removedLines.length > 0 && (
-            <p className="warn">{removedLines.map((c) => `${Number(c.ownership_percent)}%`).join(', ')} {removedLines.length === 1 ? 'is' : 'are'} held by a co-writer who removed themselves.
-              {r.status === 'draft' ? ' Edit the draft to reassign that share or discard the line before marking ready.' : ''}</p>
-          )}
-          {rows.map((n) => (
-            <div className="notice-row" key={n.key}>
-              <div>
-                <strong>{n.name}</strong> <span className="muted">· {trackTitle(n.trackId)}</span><br />
-                <span className="muted">{n.email ?? 'email deleted'}</span>
-                {n.note && n.status === 'disputed' && <><br /><span className="muted">“{n.note}”</span></>}
-                {n.status === 'disputed' && <><br /><small className="warn">Agree the correct split with them, change it, then send an updated invitation.</small></>}
-              </div>
-              <span className="muted">{n.role} · {n.share}%</span>
-              <span className="muted">{n.status === 'pending' && n.expiresAt ? `expires ${fmtDate(n.expiresAt)}` : ''}</span>
-              <Badge status={n.status} />
-              {n.canRemind && n.noticeId
-                ? <button className="ghost" disabled={busy} onClick={() => remind(n.noticeId!)}>Remind</button>
-                : <span />}
-            </div>
-          ))}
-        </Collapsible>
+        <section className="card summary-line">
+          <span>
+            <strong>Splits</strong> <span className="muted">· {splitsSummary || 'no co-writers invited yet'}</span>
+          </span>
+          <Link className="btn secondary" to={`/releases/${r.id}/splits`}>Manage splits</Link>
+        </section>
       )}
 
       <Collapsible title={r.release_type === 'single' ? 'Song' : 'Tracklist'} level="h2" className="">

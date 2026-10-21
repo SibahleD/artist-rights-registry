@@ -29,7 +29,6 @@ const toTrackInput = (t: TrackForm): TrackInput => ({
   genre: t.genre || null,
   isrc: t.isrc || null,
   iswc: t.iswc || null,
-  durationSeconds: t.durationSeconds,
   explicit: t.explicit || null,
   compositionCopyrightYear: t.compositionCopyrightYear,
   compositionCopyright: t.compositionCopyright || null,
@@ -78,7 +77,7 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
 export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const { id } = useParams()
   const [params] = useSearchParams()
-  const wantedTrack = Number(params.get('track')) || 0   // from the readiness checklist's "Open" links
+  const wantedTrack = Number(params.get('track')) || 0
   const { user } = useAuth()
   const nav = useNavigate()
 
@@ -102,13 +101,12 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const [confirm, setConfirm] = useState(false)
   const [ack, setAck] = useState<{ rid: string; list: string[] } | null>(null)
   const [artworkFile, setArtworkFile] = useState<File | undefined>()
-  const [artworkId, setArtworkId] = useState<string | null>(null)   // cover already stored on the server
+  const [artworkId, setArtworkId] = useState<string | null>(null)
   const [artworkCleared, setArtworkCleared] = useState(false)
   const [usageKey, setUsageKey] = useState(0)
   const usage = useUsage(usageKey)
 
-  // Unsaved-changes tracking: compare against a snapshot taken once the form has loaded.
-  const snapshot = form ? JSON.stringify([form, removed, !!artworkFile, artworkCleared]) : null
+ const snapshot = form ? JSON.stringify([form, removed, !!artworkFile, artworkCleared]) : null
   const [baseline, setBaseline] = useState<string | null>(null)
   useEffect(() => { if (snapshot && baseline === null) setBaseline(snapshot) }, [snapshot, baseline])
   const dirty = snapshot !== null && baseline !== null && snapshot !== baseline
@@ -157,7 +155,6 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
     } catch (e) { setAck(null); setErr({ error: (e as Error).message }) } finally { setBusy(false) }
   }
 
-  // Release -> tracks -> audio -> collaborators, then (optionally) ask co-writers or mark ready.
   async function submit(save: 'draft' | 'notify' | 'release') {
     if (!form) return
     setBusy(true); setErr(null)
@@ -205,7 +202,6 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           t.id = r.track.id
         }
         if (t.audioFile) {
-          // The server reads the real format, bitrate and length from the file.
           const r = await upload<{ audio: Record<string, any>; durationSeconds: number | null }>(`${base}/${t.id}/audio/file`, t.audioFile)
           t.audio = {
             fileName: r.audio.file_name, format: r.audio.format, bitrateKbps: r.audio.bitrate_kbps,
@@ -217,6 +213,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         } else if (!t.audio && t.hadAudio) {
           await api(`${base}/${t.id}/audio`, 'DELETE')
           t.hadAudio = false
+          t.durationSeconds = null
         }
         await api(`${base}/${t.id}/collaborators`, 'PUT', { collaborators: t.collaborators })
       }
@@ -247,7 +244,6 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
     } finally { setBusy(false) }
   }
 
-  // Collaborators other than the owner, so their emails can be confirmed before the release is locked.
   const people = form.tracks.flatMap((t, ti) =>
     t.collaborators.map((c, i) => ({ ti, i, name: c.legalName, email: c.invitedEmail ?? '', skip: !!c.removedByWriter })),
   ).filter((p) => !p.skip && p.name.trim().toLowerCase() !== owner.legalName.trim().toLowerCase())

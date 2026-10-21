@@ -1,5 +1,3 @@
-// Dropdown options for the step 4 fields. Values match what the server accepts.
-
 export const TRACK_ORIGINS = ['original', 'cover', 'arrangement', 'sample'] as const
 export type TrackOrigin = (typeof TRACK_ORIGINS)[number]
 export const ORIGIN_LABELS: Record<TrackOrigin, string> = {

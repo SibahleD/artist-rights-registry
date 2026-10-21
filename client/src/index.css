@@ -1009,3 +1009,12 @@ td {
 .store-links { margin: 0; padding-left: 1.1rem; }
 
 @media (max-width: 760px) { .store-row { grid-template-columns: 1fr; } }
+
+/* Splits summary line on the release page */
+.summary-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}

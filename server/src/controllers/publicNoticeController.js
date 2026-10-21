@@ -3,7 +3,8 @@ const { hashToken } = require('../services/tokens');
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,100}$/;
 const CHOICES = ['confirm', 'dispute', 'remove', 'unrecognized'];
-const NOT_VALID = { error: 'This link is not valid.' };
+// One answer for unknown, expired, cancelled and already-removed links, so tokens cannot be probed.
+const NOT_VALID = { error: 'This link is not valid or is no longer active.' };
 
 const isLive = (n) => !['removed', 'cancelled', 'expired'].includes(n.status)
     && !(n.status === 'pending' && new Date(n.expires_at) < new Date());
@@ -21,8 +22,7 @@ async function getNotice(req, res) {
             [hashToken(req.params.token)]
         );
         const n = rows[0];
-        if (!n) return res.status(404).json(NOT_VALID);
-        if (!isLive(n)) return res.json({ notice: { status: n.status === 'pending' ? 'expired' : n.status } });
+        if (!n || !isLive(n)) return res.status(404).json(NOT_VALID);
         return res.json({ notice: {
             status: n.status, artist_name: n.artist_name, track_title: n.track_title,
             release_title: n.release_title, role: n.role, share_percent: n.share_percent,
@@ -51,8 +51,7 @@ async function respond(req, res) {
             [hashToken(req.params.token)]
         );
         const n = rows[0];
-        if (!n) { await client.query('ROLLBACK'); return res.status(404).json(NOT_VALID); }
-        if (!isLive(n)) { await client.query('ROLLBACK'); return res.status(410).json({ error: 'This link is no longer active.' }); }
+        if (!n || !isLive(n)) { await client.query('ROLLBACK'); return res.status(404).json(NOT_VALID); }
 
         let status;
         if (choice === 'confirm') {

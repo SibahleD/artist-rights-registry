@@ -71,9 +71,8 @@ async function uploadAudio(req, res) {
              RETURNING to_jsonb(audio_specs) - 'track_id' AS audio`,
             [found.track.id, cleanName(req.file.originalname), info.format, info.bitrateKbps, info.sampleRateHz, info.channels, req.file.size]
         );
-        if (info.durationSeconds) {
-            await client.query('UPDATE tracks SET duration_seconds = $2 WHERE id = $1', [found.track.id, info.durationSeconds]);
-        }
+        // The length always comes from the file itself, replacing whatever was there before.
+        await client.query('UPDATE tracks SET duration_seconds = $2 WHERE id = $1', [found.track.id, info.durationSeconds]);
         await client.query('COMMIT'); committed = true;
         oldKey = old ? old.storage_key : null;
         return res.json({ audio: rows[0].audio, durationSeconds: info.durationSeconds });

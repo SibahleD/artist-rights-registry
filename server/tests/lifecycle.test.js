@@ -134,3 +134,26 @@ test('a co-writer removing themselves sends a released release back to draft and
   const { rows } = await pool.query('SELECT status, ready_at, released_at FROM releases WHERE id = $1', [releaseId]);
   assert.deepEqual([rows[0].status, rows[0].ready_at, rows[0].released_at], ['draft', null, null]);
 });
+
+test('unknown, expired and cancelled links all get the same neutral answer', { skip }, async () => {
+  const mkRes = (out) => ({ status(c) { out.status = c; return this; }, json(b) { out.body = b; return this; } });
+  const mk = (raw, status, expires) => pool.query(
+    `INSERT INTO collaborator_notices (track_id, email_hash, email, co_writer_name, role, share_percent, token_hash, notice_version, status, sent_by, expires_at)
+     VALUES ($1,$2,$3,'Z','songwriter',5,$4,'v',$5,$6,${expires})`,
+    [trackId, notices.emailHash(`${raw}@example.com`), `${raw}@example.com`, tokens.hashToken(raw), status, owner.id]);
+  const expired = 'neutral-expired-token-0123456789';
+  const cancelled = 'neutral-cancelled-token-012345678';
+  const unknown = 'neutral-unknown-token-01234567890';
+  await mk(expired, 'pending', "now() - interval '1 day'");
+  await mk(cancelled, 'cancelled', "now() + interval '1 day'");
+  const answers = [];
+  for (const token of [unknown, expired, cancelled]) {
+    const g = { status: 200 }; await pn.getNotice({ params: { token } }, mkRes(g));
+    const r = { status: 200 }; await pn.respond({ params: { token }, body: { choice: 'confirm' } }, mkRes(r));
+    answers.push(g, r);
+  }
+  for (const a of answers) {
+    assert.equal(a.status, 404);
+    assert.deepEqual(a.body, answers[0].body);
+  }
+});

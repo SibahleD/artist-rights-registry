@@ -63,7 +63,7 @@ function classify(p, release, ctx) {
     const same = n && n.role === p.role && Number(n.share_percent) === Number(p.ownership_percent);
     if (n && n.status === 'disputed' && same) return { state: 'disputed' };
     if (n && n.status === 'confirmed' && same) return { state: 'confirmed' };
-    return { state: 'unconfirmed', why: !n ? 'no notice sent' : !same ? 'details changed since the notice' : n.status };
+    return { state: 'unconfirmed', why: !n ? 'no notice sent' : !same ? 'details changed since the notice' : n.resolution ? 'you resolved the dispute but have not sent the notice again' : n.status };
 }
 
 // Co-writer problems as strings (errors block, unconfirmed needs acknowledging) plus the same as structured items.

@@ -6,7 +6,6 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const EXPLICIT_VALUES = ['explicit', 'not_explicit', 'cleaned'];
 const { optionalLanguage } = require('../lib/codes');
 const ORIGINS = ['original', 'cover', 'arrangement', 'sample'];
-const AUDIO_FORMATS = ['mp3', 'flac', 'wav', 'aac', 'other'];
 
 const TRACK_COLS = [
     'id', 'release_id', 'track_number', 'title', 'composition_title', 'artist_name', 'genre',
@@ -90,7 +89,7 @@ const FIELDS = {
     genre:                    { column: 'genre',                      validate: optionalText('Genre', 100) },
     isrc:                     { column: 'isrc',                       validate: optionalIsrc },
     iswc:                     { column: 'iswc',                       validate: optionalIswc },
-    durationSeconds:          { column: 'duration_seconds',           validate: optionalInt('Duration', 1, 86400) },
+    // duration_seconds is not writable here: it is read from the audio file when one is uploaded.
     explicit:                 { column: 'explicit',                   validate: optionalExplicit },
     compositionCopyrightYear: { column: 'composition_copyright_year', validate: optionalInt('Composition copyright year', 1900, 2100) },
     compositionCopyright:     { column: 'composition_copyright',      validate: optionalText('Composition copyright', 200) },
@@ -343,64 +342,6 @@ async function reorderTracks(req, res) {
     }
 }
 
-function parseAudio(body) {
-    const fileName = typeof body.fileName === 'string' ? body.fileName.trim() : '';
-    if (!fileName || fileName.length > 255) {
-        return { error: 'File name is required and must be at most 255 characters.' };
-    }
-    if (!AUDIO_FORMATS.includes(body.format)) {
-        return { error: `Format must be one of: ${AUDIO_FORMATS.join(', ')}.` };
-    }
-
-    const bitrate = optionalInt('Bitrate', 1, 10000000)(body.bitrateKbps ?? null);
-    const sampleRate = optionalInt('Sample rate', 1, 1000000)(body.sampleRateHz ?? null);
-    const channels = optionalInt('Channels', 1, 64)(body.channels ?? null);
-    const size = optionalInt('Size', 1, Number.MAX_SAFE_INTEGER)(body.sizeBytes ?? null);
-    for (const r of [bitrate, sampleRate, channels, size]) {
-        if (r.error) return { error: r.error };
-    }
-
-    return {
-        data: [fileName, body.format, bitrate.value, sampleRate.value, channels.value, size.value],
-    };
-}
-
-async function upsertAudio(req, res) {
-    const { data, error } = parseAudio(req.body);
-    if (error) return res.status(400).json({ error });
-
-    try {
-        const release = await ownedRelease(req, res, { requireDraft: true });
-        if (!release) return;
-
-        const track = await pool.query('SELECT id FROM tracks WHERE id = $1 AND release_id = $2', [
-            req.params.trackId,
-            release.id,
-        ]);
-        if (!track.rows[0]) return res.status(404).json({ error: 'Track not found.' });
-
-        const { rows } = await pool.query(
-            `INSERT INTO audio_specs
-                 (track_id, file_name, format, bitrate_kbps, sample_rate_hz, channels, size_bytes)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
-             ON CONFLICT (track_id) DO UPDATE SET
-                 file_name = EXCLUDED.file_name,
-                 format = EXCLUDED.format,
-                 bitrate_kbps = EXCLUDED.bitrate_kbps,
-                 sample_rate_hz = EXCLUDED.sample_rate_hz,
-                 channels = EXCLUDED.channels,
-                 size_bytes = EXCLUDED.size_bytes,
-                 recorded_at = now()
-             RETURNING to_jsonb(audio_specs) - 'track_id' AS audio`,
-            [req.params.trackId, ...data]
-        );
-        return res.json({ audio: rows[0].audio });
-    } catch (err) {
-        console.error('upsertAudio error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
 async function deleteAudio(req, res) {
     try {
         const release = await ownedRelease(req, res, { requireDraft: true });
@@ -419,7 +360,9 @@ async function deleteAudio(req, res) {
             [req.params.trackId, release.id]
         );
         await Promise.all(files.rows.map((r) => storage.delete(r.storage_key)));
-        if (result.rowCount === 0 && files.rowCount === 0) return res.status(404).json({ error: 'Audio spec not found.' });
+        if (result.rowCount === 0 && files.rowCount === 0) return res.status(404).json({ error: 'No audio on this track.' });
+        // The length belonged to that file.
+        await pool.query('UPDATE tracks SET duration_seconds = NULL WHERE id = $1 AND release_id = $2', [req.params.trackId, release.id]);
         return res.status(204).end();
     } catch (err) {
         console.error('deleteAudio error:', err);
@@ -429,5 +372,5 @@ async function deleteAudio(req, res) {
 
 module.exports = {
     createTrack, listTracks, getTrack, updateTrack, deleteTrack, reorderTracks,
-    upsertAudio, deleteAudio,
+    deleteAudio,
 };

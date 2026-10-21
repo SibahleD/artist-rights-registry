@@ -1,7 +1,7 @@
 const express = require('express');
 const {
     createTrack, listTracks, getTrack, updateTrack, deleteTrack, reorderTracks,
-    upsertAudio, deleteAudio,
+    deleteAudio,
 } = require('../controllers/trackController');
 
 const { uploadAudio, downloadAudio } = require('../controllers/audioFileController');
@@ -30,7 +30,6 @@ router.patch('/:trackId', updateTrack);
 router.delete('/:trackId', deleteTrack);
 router.put('/:trackId/audio/file', uploadAudio);
 router.get('/:trackId/audio/file', downloadAudio);
-router.put('/:trackId/audio', upsertAudio);
 router.delete('/:trackId/audio', deleteAudio);
 
 module.exports = router;
