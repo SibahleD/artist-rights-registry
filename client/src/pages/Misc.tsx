@@ -5,10 +5,10 @@ import { useUsage } from '../components/files'
 import { Collapsible } from '../components/ui'
 import { useBackGuard } from '../components/UnsavedGuard'
 import { useAuth } from '../auth'
-import { COLLABORATOR_ROLES } from '../types'
-import type { ArtistLink, CollaboratorRole, User } from '../types'
-import { COUNTRIES } from '../data/options'
-import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
+import type { ArtistLink, User } from '../types'
+import { COUNTRIES, NATIONALITIES } from '../data/options'
+import SaveBar from '../components/SaveBar'
+import SelectOrOther from '../components/SelectOrOther'
 
 type Platforms = readonly (readonly [string, string])[]
 
@@ -76,10 +76,6 @@ export function Profile() {
     contactInfo: user?.contact_info ?? '',
     country: user?.country ?? '',
     nationality: user?.nationality ?? '',
-    societyName: user?.society_name ?? '',
-    ipi: user?.ipi ?? '',
-    publisherName: user?.publisher_name ?? '',
-    roles: (user?.roles ?? []) as CollaboratorRole[],
   })
   const [msg, setMsg] = useState('')
   const [baseline, setBaseline] = useState(() => JSON.stringify(f))
@@ -95,7 +91,7 @@ export function Profile() {
   }, [])
 
   const dirty = JSON.stringify(f) !== baseline || !!avatarFile || avatarCleared
-  const { modal: backModal, backButton } = useBackGuard({ dirty, onSave: () => doSave(), fallback: '/' })
+  const { modal: backModal, backButton, goBack } = useBackGuard({ dirty, onSave: () => doSave(), fallback: '/' })
 
   function save(e: FormEvent) { e.preventDefault(); void doSave() }
 
@@ -123,6 +119,7 @@ export function Profile() {
         <h1>Artist Profile</h1>
         <div className="sub">Artist: {user?.artist_name}</div>
       </div>
+      <SaveBar dirty={dirty} busy={false} onSave={() => void doSave()} onCancel={goBack} message={msg} />
       <Collapsible title="General Info" level="h2" className="">
       <form className="card stack" onSubmit={save}>
         <h4>Artist Profile</h4>
@@ -134,7 +131,10 @@ export function Profile() {
           <label>Last name<input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} /></label>
         </div>
         <label>Email<input value={user?.email ?? ''} disabled /></label>
-        <label>Contact info<input value={f.contactInfo} onChange={(e) => setF({ ...f, contactInfo: e.target.value })} /></label>
+        <label>Contact info
+          <input value={f.contactInfo} onChange={(e) => setF({ ...f, contactInfo: e.target.value })} placeholder="name@example.com or +250 7XX XXX XXX" />
+          <small className="hint">How people you work with can reach you: an email address or a phone number with country code. One is enough.</small>
+        </label>
         <div className="grid2">
           <label>Country
             <select value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })}>
@@ -143,34 +143,15 @@ export function Profile() {
               {f.country && !COUNTRIES.some(([c]) => c === f.country) && <option value={f.country}>{f.country}</option>}
             </select>
           </label>
-          <label>Nationality<input value={f.nationality} onChange={(e) => setF({ ...f, nationality: e.target.value })} /></label>
-          <label>Rights society (if you belong to one)
-            <input list="society-names" value={f.societyName} onChange={(e) => setF({ ...f, societyName: e.target.value })} placeholder="Leave blank if none" />
-            <datalist id="society-names">
-              {[...new Set(SOCIETY_COUNTRIES.flatMap((c) => c.bodies.map((b) => b.name)))].map((n) => <option key={n} value={n} />)}
-            </datalist>
-          </label>
-          <label>Your IPI number (optional)<input inputMode="numeric" value={f.ipi} onChange={(e) => setF({ ...f, ipi: e.target.value })} placeholder="9 to 11 digits" /></label>
-          <label>Publisher (optional)<input value={f.publisherName} onChange={(e) => setF({ ...f, publisherName: e.target.value })} placeholder="Publishing company, if any" /></label>
+          <SelectOrOther label="Nationality" options={NATIONALITIES} value={f.nationality} onChange={(v) => setF({ ...f, nationality: v })} otherPlaceholder="Type your nationality" />
         </div>
-        <fieldset>
-          <legend>What you do</legend>
-          <div className="row">
-            {COLLABORATOR_ROLES.filter((r) => r !== 'other').map((r) => (
-              <label key={r} className="check">
-                <input type="checkbox" checked={f.roles.includes(r)}
-                  onChange={(e) => setF({ ...f, roles: e.target.checked ? [...f.roles, r] : f.roles.filter((x) => x !== r) })} /> {r}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <small className="hint">Your roles, rights society, IPI and publisher are in Settings → Account → Credit details.</small>
         </div>
         <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
           mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 300 * 1024}
           onPick={(f) => { setAvatarFile(f); setAvatarCleared(false) }}
           onClear={() => { setAvatarFile(undefined); setAvatarCleared(true) }} />
         </div>
-        <div className="row actions"><button>Save</button><span className="muted">{msg}</span></div>
       </form>
       </Collapsible>
 

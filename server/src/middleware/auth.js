@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const pool = require('../db/pool');
+const { tokenPredatesPasswordChange } = require('../lib/account');
 
 async function authToken(req, res, next) {
     const header = req.headers.authorization;
@@ -18,10 +19,10 @@ async function authToken(req, res, next) {
 
     try {
         const { rows } = await pool.query(
-            'SELECT id, email, artist_name, email_verified_at FROM users WHERE id = $1 AND deleted_at IS NULL',
+            'SELECT id, email, artist_name, email_verified_at, password_changed_at FROM users WHERE id = $1 AND deleted_at IS NULL',
             [payload.sub]
         );
-        if (!rows[0]) {
+        if (!rows[0] || tokenPredatesPasswordChange(payload.iat, rows[0].password_changed_at)) {
             return res.status(401).json({ error: 'invalid or expired token' });
         }
 

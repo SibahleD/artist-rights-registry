@@ -4,8 +4,10 @@ const pool = require('../db/pool');
 
 
 const { newToken, hashToken } = require('../services/tokens');
+const { splitLegalName } = require('../lib/account');
 const { sendMail } = require('../services/mailer');
 const verifyEmailMessage = require('../services/verifyEmail');
+const { emailChangedMessage } = require('../services/emailChange');
 
 const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 
@@ -28,6 +30,13 @@ async function register(req, res) {
     if (!email || !password || !artistName) {
         return res.status(400).json({ error: 'Email, password, and artist name are required.' });
     }
+    if (req.body.legalName !== undefined && req.body.legalName !== null && typeof req.body.legalName !== 'string') {
+        return res.status(400).json({ error: 'Legal name must be text.' });
+    }
+    const legal = splitLegalName(req.body.legalName);
+    if ((req.body.legalName ?? '').length > 200) {
+        return res.status(400).json({ error: 'Legal name must be at most 200 characters.' });
+    }
     if (typeof password !== 'string' || password.length < 8) {
         return res.status(400).json({ error: 'Password must be at least eight (8) characters' });
     }
@@ -44,10 +53,10 @@ async function register(req, res) {
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         const result = await pool.query(
-            `INSERT INTO users (email, password_hash, artist_name, contact_info)
-             VALUES ($1, $2, $3, $4)
-             RETURNING id, email, artist_name, contact_info, email_verified_at, created_at`,
-            [email, hashedPassword, artistName, contactInfo ?? null]
+            `INSERT INTO users (email, password_hash, artist_name, contact_info, first_name, last_name)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING id, email, artist_name, contact_info, first_name, last_name, email_verified_at, created_at`,
+            [email, hashedPassword, artistName, contactInfo ?? null, legal.first, legal.last]
         );
 
         const user = result.rows[0];
@@ -100,7 +109,7 @@ async function login(req, res) {
 
 async function sendVerification(user) {
     const { raw, hash } = newToken();
-    await pool.query('DELETE FROM email_tokens WHERE user_id = $1 AND used_at IS NULL', [user.id]);
+    await pool.query('DELETE FROM email_tokens WHERE user_id = $1 AND used_at IS NULL AND kind = \'verify\'', [user.id]);
     await pool.query(
         `INSERT INTO email_tokens (user_id, token_hash, expires_at)
          VALUES ($1, $2, now() + interval '24 hours')`,
@@ -115,10 +124,11 @@ async function verifyEmail(req, res) {
     if (!token) return res.status(400).json({ error: 'Missing token.' });
 
     const client = await pool.connect();
+    let notifyOld = null;
     try {
         await client.query('BEGIN');
         const { rows } = await client.query(
-            `SELECT id, user_id FROM email_tokens
+            `SELECT id, user_id, kind, new_email FROM email_tokens
              WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
              FOR UPDATE`,
             [hashToken(token)]
@@ -127,14 +137,46 @@ async function verifyEmail(req, res) {
             await client.query('ROLLBACK');
             return res.status(400).json({ error: 'This link is invalid or has expired. Request a new one.' });
         }
-        await client.query('UPDATE email_tokens SET used_at = now() WHERE id = $1', [rows[0].id]);
-        await client.query(
-            `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now())
-             WHERE id = $1 AND deleted_at IS NULL`,
-            [rows[0].user_id]
-        );
-        await client.query('COMMIT');
-        return res.json({ verified: true });
+        const t = rows[0];
+
+        if (t.kind === 'email_change') {
+            const cur = await client.query('SELECT email, artist_name FROM users WHERE id = $1 AND deleted_at IS NULL', [t.user_id]);
+            if (!cur.rows[0]) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'This link is invalid or has expired. Request a new one.' });
+            }
+            try {
+                await client.query(
+                    'UPDATE users SET email = $1, email_verified_at = now() WHERE id = $2',
+                    [t.new_email, t.user_id]
+                );
+            } catch (err) {
+                await client.query('ROLLBACK');
+                if (err.code === '23505') {
+                    return res.status(409).json({ error: 'That address was taken by another account in the meantime. Choose a different one in Settings.' });
+                }
+                throw err;
+            }
+            // Any other unused tokens (old verification link, other change requests) are now moot.
+            await client.query('UPDATE email_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL', [t.user_id]);
+            notifyOld = { to: cur.rows[0].email, artistName: cur.rows[0].artist_name, newEmail: t.new_email };
+            await client.query('COMMIT');
+        } else {
+            await client.query('UPDATE email_tokens SET used_at = now() WHERE id = $1', [t.id]);
+            await client.query(
+                `UPDATE users SET email_verified_at = COALESCE(email_verified_at, now())
+                 WHERE id = $1 AND deleted_at IS NULL`,
+                [t.user_id]
+            );
+            await client.query('COMMIT');
+        }
+
+        if (notifyOld) {
+            // Best effort: tell the old address the sign-in email changed.
+            sendMail({ to: notifyOld.to, ...emailChangedMessage({ artistName: notifyOld.artistName, newEmail: notifyOld.newEmail }) })
+                .catch((e) => console.error('old-address notice failed:', e.message));
+        }
+        return res.json({ verified: true, changed: t.kind === 'email_change' });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('verifyEmail error:', err);
@@ -151,7 +193,7 @@ async function resendVerification(req, res) {
         }
         const recent = await pool.query(
             `SELECT 1 FROM email_tokens
-             WHERE user_id = $1 AND used_at IS NULL AND created_at > now() - interval '60 seconds'`,
+             WHERE user_id = $1 AND kind = 'verify' AND used_at IS NULL AND created_at > now() - interval '60 seconds'`,
             [req.user.id]
         );
         if (recent.rowCount > 0) {
@@ -169,4 +211,4 @@ function logout(_req, res) {
     return res.status(204).end();
 }
 
-module.exports = { register, login, logout, verifyEmail, resendVerification };
+module.exports = { register, login, logout, verifyEmail, resendVerification, signToken };

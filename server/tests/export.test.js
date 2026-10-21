@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { shapeExport, findIdKeys } = require('../src/services/exportRelease');
+const { copyrightLine } = require('../src/lib/copyright');
 
 // Rows as they come from the database, deliberately full of ids and an email.
 const rows = () => ({
@@ -52,4 +53,36 @@ test('a track with no audio exports audio: null, and a missing status defaults t
   const { tracks } = shapeExport(r);
   assert.equal(tracks[0].audio, null);
   assert.equal(tracks[0].credits[0].confirmation, 'unconfirmed');
+});
+
+test('blank artist, genre and lines are filled from the release and the first song', () => {
+  const r = rows();
+  r.release.genre = null;
+  r.tracks[0] = { ...r.tracks[0], artist_name: null, genre: 'Gospel', recording_copyright_year: 2026, recording_copyright: 'Kenny TL',
+    composition_copyright_year: 2025, composition_copyright: '© Ada Obi' };
+  const { release, tracks } = shapeExport(r);
+  assert.equal(tracks[0].artist_name, 'Kenny TL');
+  assert.equal(release.genre, 'Gospel');
+  assert.equal(tracks[0].genre, 'Gospel');
+  assert.equal(release.p_line, '℗ 2026 Kenny TL');
+  assert.equal(release.c_line, '© 2025 Ada Obi');   // a typed symbol is not doubled
+});
+
+test('values the artist did enter are never overwritten by the fallbacks', () => {
+  const r = rows();
+  r.release.p_line = '℗ 2024 My Label'; r.release.c_line = '© 2024 My Publisher'; r.release.genre = 'Reggae';
+  r.tracks[0] = { ...r.tracks[0], artist_name: 'Featured Name', genre: 'Pop', recording_copyright_year: 2026, recording_copyright: 'Other' };
+  const { release, tracks } = shapeExport(r);
+  assert.equal(release.p_line, '℗ 2024 My Label');
+  assert.equal(release.c_line, '© 2024 My Publisher');
+  assert.equal(release.genre, 'Reggae');
+  assert.equal(tracks[0].artist_name, 'Featured Name');
+  assert.equal(tracks[0].genre, 'Pop');
+});
+
+test('with nothing to derive from, lines stay null and the export still has no ids', () => {
+  const out = shapeExport(rows());
+  assert.equal(out.release.p_line, null);
+  assert.equal(copyrightLine('©', null, ''), null);
+  assert.deepEqual(findIdKeys(out), []);
 });

@@ -72,3 +72,12 @@ export function checkAudio(file: File, maxBytes: number): string | null {
   if (file.size > maxBytes) return `That file is ${fmtBytes(file.size)}. The limit for the test is ${fmtBytes(maxBytes)}.`
   return null
 }
+
+// A two-stop gradient from the artwork's colour. Bright colours are scaled down so the white hero text always stays readable,
+// in the light theme as well as the dark one.
+export function tintGradient([r, g, b]: RGB): string {
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+  const k = lum > 0.4 ? 0.4 / lum : 1
+  const c = (m: number) => [r, g, b].map((v) => Math.round(v * k * m)).join(' ')
+  return `linear-gradient(135deg, rgb(${c(1)}), rgb(${c(0.5)}))`
+}

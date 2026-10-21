@@ -86,11 +86,6 @@ export default function RegisterRights() {
             <ul>{country.watchOut.map((s, i) => <li key={i}>{s}</li>)}</ul>
           </section>
 
-          <section className="card stack">
-            <h4>Sources</h4>
-            <ul>{country.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noreferrer">{s.label}</a></li>)}</ul>
-            <p className="muted">Last checked {country.checked}.</p>
-          </section>
         </>
       )}
 

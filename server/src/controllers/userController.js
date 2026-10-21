@@ -1,6 +1,12 @@
 const pool = require('../db/pool');
 
-const USER_COLUMNS = 'id, email, artist_name, contact_info, first_name, last_name, username, country, nationality, roles, society_name, ipi, publisher_name,\n    created_at, email_verified_at, (SELECT id FROM media WHERE owner_id = users.id AND kind = \'avatar\') AS avatar_id';
+const USER_COLUMNS = `id, email, artist_name, contact_info, first_name, last_name, username, country, nationality, roles,
+    society_name, ipi, publisher_name, created_at, email_verified_at, preferences,
+    (SELECT new_email FROM email_tokens WHERE user_id = users.id AND kind = 'email_change' AND used_at IS NULL
+        AND expires_at > now() ORDER BY created_at DESC LIMIT 1) AS pending_email,
+    (SELECT id FROM media WHERE owner_id = users.id AND kind = 'avatar') AS avatar_id`;
+const { withDefaults } = require('../lib/account');
+const shapeUser = (row) => (row ? { ...row, preferences: withDefaults(row.preferences) } : row);
 const { ROLES } = require('../lib/splits');
 const { optionalIpi, optionalCountry } = require('../lib/codes');
 const PLATFORMS = ['spotify', 'apple_music', 'soundcloud', 'youtube', 'instagram', 'tiktok', 'x'];
@@ -69,7 +75,7 @@ async function getMe(req, res) {
             'SELECT platform, url FROM artist_links WHERE user_id = $1 ORDER BY platform',
             [req.user.id]
         );
-        return res.json({ user: userResult.rows[0], links: linksResult.rows });
+        return res.json({ user: shapeUser(userResult.rows[0]), links: linksResult.rows });
     } catch (err) {
         console.error('getMe error:', err);
         return res.status(500).json({ error: 'Internal server error' });
@@ -99,7 +105,7 @@ async function updateMe(req, res) {
             `UPDATE users SET ${sets.join(', ')} WHERE id = $${values.length} RETURNING ${USER_COLUMNS}`,
             values
         );
-        return res.json({ user: result.rows[0] });
+        return res.json({ user: shapeUser(result.rows[0]) });
     } catch (err) {
         if (err.code === '23505' && err.constraint === 'uq_users_username') {
             return res.status(409).json({ error: 'Username already taken.' });

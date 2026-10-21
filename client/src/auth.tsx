@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { api, getToken, setToken } from './api'
 import type { User } from './types'
+import { useTheme } from './theme'
 
 interface Ctx {
   user: User | null; loading: boolean
@@ -16,6 +17,7 @@ export const useAuth = () => useContext(AuthCtx)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(!!getToken())
+  useTheme(user?.preferences?.theme ?? 'system')
 
   useEffect(() => {
     if (!getToken()) return

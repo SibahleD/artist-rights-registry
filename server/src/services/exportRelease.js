@@ -1,5 +1,6 @@
 const pool = require('../db/pool');
 const { creditStatuses } = require('./notices');
+const { copyrightLine } = require('../lib/copyright');
 
 // Everything that leaves the server in an export is picked from these lists. Nothing is copied wholesale,
 // so internal ids, owner ids and co-writer emails can never leak by accident when a column is added.
@@ -23,17 +24,25 @@ function shapeExport({ release, tracks, audio, collaborators, statuses, artwork,
         if (!creditsByTrack.has(c.track_id)) creditsByTrack.set(c.track_id, []);
         creditsByTrack.get(c.track_id).push(c);
     }
+    // The form leaves some release-level and track-level fields blank, so fill them from what the artist did enter.
+    const first = tracks[0];
+    const firstGenre = tracks.map((t) => t.genre).find((g) => g && String(g).trim()) ?? null;
     return {
         export_version: 1,
         exported_at: now.toISOString(),
         release: {
             ...pick(release, RELEASE_KEYS),
+            genre: release.genre || firstGenre || null,
+            p_line: release.p_line || copyrightLine('℗', first?.recording_copyright_year, first?.recording_copyright),
+            c_line: release.c_line || copyrightLine('©', first?.composition_copyright_year, first?.composition_copyright),
             created_at: iso(release.created_at),
             ready_at: iso(release.ready_at),
             artwork: artwork ? pick(artwork, ARTWORK_KEYS) : null,
         },
         tracks: tracks.map((t) => ({
             ...pick(t, TRACK_KEYS),
+            artist_name: t.artist_name || release.album_artist || null,
+            genre: t.genre || release.genre || firstGenre || null,
             audio: audioByTrack.has(t.id) ? pick(audioByTrack.get(t.id), AUDIO_KEYS) : null,
             credits: (creditsByTrack.get(t.id) ?? []).map((c, i) => ({
                 position: i + 1,

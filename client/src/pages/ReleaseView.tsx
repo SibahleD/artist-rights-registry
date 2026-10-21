@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
-import { AuthImage, vinylFallback } from '../components/files'
+import { AuthImage, tintGradient } from '../components/files'
+import type { RGB } from '../components/files'
+import ImageViewer from '../components/ImageViewer'
+import { formatCopyright } from '../components/CopyrightInput'
 import { useAuth } from '../auth'
 import { buildRows, summarize } from '../lib/splitRows'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
@@ -12,6 +15,12 @@ export function downloadJson(name: string, data: unknown) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }))
   const a = Object.assign(document.createElement('a'), { href: url, download: name })
   a.click(); URL.revokeObjectURL(url)
+}
+
+// Release lines left blank fall back to the first song's copyright, the same way the export does.
+const derivedLine = (symbol: string, year?: number | null, line?: string | null) => {
+  const t = formatCopyright(year, line)
+  return t ? `${symbol} ${t}` : '—'
 }
 
 const TYPE_LABEL = { single: 'Single', ep: 'EP', album: 'Album' } as const
@@ -111,6 +120,8 @@ export default function ReleaseView() {
   const { id } = useParams()
   const nav = useNavigate()
   const [r, setR] = useState<Release | null>(null)
+  const [tint, setTint] = useState<RGB | null>(null)
+  const [viewing, setViewing] = useState(false)
   const [tracks, setTracks] = useState<Track[]>([])
   const [err, setErr] = useState('')
   const [actionErr, setActionErr] = useState('')
@@ -203,17 +214,25 @@ export default function ReleaseView() {
   return (
     <div className="stack">
       {ack && <AckModal list={ack} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
-      <div className="hero">
-        <Link to="/discography" className="back">← Back to Discography</Link>
-        <h1>{r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.released_at ? 'released' : r.status} /></h1>
-        <div className="sub">Artist: {r.album_artist}</div>
-        <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
-        <div className="row actions">
-          <button className="secondary" disabled={busy} onClick={exportMetadata}>Export metadata (JSON)</button>
-          {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
-          {r.status === 'draft' && <button disabled={busy} onClick={markReady}>Mark ready</button>}
-          {r.status === 'ready' && !r.released_at && <button className="secondary" disabled={busy} onClick={revert}>Revert to draft</button>}
-          {r.status === 'draft' && <button className="danger" disabled={busy} onClick={remove}>Delete release</button>}
+      <div className={r.artwork_id ? 'hero hero-art' : 'hero'} style={r.artwork_id && tint ? { background: tintGradient(tint) } : undefined}>
+        {r.artwork_id && (
+          <button type="button" className="cover viewable hero-cover" aria-label="View cover art full size" title="Click to view" onClick={() => setViewing(true)}>
+            <AuthImage mediaId={r.artwork_id} alt="Cover art" onColor={setTint} />
+          </button>
+        )}
+        {viewing && <ImageViewer mediaId={r.artwork_id} alt="Cover art" onClose={() => setViewing(false)} />}
+        <div className="hero-text">
+          <Link to="/discography" className="back">← Back to Discography</Link>
+          <h1>{r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.released_at ? 'released' : r.status} /></h1>
+          <div className="sub">Artist: {r.album_artist}</div>
+          <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
+          <div className="row actions">
+            <button className="secondary" disabled={busy} onClick={exportMetadata}>Export metadata (JSON)</button>
+            {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
+            {r.status === 'draft' && <button disabled={busy} onClick={markReady}>Mark ready</button>}
+            {r.status === 'ready' && !r.released_at && <button className="secondary" disabled={busy} onClick={revert}>Revert to draft</button>}
+            {r.status === 'draft' && <button className="danger" disabled={busy} onClick={remove}>Delete release</button>}
+          </div>
         </div>
       </div>
       {actionErr && <ErrorBox error={actionErr} details={problems} />}
@@ -225,17 +244,16 @@ export default function ReleaseView() {
        <div className="split">
         <div className="grid2">
         <div><span className="muted">Album artist</span><br />{r.album_artist}</div>
-        <div><span className="muted">Genre</span><br />{r.genre || '—'}</div>
+        <div><span className="muted">Genre</span><br />{r.genre || tracks.find((t) => t.genre)?.genre || '—'}</div>
         <div><span className="muted">Release date</span><br />{r.release_date ? fmtDate(r.release_date) : '—'}</div>
         <div><span className="muted">UPC</span><br />{r.upc || '—'}</div>
-        <div><span className="muted">℗ line</span><br />{r.p_line || '—'}</div>
-        <div><span className="muted">© line</span><br />{r.c_line || '—'}</div>
+        <div><span className="muted">℗ line</span><br />{r.p_line || derivedLine('℗', tracks[0]?.recording_copyright_year, tracks[0]?.recording_copyright)}</div>
+        <div><span className="muted">© line</span><br />{r.c_line || derivedLine('©', tracks[0]?.composition_copyright_year, tracks[0]?.composition_copyright)}</div>
         <div><span className="muted">Label</span><br />{r.label_name || '—'}</div>
         <div><span className="muted">Language</span><br />{r.language || '—'}</div>
         <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
         <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
         </div>
-        <div className="cover-side"><div className="cover"><AuthImage mediaId={r.artwork_id} alt="Cover art" fallback={vinylFallback} /></div></div>
        </div>
       </Collapsible>
 

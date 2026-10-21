@@ -11,6 +11,18 @@ export type CollaboratorRole = (typeof COLLABORATOR_ROLES)[number]
 export type ExplicitValue = (typeof EXPLICIT_VALUES)[number]
 export type AudioFormat = (typeof AUDIO_FORMATS)[number]
 
+export type Theme = 'system' | 'light' | 'dark'
+export interface Preferences {
+  theme: Theme
+  analytics_opt_in: boolean
+  play_counts_opt_in: boolean
+  notify_disputes: boolean
+  notify_approvals: boolean
+}
+export const DEFAULT_PREFERENCES: Preferences = {
+  theme: 'system', analytics_opt_in: false, play_counts_opt_in: false, notify_disputes: true, notify_approvals: true,
+}
+
 export interface User {
   id: string
   email: string
@@ -28,6 +40,8 @@ export interface User {
   created_at: string
   email_verified_at?: string | null
   avatar_id?: string | null
+  pending_email?: string | null
+  preferences?: Partial<Preferences>
 }
 
 export interface ArtistLink { platform: string; url: string }
@@ -280,6 +294,7 @@ export interface ReleaseForm {
   title: string
   albumArtist: string
   releaseDate: string
+  genre: string
   upc: string
   labelName: string
   language: string

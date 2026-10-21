@@ -1,3 +1,5 @@
+// Dropdown options for the step 4 fields. Values match what the server accepts.
+
 export const TRACK_ORIGINS = ['original', 'cover', 'arrangement', 'sample'] as const
 export type TrackOrigin = (typeof TRACK_ORIGINS)[number]
 export const ORIGIN_LABELS: Record<TrackOrigin, string> = {
@@ -27,4 +29,17 @@ export const COUNTRIES: [string, string][] = [
   ['CI', "Côte d'Ivoire"], ['CM', 'Cameroon'], ['ZM', 'Zambia'], ['ZW', 'Zimbabwe'], ['EG', 'Egypt'],
   ['MA', 'Morocco'], ['SS', 'South Sudan'], ['SO', 'Somalia'], ['AO', 'Angola'], ['MZ', 'Mozambique'],
   ['GB', 'United Kingdom'], ['US', 'United States'], ['FR', 'France'], ['BE', 'Belgium'], ['CA', 'Canada'],
+]
+
+export const GENRES: string[] = [
+  'Afrobeats', 'Afropop', 'Afro-fusion', 'Amapiano', 'Bongo Flava', 'Benga', 'Coupé-décalé', 'Gospel / Worship',
+  'Highlife', 'Hip-hop / Rap', 'Gengetone', 'Kinyarwanda Contemporary', 'Reggae / Dancehall', 'R&B / Soul',
+  'Rumba / Soukous', 'Traditional / Folk', 'Pop', 'Rock', 'Electronic / Dance', 'Jazz', 'Classical', 'Country', 'Latin',
+]
+
+// Demonyms for the Nationality field (nationality is "Rwandan", not "Rwanda").
+export const NATIONALITIES: string[] = [
+  'Angolan', 'Belgian', 'British', 'Burundian', 'Cameroonian', 'Canadian', 'Congolese (DRC)', 'Egyptian', 'Ethiopian',
+  'French', 'Ghanaian', 'Ivorian', 'Kenyan', 'Moroccan', 'Mozambican', 'Nigerian', 'Rwandan', 'Senegalese', 'Somali',
+  'South African', 'South Sudanese', 'Tanzanian', 'Ugandan', 'American', 'Zambian', 'Zimbabwean',
 ]

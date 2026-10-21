@@ -1018,3 +1018,190 @@ td {
   gap: 1rem;
   flex-wrap: wrap;
 }
+
+
+/* Light theme (Settings > Preferences). Dark stays the default palette above. */
+
+:root[data-theme='light'] {
+  --active: #e4e7ee;
+  --input-bg: #ffffff;
+  --sidemenu-bg: #ffffffcc;
+  --bg-light-faded: #ffffffb3;
+  --card-hover: #e9ecf3cc;
+  --pri-font: #14161c;
+  --sec-font: #4a4f5c;
+  --border-light: #8a90a0;
+  --border-mid: #c3c8d4;
+  --border-dark: #d6dae3;
+  --btn-accent: #8b9fb3;
+  --btn-blue: #2a5fb8;
+  --btn-blue-border: #1f4a94;
+  --btn-red: #c24a4a;
+  --btn-red-border: #9c2f2f;
+  --accent: #2f6fe0;
+  --accent-bg: rgba(47, 111, 224, 0.1);
+  --accent-border: rgba(47, 111, 224, 0.5);
+  --link-blue: #1f58c4;
+  --hero-bg: linear-gradient(135deg, #dbe6ff, #eaf0ff);
+  --hero-border: #9db6ee;
+  --ok: #1f8f4e;
+  --warn: #a35f00;
+  --danger: #c62f2f;
+  --social-bg: rgba(255, 255, 255, 0.7);
+  --shadow: rgba(20, 30, 60, 0.12) 0 10px 15px -3px, rgba(20, 30, 60, 0.08) 0 4px 6px -2px;
+  --text: #2a2d36;
+  --bg: #f3f4f7;
+  --code-bg: #eceef4;
+  color-scheme: light;
+  background: var(--bg);
+  scrollbar-color: #b5bac6 transparent;
+}
+
+:root[data-theme='light'] .tab.on { color: var(--accent); }
+
+/* Tag pills (multi-select as tags) */
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tag-pill {
+  background: var(--input-bg);
+  border: 1.5px solid var(--border-mid);
+  border-radius: 999px;
+  color: var(--sec-font);
+  padding: 0.25rem 0.8rem;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tag-pill:hover {
+  border-color: var(--accent-border);
+}
+
+.tag-pill.on {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+/* Clickable picture + full-size viewer */
+
+button.cover.viewable {
+  padding: 0;
+  cursor: zoom-in;
+  background: none;
+  border: none;
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.88);
+  cursor: zoom-out;
+}
+
+.lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: #fff;
+}
+
+/* A symbol (© or ℗) in front of an input */
+
+.adorned {
+  display: flex;
+  align-items: stretch;
+}
+
+.adorned .adorn {
+  display: flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  background: var(--active);
+  border: 1.5px solid var(--border-mid);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: var(--sec-font);
+}
+
+.adorned input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Pinned save bar */
+
+.savebar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--bg-light-faded);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-mid);
+  border-radius: 12px;
+}
+
+.savebar-note {
+  color: var(--warn);
+  font-size: 13px;
+}
+
+/* Release hero with cover art */
+
+.hero.hero-art {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.2rem;
+  border-color: transparent;
+}
+
+.hero-art .hero-cover {
+  width: 160px;
+  height: 160px;
+  box-shadow: var(--shadow);
+}
+
+.hero-art .hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hero-art h1,
+.hero-art .sub,
+.hero-art .back {
+  color: #fff;
+}
+
+.hero-art .sub {
+  opacity: 0.85;
+}
+
+@media (max-width: 700px) {
+  .hero.hero-art {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

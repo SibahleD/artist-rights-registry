@@ -6,6 +6,7 @@ import { AuthImage, vinylFallback } from '../components/files'
 import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
 import type { Collaborator, Release, ReleaseExport, Track } from '../types'
 import { downloadJson } from './ReleaseView'
+import { formatCopyright } from '../components/CopyrightInput'
 
 interface Data { release: Release; track: Track; collaborators: Collaborator[] }
 
@@ -42,7 +43,6 @@ export default function SongView() {
         <div className="row actions">
           <button className="secondary" onClick={async () => {
             try {
-              // Same clean export as the release page, narrowed to this song.
               const doc = await api<ReleaseExport>(`/releases/${r.id}/export`)
               downloadJson(`${t.title}.json`, { ...doc, tracks: doc.tracks.filter((x) => x.track_number === t.track_number) })
             } catch (e) { setErr((e as Error).message) }
@@ -72,8 +72,8 @@ export default function SongView() {
           <div><span className="muted">Composition title</span><br />{t.composition_title || '—'}</div>
           <div><span className="muted">ISRC</span><br />{t.isrc || '—'}</div>
           <div><span className="muted">ISWC</span><br />{t.iswc || '—'}</div>
-          <div><span className="muted">Composition ©</span><br />{[t.composition_copyright_year, t.composition_copyright].filter(Boolean).join(' ') || '—'}</div>
-          <div><span className="muted">Recording ℗</span><br />{[t.recording_copyright_year, t.recording_copyright].filter(Boolean).join(' ') || '—'}</div>
+          <div><span className="muted">Composition ©</span><br />{formatCopyright(t.composition_copyright_year, t.composition_copyright) ? `© ${formatCopyright(t.composition_copyright_year, t.composition_copyright)}` : '—'}</div>
+          <div><span className="muted">Recording ℗</span><br />{formatCopyright(t.recording_copyright_year, t.recording_copyright) ? `℗ ${formatCopyright(t.recording_copyright_year, t.recording_copyright)}` : '—'}</div>
         </div>
       </Collapsible>
 

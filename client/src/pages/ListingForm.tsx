@@ -5,13 +5,14 @@ import { useAuth } from '../auth'
 import TrackEditor from '../components/TrackEditor'
 import ImagePicker from '../components/ImagePicker'
 import { UsageLine, useUsage } from '../components/files'
-import { Collapsible, ErrorBox, Loading, Modal } from '../components/ui'
+import { Collapsible, ErrorBox, Loading } from '../components/ui'
+import SaveBar from '../components/SaveBar'
 import { useBackGuard } from '../components/UnsavedGuard'
-import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
 import type {
   Collaborator, CollaboratorInput, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
 } from '../types'
-import { LANGUAGES } from '../data/options'
+import { GENRES, LANGUAGES } from '../data/options'
+import SelectOrOther from '../components/SelectOrOther'
 
 const emptyTrack = (owner: CollaboratorInput): TrackForm => ({
   title: '', compositionTitle: '', artistName: '', genre: '', isrc: '', iswc: '',
@@ -77,7 +78,7 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
 export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const { id } = useParams()
   const [params] = useSearchParams()
-  const wantedTrack = Number(params.get('track')) || 0
+  const wantedTrack = Number(params.get('track')) || 0   // from the readiness checklist's "Open" links
   const { user } = useAuth()
   const nav = useNavigate()
 
@@ -91,27 +92,26 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
   const [form, setForm] = useState<ReleaseForm | null>(id ? null : {
     releaseType: mode === 'song' ? 'single' : 'album', title: '', albumArtist: user?.artist_name ?? '',
-    releaseDate: '', upc: '', labelName: '', language: '', tracks: [emptyTrack(owner)],
+    releaseDate: '', genre: '', upc: '', labelName: '', language: '', tracks: [emptyTrack(owner)],
   })
   const [releaseId, setReleaseId] = useState<string | undefined>(id)
   const [removed, setRemoved] = useState<string[]>([])
   const [active, setActive] = useState(0)
   const [err, setErr] = useState<{ error: string; details?: string[] } | null>(null)
   const [busy, setBusy] = useState(false)
-  const [confirm, setConfirm] = useState(false)
-  const [ack, setAck] = useState<{ rid: string; list: string[] } | null>(null)
   const [artworkFile, setArtworkFile] = useState<File | undefined>()
-  const [artworkId, setArtworkId] = useState<string | null>(null)
+  const [artworkId, setArtworkId] = useState<string | null>(null)   // cover already stored on the server
   const [artworkCleared, setArtworkCleared] = useState(false)
   const [usageKey, setUsageKey] = useState(0)
   const usage = useUsage(usageKey)
 
- const snapshot = form ? JSON.stringify([form, removed, !!artworkFile, artworkCleared]) : null
+  // Unsaved-changes tracking: compare against a snapshot taken once the form has loaded.
+  const snapshot = form ? JSON.stringify([form, removed, !!artworkFile, artworkCleared]) : null
   const [baseline, setBaseline] = useState<string | null>(null)
   useEffect(() => { if (snapshot && baseline === null) setBaseline(snapshot) }, [snapshot, baseline])
   const dirty = snapshot !== null && baseline !== null && snapshot !== baseline
   const { goBack, modal: backModal, backButton } = useBackGuard({
-    dirty, onSave: () => submit('draft'), saveLabel: 'Save as draft',
+    dirty, onSave: () => submit('draft'), saveLabel: 'Save', leaveAfterSave: false,
   })
 
   useEffect(() => {
@@ -129,6 +129,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         title: release.title,
         albumArtist: release.album_artist,
         releaseDate: release.release_date ?? '',
+        genre: release.genre ?? '',
         upc: release.upc ?? '',
         labelName: release.label_name ?? '',
         language: release.language ?? '',
@@ -144,21 +145,12 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const isSong = form.releaseType === 'single'
   const setTrack = (i: number, t: TrackForm) => setForm({ ...form, tracks: form.tracks.map((x, j) => (j === i ? t : x)) })
 
-  async function confirmAck() {
-    if (!ack) return
-    setBusy(true)
-    try {
-      await acknowledgeUnconfirmed(ack.rid)
-      const r = await tryMarkReady(ack.rid)
-      if (!r.ok) { setAck(null); setErr({ error: r.error, details: r.problems }); return }
-      nav(`/releases/${ack.rid}`)
-    } catch (e) { setAck(null); setErr({ error: (e as Error).message }) } finally { setBusy(false) }
-  }
-
-  async function submit(save: 'draft' | 'notify' | 'release') {
+  // Release -> tracks -> audio -> collaborators, then (optionally) ask co-writers. Marking ready happens on the release page.
+  async function submit(save: 'draft' | 'notify') {
     if (!form) return
     setBusy(true); setErr(null)
     const tracks = form.tracks.map((t) => ({ ...t }))
+    const inherit = (t: TrackForm): TrackForm => (!isSong && !t.genre && form.genre ? { ...t, genre: form.genre } : t)
     const pending = [...removed]
     let rid = releaseId
     try {
@@ -167,6 +159,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         releaseType: form.releaseType,
         albumArtist: form.albumArtist,
         releaseDate: form.releaseDate || null,
+        // A single has one genre (the song's). An album has a release genre that songs without their own inherit.
+        genre: (isSong ? tracks[0]?.genre : form.genre) || null,
         upc: form.upc || null,
         labelName: form.labelName || null,
         language: form.language || null,
@@ -196,12 +190,13 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       for (const t of tracks) {
         if (t.id) {
-          await api(`${base}/${t.id}`, 'PATCH', toTrackInput(t))
+          await api(`${base}/${t.id}`, 'PATCH', toTrackInput(inherit(t)))
         } else {
-          const r = await api<{ track: Track }>(base, 'POST', toTrackInput(t))
+          const r = await api<{ track: Track }>(base, 'POST', toTrackInput(inherit(t)))
           t.id = r.track.id
         }
         if (t.audioFile) {
+          // The server reads the real format, bitrate and length from the file.
           const r = await upload<{ audio: Record<string, any>; durationSeconds: number | null }>(`${base}/${t.id}/audio/file`, t.audioFile)
           t.audio = {
             fileName: r.audio.file_name, format: r.audio.format, bitrateKbps: r.audio.bitrate_kbps,
@@ -222,36 +217,21 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         await api(`/releases/${rid}/notices/send`, 'POST')
         return nav(`/releases/${rid}`)
       }
-      if (save === 'release') {
-        const r = await tryMarkReady(rid!)
-        if (!r.ok) {
-          setForm({ ...form, tracks })
-          setConfirm(false)
-          if (r.unconfirmed) { setAck({ rid: rid!, list: r.unconfirmed }); return }
-          setErr({ error: r.error, details: r.problems })
-          return
-        }
-      }
-      nav(save === 'draft' ? '/discography' : `/releases/${rid}`)
+      nav(`/releases/${rid}`)
     } catch (e) {
       const ae = e as ApiError & { problems?: string[] }
       setForm({ ...form, tracks })
       setRemoved(pending)
       setErr({ error: ae.message, details: ae.details ?? ae.problems })
-      setConfirm(false)
       setUsageKey((k) => k + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally { setBusy(false) }
   }
 
+  // Collaborators other than the owner, so their emails can be confirmed before the release is locked.
   const people = form.tracks.flatMap((t, ti) =>
     t.collaborators.map((c, i) => ({ ti, i, name: c.legalName, email: c.invitedEmail ?? '', skip: !!c.removedByWriter })),
   ).filter((p) => !p.skip && p.name.trim().toLowerCase() !== owner.legalName.trim().toLowerCase())
-  const setEmail = (p: (typeof people)[number], email: string) => {
-    const t = form.tracks[p.ti]
-    setTrack(p.ti, { ...t, collaborators: t.collaborators.map((c, j) => (j === p.i ? { ...c, invitedEmail: email } : c)) })
-  }
-
   const removeActive = () => {
     const t = form.tracks[active]
     if (t.id) setRemoved([...removed, t.id])
@@ -263,6 +243,10 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
     <div className="stack">
       {backButton}
       <h1>{id ? 'Edit draft' : isSong ? 'New Song Listing' : 'New Album / EP Listing'}</h1>
+      <SaveBar dirty={dirty} busy={busy} onSave={() => void submit('draft')} onCancel={goBack}>
+        {people.some((p) => p.email.trim()) &&
+          <button type="button" className="secondary" disabled={busy} onClick={() => void submit('notify')}>Save &amp; ask co-writers to confirm</button>}
+      </SaveBar>
       {err && <ErrorBox error={err.error} details={err.details} />}
 
       <Collapsible title="Release info">
@@ -271,6 +255,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           {!isSong && <label>Release title<input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
           {!isSong && <label>Type<select value={form.releaseType} onChange={(e) => setForm({ ...form, releaseType: e.target.value as ReleaseForm['releaseType'] })}><option value="ep">EP</option><option value="album">Album</option></select></label>}
           <label>Main artist name<input value={form.albumArtist} onChange={(e) => setForm({ ...form, albumArtist: e.target.value })} /></label>
+          {!isSong && <SelectOrOther label="Genre (songs without their own use this)" options={GENRES} value={form.genre} onChange={(v) => setForm({ ...form, genre: v })} otherPlaceholder="Type the genre" />}
           <label>Release date (to streaming services)<input type="date" value={form.releaseDate} onChange={(e) => setForm({ ...form, releaseDate: e.target.value })} /></label>
           <label>Label (optional)<input value={form.labelName} onChange={(e) => setForm({ ...form, labelName: e.target.value })} placeholder="Leave blank if you release independently" /></label>
           <label>Main language
@@ -280,7 +265,10 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
               {form.language && !LANGUAGES.some(([c]) => c === form.language) && <option value={form.language}>{form.language}</option>}
             </select>
           </label>
-          {!isSong && <label>UPC (optional)<input value={form.upc} onChange={(e) => setForm({ ...form, upc: e.target.value })} placeholder="12 or 13 digits" /></label>}
+          <label>UPC (optional)
+            <input inputMode="numeric" value={form.upc} onChange={(e) => setForm({ ...form, upc: e.target.value })} placeholder="12 or 13 digits" />
+            <small className="hint">The barcode for the release, on singles too. Your distributor assigns one if you don't have it.</small>
+          </label>
         </div>
         <ImagePicker label="Cover art" hint="Square JPEG or PNG, at least 1400 x 1400 pixels for most stores."
           mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 1024 * 1024}
@@ -296,37 +284,12 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         </div>
       )}
 
-      <TrackEditor key={active} track={form.tracks[active]} onChange={(t) => setTrack(active, t)} hideTitle={false} maxAudioBytes={usage?.limits.maxAudioBytes} />
+      <TrackEditor key={active} track={form.tracks[active]} onChange={(t) => setTrack(active, t)} hideTitle={false} maxAudioBytes={usage?.limits.maxAudioBytes} releaseId={releaseId} />
       <UsageLine usage={usage} />
       {!isSong && form.tracks.length > 1 && (
         <button className="ghost danger" onClick={removeActive}>Remove this song</button>
       )}
-
-      <div className="row actions">
-        <button disabled={busy} onClick={() => setConfirm(true)}>Save Release</button>
-        {people.some((p) => p.email.trim()) &&
-          <button className="secondary" disabled={busy} onClick={() => submit('notify')}>Save &amp; ask co-writers to confirm</button>}
-        <button className="secondary" disabled={busy} onClick={() => submit('draft')}>Save as Draft</button>
-        <button className="ghost" onClick={goBack}>Cancel</button>
-      </div>
-
       {backModal}
-      {ack && <AckModal list={ack.list} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
-
-      {confirm && (
-        <Modal title="Confirm release" onClose={() => setConfirm(false)}>
-          <p>This marks the release as ready and locks the ownership splits. If co-writers haven't confirmed their share you'll be asked to acknowledge that first. Collaborators whose email matches an account will see the song under Collaborations when they log in, including people who sign up later with that email.</p>
-          {people.length === 0 && <p className="muted">You haven't added anyone else, so nobody else will see this release.</p>}
-          {people.map((p) => (
-            <label key={`${p.ti}-${p.i}`}>{p.name || '(unnamed)'}
-              <input type="email" value={p.email} placeholder="their email" onChange={(e) => setEmail(p, e.target.value)} /></label>
-          ))}
-          <div className="row actions">
-            <button disabled={busy} onClick={() => submit('release')}>{busy ? 'Saving…' : 'Save & mark ready'}</button>
-            <button className="ghost" onClick={() => setConfirm(false)}>Back</button>
-          </div>
-        </Modal>
-      )}
     </div>
   )
 }

@@ -2,19 +2,22 @@ import { useState } from 'react'
 import { COLLABORATOR_ROLES, EXPLICIT_VALUES } from '../types'
 import type { CollaboratorInput, TrackForm } from '../types'
 import { Collapsible, Hint } from './ui'
-import { LANGUAGES, ORIGIN_LABELS, ORIGIN_WARNING, TRACK_ORIGINS, WRITER_STATUSES, WRITER_STATUS_LABELS } from '../data/options'
+import { GENRES, LANGUAGES, ORIGIN_LABELS, ORIGIN_WARNING, TRACK_ORIGINS, WRITER_STATUSES, WRITER_STATUS_LABELS } from '../data/options'
 import type { WriterStatus } from '../data/options'
 import { checkAudio, fmtBytes } from './files'
+import CopyrightInput from './CopyrightInput'
+import SelectOrOther from './SelectOrOther'
+import AudioPreview from './AudioPreview'
 
 const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
   explicit: 'Explicit', not_explicit: 'Not explicit', cleaned: 'Cleaned',
 }
 
 const sumPct = (t: TrackForm) => t.collaborators.filter((c) => !c.discard).reduce((s, c) => s + Math.round((Number(c.ownershipPercent) || 0) * 100), 0) / 100
-const toInt = (s: string) => (s.trim() && /^\d+$/.test(s.trim()) ? parseInt(s, 10) : null)
 
 export const showDuration = (n?: number | null) => (n ? `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}` : '')
 
+// A quick preview of the file's length, read by the browser. The server reads it again when the file is saved and is the one that counts.
 const previewDuration = (f: File) => new Promise<number | null>((resolve) => {
   const url = URL.createObjectURL(f)
   const a = new Audio()
@@ -25,12 +28,19 @@ const previewDuration = (f: File) => new Promise<number | null>((resolve) => {
   a.src = url
 })
 
-export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 5 * 1024 * 1024 }: { track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean; maxAudioBytes?: number }) {
+export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 5 * 1024 * 1024, releaseId }: {
+  track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean; maxAudioBytes?: number; releaseId?: string
+}) {
   const [audioErr, setAudioErr] = useState('')
   const [open, setOpen] = useState<Record<number, boolean>>({})
   const set = <K extends keyof TrackForm>(k: K, v: TrackForm[K]) => onChange({ ...track, [k]: v })
   const setCollab = (i: number, patch: Partial<CollaboratorInput>) =>
     set('collaborators', track.collaborators.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+  // The composition title follows the song title until the artist edits it to something different.
+  const setTitle = (v: string) => onChange({
+    ...track, title: v,
+    compositionTitle: !track.compositionTitle || track.compositionTitle === track.title ? v : track.compositionTitle,
+  })
   const total = sumPct(track)
 
   const pickFile = async (f?: File) => {
@@ -46,23 +56,22 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
       <Collapsible title={<>General info</>}>
         
         <div className="grid2">
-          {!hideTitle && <label>Song Title<input value={track.title} onChange={(e) => set('title', e.target.value)} /></label>}
-          <label>Main Artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
-          <label>Genre<input value={track.genre} onChange={(e) => set('genre', e.target.value)} placeholder="Afrobeat, Gospel, Hip-hop…" /></label>
-          <label>Primary Language
+          {!hideTitle && <label>Song title<input value={track.title} onChange={(e) => setTitle(e.target.value)} /></label>}
+          <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
+          <SelectOrOther label="Genre" options={GENRES} value={track.genre} onChange={(v) => set('genre', v)} otherPlaceholder="Type the genre" />
+          <label>Version title (optional)<input value={track.versionTitle} onChange={(e) => set('versionTitle', e.target.value)} placeholder="Acoustic, Radio edit, Remix…" /></label>
+          <label>Language of the lyrics
             <select value={track.language} onChange={(e) => set('language', e.target.value)}>
               <option value="">Not specified</option>
               {LANGUAGES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
               {track.language && !LANGUAGES.some(([c]) => c === track.language) && <option value={track.language}>{track.language}</option>}
             </select>
           </label>
-          <label>Song Origin
+          <label>Where does the song come from?
             <select value={track.origin} onChange={(e) => set('origin', e.target.value as TrackForm['origin'])}>
               {TRACK_ORIGINS.map((o) => <option key={o} value={o}>{ORIGIN_LABELS[o]}</option>)}
             </select>
           </label>
-          <label>Version title (optional)<input value={track.versionTitle} onChange={(e) => set('versionTitle', e.target.value)} placeholder="Acoustic, Radio edit, Remix…" /></label>
-          
           <label>Explicit content
             <select value={track.explicit} onChange={(e) => set('explicit', e.target.value as TrackForm['explicit'])}>
               <option value="">Not specified</option>
@@ -82,6 +91,9 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
           )}
         </div>
         {audioErr && <small className="warn">{audioErr}</small>}
+        {(track.audioFile || (track.audio && track.id && releaseId)) && (
+          <AudioPreview file={track.audioFile} releaseId={releaseId} trackId={track.id} />
+        )}
         {track.audioFile && <small className="muted">Selected: {track.audioFile.name} ({fmtBytes(track.audioFile.size)}). It uploads when you save, and the details below are then read from the file.</small>}
         {track.audio && !track.audioFile && (
           <div className="grid2">
@@ -104,10 +116,12 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
             <Hint>12-character code that identifies this recording. Your distributor can issue one if you don't have it.</Hint></label>
           <label>ISWC (optional)<input value={track.iswc} onChange={(e) => set('iswc', e.target.value)} placeholder="T-123.456.789-0" />
             <Hint>Identifies the composition. It is issued when the work is registered with a rights society, so you may not have one yet.</Hint></label>
-          <label>Composition copyright line<input value={track.compositionCopyright} onChange={(e) => set('compositionCopyright', e.target.value)} placeholder="© Your Legal Name" /></label>
-          <label>Composition copyright year<input inputMode="numeric" value={track.compositionCopyrightYear ?? ''} onChange={(e) => set('compositionCopyrightYear', toInt(e.target.value))} placeholder="2026" /></label>
-          <label>Sound recording copyright line<input value={track.recordingCopyright} onChange={(e) => set('recordingCopyright', e.target.value)} placeholder="℗ Your Legal Name" /></label>
-          <label>Sound recording copyright year<input inputMode="numeric" value={track.recordingCopyrightYear ?? ''} onChange={(e) => set('recordingCopyrightYear', toInt(e.target.value))} placeholder="2026" /></label>
+          <CopyrightInput symbol="©" label="Composition copyright" year={track.compositionCopyrightYear} line={track.compositionCopyright}
+            placeholder="2026 Your Legal Name" hint="Year, then the legal name of the songwriter or publisher: 2026 Jane Doe. The © is added for you."
+            onChange={(y, l) => onChange({ ...track, compositionCopyrightYear: y, compositionCopyright: l })} />
+          <CopyrightInput symbol="℗" label="Sound recording copyright" year={track.recordingCopyrightYear} line={track.recordingCopyright}
+            placeholder="2026 Your Label or Name" hint="Year, then whoever owns the recording (you or your label): 2026 Jane Doe Records. The ℗ is added for you."
+            onChange={(y, l) => onChange({ ...track, recordingCopyrightYear: y, recordingCopyright: l })} />
         </div>
       </Collapsible>
 
