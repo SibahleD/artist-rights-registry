@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
 import Layout from './components/Layout'
 import { Loading } from './components/ui'
@@ -23,33 +23,42 @@ function Protected() {
   return user ? <Layout /> : <Navigate to="/login" replace />
 }
 
+// A data router, so the unsaved-changes guard can stop navigation from anywhere (sidebar links, the back button).
+function Root() {
+  return <AuthProvider><Outlet /></AuthProvider>
+}
+
+const router = createBrowserRouter([
+  {
+    element: <Root />,
+    children: [
+      { path: '/login', element: <AuthPage mode="login" /> },
+      { path: '/register', element: <AuthPage mode="register" /> },
+      { path: '/verify-email', element: <VerifyEmail /> },
+      { path: '/notice/:token', element: <CoWriterNotice /> },
+      {
+        element: <Protected />,
+        children: [
+          { path: '/', element: <Home /> },
+          { path: '/discography', element: <Discography /> },
+          { path: '/new/song', element: <ListingForm mode="song" /> },
+          { path: '/new/album', element: <ListingForm mode="album" /> },
+          { path: '/releases/:id', element: <ReleaseView /> },
+          { path: '/releases/:id/edit', element: <ListingForm mode="song" /> },
+          { path: '/releases/:id/splits', element: <Splits /> },
+          { path: '/releases/:releaseId/tracks/:trackId', element: <SongView /> },
+          { path: '/shared-tracks/:id', element: <SharedTrackView /> },
+          { path: '/profile', element: <Profile /> },
+          { path: '/settings', element: <Settings /> },
+          { path: '/Glossary', element: <Glossary /> },
+          { path: '/royalty-rights', element: <RegisterRights /> },
+        ],
+      },
+      { path: '*', element: <Navigate to="/" replace /> },
+    ],
+  },
+], { basename: import.meta.env.BASE_URL.replace(/\/$/, '') })
+
 export default function App() {
-  return (
-    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<AuthPage mode="login" />} />
-          <Route path="/register" element={<AuthPage mode="register" />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/notice/:token" element={<CoWriterNotice />} />
-          <Route element={<Protected />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/discography" element={<Discography />} />
-            <Route path="/new/song" element={<ListingForm mode="song" />} />
-            <Route path="/new/album" element={<ListingForm mode="album" />} />
-            <Route path="/releases/:id" element={<ReleaseView />} />
-            <Route path="/releases/:id/edit" element={<ListingForm mode="song" />} />
-            <Route path="/releases/:id/splits" element={<Splits />} />
-            <Route path="/releases/:releaseId/tracks/:trackId" element={<SongView />} />
-            <Route path="/shared-tracks/:id" element={<SharedTrackView />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/Glossary" element={<Glossary />} />
-            <Route path="/royalty-rights" element={<RegisterRights />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  )
+  return <RouterProvider router={router} />
 }

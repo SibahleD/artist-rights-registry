@@ -10,4 +10,5 @@ module.exports = {
   maxPlatformBytes: n('MAX_PLATFORM_BYTES', 900 * 1024 * 1024),
   maxNoticesPerDay: n('MAX_NOTICES_PER_DAY', 20),
   maxReleaseLinks: n('MAX_RELEASE_LINKS', 10),
+  maxArtistLinks: n('MAX_ARTIST_LINKS', 12),
 };

@@ -1004,11 +1004,11 @@ td {
 
 .badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 
-.store-row { display: grid; grid-template-columns: minmax(0, 0.4fr) minmax(0, 1fr) auto; gap: 0.5rem; align-items: center; }
+.link-row { display: grid; grid-template-columns: minmax(0, 0.4fr) minmax(0, 1fr) auto; gap: 0.5rem; align-items: start; }
 
 .store-links { margin: 0; padding-left: 1.1rem; }
 
-@media (max-width: 760px) { .store-row { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .link-row { grid-template-columns: 1fr; } }
 
 /* Splits summary line on the release page */
 .summary-line {
@@ -1205,3 +1205,43 @@ button.cover.viewable {
     align-items: flex-start;
   }
 }
+
+/* Song tabs with a delete button next to the name */
+.tab-group {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1.5px solid var(--border-mid);
+  border-radius: 8px;
+  background: var(--input-bg);
+  overflow: hidden;
+}
+
+.tab-group.on {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.tab-group .tab {
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.tab-group .tab-x {
+  border: 0;
+  border-left: 1px solid var(--border-mid);
+  border-radius: 0;
+  background: none;
+  color: var(--sec-font);
+  padding: 0 0.6rem;
+  line-height: 1;
+}
+
+.tab-group .tab-x:hover {
+  color: #fff;
+  background: var(--btn-red-border);
+}
+
+.plain-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+.tag-pill .ghost { padding: 0 0 0 0.4rem; border: 0; background: none; min-height: 0; }

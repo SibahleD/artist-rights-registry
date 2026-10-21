@@ -99,7 +99,7 @@ async function exportMyData(req, res) {
         const uid = req.user.id;
         const [u, links, releases, sentNotices, credited, media] = await Promise.all([
             pool.query(`SELECT ${PROFILE_KEYS.join(', ')}, preferences FROM users WHERE id = $1`, [uid]),
-            pool.query('SELECT platform, url FROM artist_links WHERE user_id = $1 ORDER BY platform', [uid]),
+            pool.query('SELECT service, label, kind, url FROM artist_links WHERE user_id = $1 ORDER BY kind, created_at, id', [uid]),
             pool.query('SELECT * FROM releases WHERE owner_id = $1 ORDER BY created_at', [uid]),
             pool.query(
                 `SELECT t.title AS track_title, n.co_writer_name, n.role, n.share_percent, n.status, n.sent_at, n.responded_at

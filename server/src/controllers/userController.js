@@ -9,7 +9,11 @@ const { withDefaults } = require('../lib/account');
 const shapeUser = (row) => (row ? { ...row, preferences: withDefaults(row.preferences) } : row);
 const { ROLES } = require('../lib/splits');
 const { optionalIpi, optionalCountry } = require('../lib/codes');
-const PLATFORMS = ['spotify', 'apple_music', 'soundcloud', 'youtube', 'instagram', 'tiktok', 'x'];
+const { parseLinkInput } = require('../lib/services');
+const limits = require('../limits');
+const LINK_COLS = 'id, service, label, kind, url';
+const LINK_ORDER = 'ORDER BY kind, created_at, id';
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const USERNAME_RE = /^[a-z0-9_.]{3,30}$/;
 
 function optionalText(label, max) {
@@ -72,7 +76,7 @@ async function getMe(req, res) {
     try {
         const userResult = await pool.query(`SELECT ${USER_COLUMNS} FROM users WHERE id = $1`, [req.user.id]);
         const linksResult = await pool.query(
-            'SELECT platform, url FROM artist_links WHERE user_id = $1 ORDER BY platform',
+            `SELECT ${LINK_COLS} FROM artist_links WHERE user_id = $1 ${LINK_ORDER}`,
             [req.user.id]
         );
         return res.json({ user: shapeUser(userResult.rows[0]), links: linksResult.rows });
@@ -118,7 +122,7 @@ async function updateMe(req, res) {
 async function listLinks(req, res) {
     try {
         const { rows } = await pool.query(
-            'SELECT platform, url FROM artist_links WHERE user_id = $1 ORDER BY platform',
+            `SELECT ${LINK_COLS} FROM artist_links WHERE user_id = $1 ${LINK_ORDER}`,
             [req.user.id]
         );
         return res.json({ links: rows });
@@ -128,50 +132,61 @@ async function listLinks(req, res) {
     }
 }
 
-async function upsertLink(req, res) {
-    const { platform } = req.params;
-    if (!PLATFORMS.includes(platform)) {
-        return res.status(400).json({ error: `Platform must be one of: ${PLATFORMS.join(', ')}.` });
-    }
-
-    const url = typeof req.body.url === 'string' ? req.body.url.trim() : '';
-    if (!url || url.length > 500) {
-        return res.status(400).json({ error: 'URL is required and must be at most 500 characters.' });
-    }
+async function createLink(req, res) {
+    const parsed = parseLinkInput(req.body);
+    if (parsed.error) return res.status(400).json({ error: parsed.error });
 
     try {
-        const parsed = new URL(url);
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
-    } catch {
-        return res.status(400).json({ error: 'URL must be a valid http(s) URL.' });
-    }
-
-    try {
+        const max = limits.enabled ? limits.maxArtistLinks : 1000;
+        const { rows: count } = await pool.query('SELECT count(*) AS n FROM artist_links WHERE user_id = $1', [req.user.id]);
+        if (Number(count[0].n) >= max) {
+            return res.status(409).json({ error: `You can have at most ${max} links.` });
+        }
+        const { link } = parsed;
         const { rows } = await pool.query(
-            `INSERT INTO artist_links (user_id, platform, url)
-             VALUES ($1, $2, $3)
-             ON CONFLICT (user_id, platform) DO UPDATE SET url = EXCLUDED.url
-             RETURNING platform, url`,
-            [req.user.id, platform, url]
+            `INSERT INTO artist_links (user_id, service, label, kind, url) VALUES ($1, $2, $3, $4, $5) RETURNING ${LINK_COLS}`,
+            [req.user.id, link.service, link.label, link.kind, link.url]
+        );
+        return res.status(201).json({ link: rows[0] });
+    } catch (err) {
+        if (err.code === '23505') return res.status(409).json({ error: 'That address is already in your links.' });
+        console.error('createLink error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+async function updateLink(req, res) {
+    const { id } = req.params;
+    if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Link not found.' });
+
+    try {
+        const { rows: found } = await pool.query(
+            `SELECT ${LINK_COLS} FROM artist_links WHERE id = $1 AND user_id = $2`, [id, req.user.id]);
+        if (!found[0]) return res.status(404).json({ error: 'Link not found.' });
+
+        const parsed = parseLinkInput(req.body, found[0]);
+        if (parsed.error) return res.status(400).json({ error: parsed.error });
+
+        const { link } = parsed;
+        const { rows } = await pool.query(
+            `UPDATE artist_links SET service = $1, label = $2, kind = $3, url = $4
+             WHERE id = $5 AND user_id = $6 RETURNING ${LINK_COLS}`,
+            [link.service, link.label, link.kind, link.url, id, req.user.id]
         );
         return res.json({ link: rows[0] });
     } catch (err) {
-        console.error('upsertLink error:', err);
+        if (err.code === '23505') return res.status(409).json({ error: 'That address is already in your links.' });
+        console.error('updateLink error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }
 
 async function deleteLink(req, res) {
-    const { platform } = req.params;
-    if (!PLATFORMS.includes(platform)) {
-        return res.status(400).json({ error: `Platform must be one of: ${PLATFORMS.join(', ')}.` });
-    }
+    const { id } = req.params;
+    if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Link not found.' });
 
     try {
-        const result = await pool.query(
-            'DELETE FROM artist_links WHERE user_id = $1 AND platform = $2',
-            [req.user.id, platform]
-        );
+        const result = await pool.query('DELETE FROM artist_links WHERE id = $1 AND user_id = $2', [id, req.user.id]);
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Link not found.' });
         }
@@ -184,7 +199,6 @@ async function deleteLink(req, res) {
 
 async function getUsage(req, res) {
     try {
-        const limits = require('../limits');
         const q = (sql) => pool.query(sql, [req.user.id]).then((r) => Number(r.rows[0].n));
         const [releases, audio, images] = await Promise.all([
             q('SELECT count(*) AS n FROM releases WHERE owner_id = $1'),
@@ -209,4 +223,4 @@ async function getUsage(req, res) {
     }
 }
 
-module.exports = { getMe, updateMe, getUsage, listLinks, upsertLink, deleteLink };
+module.exports = { getMe, updateMe, getUsage, listLinks, createLink, updateLink, deleteLink };

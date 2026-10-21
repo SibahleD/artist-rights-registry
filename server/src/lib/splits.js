@@ -35,6 +35,11 @@ function parseCollaborators(body, existingRemoved = []) {
             return { error: `Collaborator ${n}: role must be one of: ${ROLES.join(', ')}.` };
         }
 
+        const isFeatured = c.isFeatured === true;
+        if (isFeatured && role !== 'performer') {
+            return { error: `Collaborator ${n}: a featured artist must have the role performer.` };
+        }
+
         const pct = c.ownershipPercent;
         if (typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0 || pct > 100) {
             return { error: `Collaborator ${n}: ownership percent must be a number between 0 and 100.` };
@@ -78,7 +83,7 @@ function parseCollaborators(body, existingRemoved = []) {
         if (email) seenEmails.add(email);
 
         totalCents += cents;
-        data.push({ legalName, role, percent: cents / 100, email, ipi: ipi.value, writerStatus, publisherName: pub.value, isSelfPublished });
+        data.push({ legalName, role, percent: cents / 100, email, ipi: ipi.value, writerStatus, publisherName: pub.value, isSelfPublished, isFeatured });
     }
 
     const lockedCents = existingRemoved

@@ -5,22 +5,24 @@ import { useAuth } from '../auth'
 import TrackEditor from '../components/TrackEditor'
 import ImagePicker from '../components/ImagePicker'
 import { UsageLine, useUsage } from '../components/files'
-import { Collapsible, ErrorBox, Loading } from '../components/ui'
+import { Collapsible, ConfirmModal, ErrorBox, Loading } from '../components/ui'
 import SaveBar from '../components/SaveBar'
 import { useBackGuard } from '../components/UnsavedGuard'
 import type {
-  Collaborator, CollaboratorInput, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
+  Collaborator, CollaboratorInput, Notice, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
 } from '../types'
 import { GENRES, LANGUAGES } from '../data/options'
 import SelectOrOther from '../components/SelectOrOther'
+import { featuredCredit, featuredNames, toCollaboratorInput } from '../lib/collab'
 
+// A new song starts with this year and the owner's legal name in both copyright lines, e.g. "© 2026 Jane Doe". Saved songs are never touched.
 const emptyTrack = (owner: CollaboratorInput): TrackForm => ({
   title: '', compositionTitle: '', artistName: '', genre: '', isrc: '', iswc: '',
   durationSeconds: null, explicit: '',
-  compositionCopyrightYear: null, compositionCopyright: '',
-  recordingCopyrightYear: null, recordingCopyright: '',
+  compositionCopyrightYear: new Date().getFullYear(), compositionCopyright: owner.legalName,
+  recordingCopyrightYear: new Date().getFullYear(), recordingCopyright: owner.legalName,
   origin: 'original', versionTitle: '', language: '',
-  audio: null, collaborators: [{ ...owner }],
+  audio: null, featuring: [], savedFeaturing: [], collaborators: [{ ...owner }],
 })
 
 const toTrackInput = (t: TrackForm): TrackInput => ({
@@ -42,6 +44,8 @@ const toTrackInput = (t: TrackForm): TrackInput => ({
 
 const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorInput): TrackForm => ({
   id: t.id,
+  featuring: featuredNames(collabs),
+  savedFeaturing: featuredNames(collabs),
   hadAudio: !!t.audio,
   title: t.title,
   compositionTitle: t.composition_title ?? '',
@@ -65,13 +69,7 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
       }
     : null,
   collaborators: collabs.length
-    ? collabs.map((c) => ({
-        legalName: c.legal_name, role: c.role, ownershipPercent: Number(c.ownership_percent),
-        invitedEmail: c.invited_email,
-        ipi: c.ipi ?? '', writerStatus: c.writer_status ?? null,
-        publisherName: c.publisher_name ?? '', isSelfPublished: !!c.is_self_published,
-        ...(c.removed_by_writer ? { id: c.id, removedByWriter: true } : {}),
-      }))
+    ? collabs.map(toCollaboratorInput)
     : [{ ...owner }],
 })
 
@@ -110,9 +108,11 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const [baseline, setBaseline] = useState<string | null>(null)
   useEffect(() => { if (snapshot && baseline === null) setBaseline(snapshot) }, [snapshot, baseline])
   const dirty = snapshot !== null && baseline !== null && snapshot !== baseline
-  const { goBack, modal: backModal, backButton } = useBackGuard({
-    dirty, onSave: () => submit('draft'), saveLabel: 'Save', leaveAfterSave: false,
+  // Saving from the unsaved-changes modal must not navigate on its own: the guard then carries on to wherever the person was going.
+  const { goBack, modal: backModal, backButton, allowLeave } = useBackGuard({
+    dirty, onSave: () => submit({ navigate: false }), saveLabel: 'Save',
   })
+  const [deleting, setDeleting] = useState<number | null>(null)   // index of the song waiting for a delete confirmation
 
   useEffect(() => {
     if (!id) return
@@ -145,13 +145,34 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const isSong = form.releaseType === 'single'
   const setTrack = (i: number, t: TrackForm) => setForm({ ...form, tracks: form.tracks.map((x, j) => (j === i ? t : x)) })
 
-  // Release -> tracks -> audio -> collaborators, then (optionally) ask co-writers. Marking ready happens on the release page.
-  async function submit(save: 'draft' | 'notify') {
-    if (!form) return
+  // Brings the saved featured credits in line with the Featuring tags, without touching anyone else's splits.
+  // A featured artist who already has a share, or who has confirmed it, is kept: only the Splits page can take them off.
+  async function syncFeatured(rid: string, t: TrackForm): Promise<string> {
+    const lc = (x: string) => x.toLowerCase()
+    const { collaborators } = await api<{ collaborators: Collaborator[] }>(`/releases/${rid}/tracks/${t.id}/collaborators`)
+    const { notices } = await api<{ notices: Notice[] }>(`/releases/${rid}/notices`)
+    const kept: string[] = []
+    const next = collaborators.map(toCollaboratorInput).filter((c) => {
+      if (!c.isFeatured || c.removedByWriter || t.featuring.some((w) => lc(w) === lc(c.legalName))) return true
+      const confirmed = notices.some((n) => n.track_id === t.id && n.status === 'confirmed' && n.co_writer_name && lc(n.co_writer_name) === lc(c.legalName))
+      if (c.ownershipPercent > 0 || confirmed) { kept.push(c.legalName); return true }
+      return false
+    })
+    for (const w of t.featuring) if (!next.some((c) => lc(c.legalName) === lc(w))) next.push(featuredCredit(w))
+    const { collaborators: saved } = await api<{ collaborators: Collaborator[] }>(`/releases/${rid}/tracks/${t.id}/collaborators`, 'PUT', { collaborators: next })
+    t.featuring = featuredNames(saved); t.savedFeaturing = [...t.featuring]
+    t.collaborators = saved.map(toCollaboratorInput)
+    return kept.length ? `${kept.join(', ')} ${kept.length === 1 ? 'was' : 'were'} kept as credited because they have a share or have confirmed it. Change that on the Splits page.` : ''
+  }
+
+  // Release -> tracks -> audio. Splits are edited on the Splits page; a new song only gets the owner's own 100% credit.
+  async function submit({ navigate = true }: { navigate?: boolean } = {}): Promise<boolean> {
+    if (!form) return false
     setBusy(true); setErr(null)
     const tracks = form.tracks.map((t) => ({ ...t }))
     const inherit = (t: TrackForm): TrackForm => (!isSong && !t.genre && form.genre ? { ...t, genre: form.genre } : t)
     const pending = [...removed]
+    const notes: string[] = []
     let rid = releaseId
     try {
       const body: ReleaseInput = {
@@ -189,6 +210,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       setRemoved([])
 
       for (const t of tracks) {
+        const isNew = !t.id
         if (t.id) {
           await api(`${base}/${t.id}`, 'PATCH', toTrackInput(inherit(t)))
         } else {
@@ -210,14 +232,25 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           t.hadAudio = false
           t.durationSeconds = null
         }
-        await api(`${base}/${t.id}/collaborators`, 'PUT', { collaborators: t.collaborators })
+        if (isNew) {
+          const own = t.collaborators.map((c) => c.legalName.trim().toLowerCase())
+          const feat = t.featuring.filter((n) => !own.includes(n.toLowerCase()))
+          await api(`${base}/${t.id}/collaborators`, 'PUT', { collaborators: [...t.collaborators, ...feat.map(featuredCredit)] })
+          t.featuring = feat; t.savedFeaturing = feat
+        } else if (JSON.stringify([...t.featuring].sort()) !== JSON.stringify([...t.savedFeaturing].sort())) {
+          const note = await syncFeatured(rid!, t)
+          if (note) notes.push(note)
+        }
       }
 
-      if (save === 'notify') {
-        await api(`/releases/${rid}/notices/send`, 'POST')
-        return nav(`/releases/${rid}`)
+      // After the first save go straight to the splits; later saves go back to the release.
+      if (notes.length && navigate) {
+        // Something was kept on purpose: stay here so the message is read.
+        setForm({ ...form, tracks }); setBaseline(null); setErr({ error: notes.join(' ') })
+        return true
       }
-      nav(`/releases/${rid}`)
+      if (navigate) { allowLeave(); nav(id ? `/releases/${rid}` : `/releases/${rid}/splits`, { state: id ? undefined : { first: true } }) }
+      return true
     } catch (e) {
       const ae = e as ApiError & { problems?: string[] }
       setForm({ ...form, tracks })
@@ -225,28 +258,24 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       setErr({ error: ae.message, details: ae.details ?? ae.problems })
       setUsageKey((k) => k + 1)
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      return false
     } finally { setBusy(false) }
   }
 
-  // Collaborators other than the owner, so their emails can be confirmed before the release is locked.
-  const people = form.tracks.flatMap((t, ti) =>
-    t.collaborators.map((c, i) => ({ ti, i, name: c.legalName, email: c.invitedEmail ?? '', skip: !!c.removedByWriter })),
-  ).filter((p) => !p.skip && p.name.trim().toLowerCase() !== owner.legalName.trim().toLowerCase())
-  const removeActive = () => {
-    const t = form.tracks[active]
+  // Songs already saved are deleted on the server when the release is saved; unsaved ones just disappear.
+  const removeTrack = (i: number) => {
+    const t = form.tracks[i]
     if (t.id) setRemoved([...removed, t.id])
-    setForm({ ...form, tracks: form.tracks.filter((_, j) => j !== active) })
-    setActive(0)
+    setForm({ ...form, tracks: form.tracks.filter((_, j) => j !== i) })
+    setActive(i < active ? active - 1 : Math.min(active, form.tracks.length - 2))
+    setDeleting(null)
   }
 
   return (
     <div className="stack">
       {backButton}
       <h1>{id ? 'Edit draft' : isSong ? 'New Song Listing' : 'New Album / EP Listing'}</h1>
-      <SaveBar dirty={dirty} busy={busy} onSave={() => void submit('draft')} onCancel={goBack}>
-        {people.some((p) => p.email.trim()) &&
-          <button type="button" className="secondary" disabled={busy} onClick={() => void submit('notify')}>Save &amp; ask co-writers to confirm</button>}
-      </SaveBar>
+      <SaveBar dirty={dirty} busy={busy} onSave={() => void submit()} onCancel={goBack} />
       {err && <ErrorBox error={err.error} details={err.details} />}
 
       <Collapsible title="Release info">
@@ -279,17 +308,27 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       {!isSong && (
         <div className="tabs">
-          {form.tracks.map((t, i) => <button key={i} className={i === active ? 'tab on' : 'tab'} onClick={() => setActive(i)}>{i + 1}. {t.title || 'Untitled'}</button>)}
+          {form.tracks.map((t, i) => (
+            <div key={i} className={i === active ? 'tab-group on' : 'tab-group'}>
+              <button type="button" className={i === active ? 'tab on' : 'tab'} onClick={() => setActive(i)}>{i + 1}. {t.title || 'Untitled'}</button>
+              {form.tracks.length > 1 && (
+                <button type="button" className="tab-x" aria-label={`Delete ${t.title || 'song ' + (i + 1)}`} title="Delete this song" onClick={() => setDeleting(i)}>✕</button>
+              )}
+            </div>
+          ))}
           <button className="tab" onClick={() => { setForm({ ...form, tracks: [...form.tracks, emptyTrack(owner)] }); setActive(form.tracks.length) }}>+ Add song</button>
         </div>
       )}
 
       <TrackEditor key={active} track={form.tracks[active]} onChange={(t) => setTrack(active, t)} hideTitle={false} maxAudioBytes={usage?.limits.maxAudioBytes} releaseId={releaseId} />
       <UsageLine usage={usage} />
-      {!isSong && form.tracks.length > 1 && (
-        <button className="ghost danger" onClick={removeActive}>Remove this song</button>
-      )}
       {backModal}
+      {deleting !== null && form.tracks[deleting] && (
+        <ConfirmModal title="Delete this song?" danger confirmLabel="Delete song" onConfirm={() => removeTrack(deleting)} onClose={() => setDeleting(null)}>
+          <p>“{form.tracks[deleting].title || `Song ${deleting + 1}`}” will be removed from this release, together with its audio file and its splits.</p>
+          <p className="muted">Nothing is deleted until you save. Leave without saving to keep it.</p>
+        </ConfirmModal>
+      )}
     </div>
   )
 }

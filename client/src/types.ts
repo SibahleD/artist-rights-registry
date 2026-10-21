@@ -44,7 +44,7 @@ export interface User {
   preferences?: Partial<Preferences>
 }
 
-export interface ArtistLink { platform: string; url: string }
+export interface ArtistLink { id: string; service: string; label: string; kind: 'streaming' | 'social' | 'store' | 'other'; url: string }
 
 export interface Release {
   id: string
@@ -139,6 +139,7 @@ export interface Collaborator {
   writer_status?: WriterStatus | null
   publisher_name?: string | null
   is_self_published?: boolean
+  is_featured?: boolean
   created_at: string
 }
 
@@ -218,6 +219,7 @@ export interface CollaboratorInput {
   writerStatus?: WriterStatus | null
   publisherName?: string | null
   isSelfPublished?: boolean
+  isFeatured?: boolean
 }
 
 export type NoticeStatus = 'pending' | 'confirmed' | 'disputed' | 'removed' | 'expired' | 'cancelled'
@@ -286,6 +288,8 @@ export interface TrackForm {
   audio: AudioInput | null 
   audioHasFile?: boolean 
   audioFile?: File
+  featuring: string[]          // featured artists, kept as 0% performer credits
+  savedFeaturing: string[]     // what the server had when the song was loaded or last saved
   collaborators: CollaboratorInput[]
 }
 

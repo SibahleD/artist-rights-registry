@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api, fetchBlob, setToken } from '../api'
 import { useAuth } from '../auth'
 import { Collapsible, ErrorBox, Hint } from '../components/ui'
+import { DirtyProvider, useReportDirty } from '../components/UnsavedGuard'
 import TagPicker from '../components/TagPicker'
 import { COLLABORATOR_ROLES, DEFAULT_PREFERENCES } from '../types'
 import type { CollaboratorRole, Preferences, Theme, User } from '../types'
@@ -32,6 +33,7 @@ function SignInCard() {
   const [cur, setCur] = useState('')
   const [next, setNext] = useState('')
   const [again, setAgain] = useState('')
+  useReportDirty('username', username.trim() !== (user?.username ?? ''))
 
   const saveUsername = (e: FormEvent) => { e.preventDefault(); void un.run(async () => {
     const r = await api<{ user: User }>('/users/me', 'PATCH', { username: username.trim() })
@@ -102,6 +104,11 @@ function CreditDetailsCard() {
     publisherName: user?.publisher_name ?? '',
     roles: (user?.roles ?? []) as CollaboratorRole[],
   })
+  const saved = {
+    societyName: user?.society_name ?? '', ipi: user?.ipi ?? '', publisherName: user?.publisher_name ?? '',
+    roles: (user?.roles ?? []) as CollaboratorRole[],
+  }
+  useReportDirty('credit-details', JSON.stringify(f) !== JSON.stringify(saved))
   const submit = (e: FormEvent) => { e.preventDefault(); void s.run(async () => {
     const r = await api<{ user: User }>('/users/me', 'PATCH', f)
     setUser({ ...user!, ...r.user })
@@ -275,9 +282,11 @@ export default function Settings() {
         <button role="tab" aria-selected={tab === 'account'} className={`tab${tab === 'account' ? ' on' : ''}`} onClick={() => setTab('account')}>Account</button>
         <button role="tab" aria-selected={tab === 'preferences'} className={`tab${tab === 'preferences' ? ' on' : ''}`} onClick={() => setTab('preferences')}>Preferences</button>
       </div>
-      {tab === 'account' ? (
-        <div className="stack"><SignInCard /><CreditDetailsCard /><PrivacyCard /><DeleteCard /></div>
-      ) : <PreferencesTab />}
+      <DirtyProvider>
+        {tab === 'account' ? (
+          <div className="stack"><SignInCard /><CreditDetailsCard /><PrivacyCard /><DeleteCard /></div>
+        ) : <PreferencesTab />}
+      </DirtyProvider>
     </div>
   )
 }

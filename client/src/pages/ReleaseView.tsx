@@ -8,7 +8,11 @@ import { formatCopyright } from '../components/CopyrightInput'
 import { useAuth } from '../auth'
 import { buildRows, summarize } from '../lib/splitRows'
 import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
-import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Hint, Loading } from '../components/ui'
+import { Badge, Collapsible, ConfirmModal, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Hint, Loading } from '../components/ui'
+import { featTitle, featuredNames } from '../lib/collab'
+import LinkRows from '../components/LinkRows'
+import { useUnsavedChanges } from '../components/UnsavedGuard'
+import { blankRow, isBlankRow, rowName, rowToStore, storeToRow, type LinkRow } from '../data/services'
 import type { Collaborator, Notice, ReadinessCheck, ReadinessReport, Release, ReleaseExport, ReleaseLink, Track } from '../types'
 
 export function downloadJson(name: string, data: unknown) {
@@ -25,58 +29,60 @@ const derivedLine = (symbol: string, year?: number | null, line?: string | null)
 
 const TYPE_LABEL = { single: 'Single', ep: 'EP', album: 'Album' } as const
 
-const STORES = ['Spotify', 'Apple Music', 'YouTube Music', 'Boomplay', 'Audiomack', 'Deezer', 'Tidal', 'Amazon Music', 'SoundCloud']
-
 // Ready releases only: record where the release is live. Marking it released locks it until it is un-marked.
 function ReleasedPanel({ release, links, onChanged }: { release: Release; links: ReleaseLink[]; onChanged: () => Promise<void> }) {
   const live = !!release.released_at
-  const blank = () => [{ store: '', url: '' }]
-  const [rows, setRows] = useState<ReleaseLink[]>(links.length ? links : blank())
+  const initial = () => (links.length ? links.map(storeToRow) : [blankRow('streaming')])
+  const snap = (r: LinkRow[]) => JSON.stringify(r.filter((x) => !isBlankRow(x)).map((x) => [x.service, rowName(x), x.url.trim()]))
+  const [rows, setRows] = useState<LinkRow[]>(initial)
+  const [base, setBase] = useState(() => snap(initial()))
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const setRow = (i: number, patch: Partial<ReleaseLink>) => setRows(rows.map((x, j) => (j === i ? { ...x, ...patch } : x)))
-  const open = () => { setRows(links.length ? links : blank()); setErr(''); setEditing(true) }
+  const [askUnmark, setAskUnmark] = useState(false)
+  const open = () => { const r = initial(); setRows(r); setBase(snap(r)); setErr(''); setEditing(true) }
+  const dirty = (!live || editing) && snap(rows) !== base
 
-  async function save() {
+  async function save(): Promise<boolean> {
+    const used = rows.filter((x) => !isBlankRow(x))
+    if (used.some((x) => !x.service || !rowName(x))) { setErr('Choose a store for each link.'); return false }
     setBusy(true); setErr('')
     try {
-      await api(`/releases/${release.id}/released`, 'PUT', { links: rows.filter((l) => l.store.trim() || l.url.trim()) })
+      await api(`/releases/${release.id}/released`, 'PUT', { links: used.map(rowToStore) })
+      setBase(snap(rows))
       setEditing(false)
       await onChanged()
-    } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
+      return true
+    } catch (e) { setErr((e as Error).message); return false } finally { setBusy(false) }
   }
+  const { modal: guardModal } = useUnsavedChanges({ dirty, onSave: save })
 
   async function unmark() {
-    if (!window.confirm('Mark this release as not released? Your store links are kept.')) return
     setBusy(true); setErr('')
-    try { await api(`/releases/${release.id}/released`, 'DELETE'); await onChanged() }
-    catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
+    try { await api(`/releases/${release.id}/released`, 'DELETE'); setAskUnmark(false); await onChanged() }
+    catch (e) { setAskUnmark(false); setErr((e as Error).message) } finally { setBusy(false) }
   }
 
   const form = (
     <div className="stack">
       <Hint>Once the release is live, paste its link from each store's share menu. At least one is needed.</Hint>
-      <datalist id="store-names">{STORES.map((s) => <option key={s} value={s} />)}</datalist>
-      {rows.map((l, i) => (
-        <div className="store-row" key={i}>
-          <input list="store-names" placeholder="Store" value={l.store} onChange={(e) => setRow(i, { store: e.target.value })} />
-          <input type="url" placeholder="https://…" value={l.url} onChange={(e) => setRow(i, { url: e.target.value })} />
-          <button type="button" className="ghost" disabled={rows.length === 1} onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</button>
-        </div>
-      ))}
-      <div className="row">
-        <button type="button" className="ghost" onClick={() => setRows([...rows, { store: '', url: '' }])}>+ Add another store</button>
-      </div>
+      <LinkRows rows={rows} onChange={setRows} kinds={['streaming', 'store']} addLabel="Add another store" minRows={1} />
       {err && <ErrorBox error={err} />}
       <div className="row actions">
-        <button disabled={busy} onClick={save}>{busy ? 'Saving…' : live ? 'Save links' : 'Mark as released'}</button>
+        <button disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : live ? 'Save links' : 'Mark as released'}</button>
         {live && <button className="ghost" disabled={busy} onClick={() => setEditing(false)}>Cancel</button>}
       </div>
     </div>
   )
 
   return (
+    <>
+    {guardModal}
+    {askUnmark && (
+      <ConfirmModal title="Mark as not released?" confirmLabel="Mark as not released" busy={busy} onConfirm={unmark} onClose={() => setAskUnmark(false)}>
+        <p>This release will be unlocked again. Your store links are kept.</p>
+      </ConfirmModal>
+    )}
     <Collapsible title={live ? 'Released' : 'Mark as released'}>
       {live && !editing ? (
         <div className="stack">
@@ -87,11 +93,12 @@ function ReleasedPanel({ release, links, onChanged }: { release: Release; links:
           {err && <ErrorBox error={err} />}
           <div className="row actions">
             <button className="secondary" disabled={busy} onClick={open}>Edit links</button>
-            <button className="ghost" disabled={busy} onClick={unmark}>Mark as not released</button>
+            <button className="ghost" disabled={busy} onClick={() => setAskUnmark(true)}>Mark as not released</button>
           </div>
         </div>
       ) : form}
     </Collapsible>
+    </>
   )
 }
 
@@ -126,6 +133,7 @@ export default function ReleaseView() {
   const [err, setErr] = useState('')
   const [actionErr, setActionErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [askDelete, setAskDelete] = useState(false)
   const { user } = useAuth()
   const [notices, setNotices] = useState<Notice[]>([])
   const [people, setPeople] = useState<Collaborator[]>([])
@@ -193,7 +201,7 @@ export default function ReleaseView() {
   }
 
   async function remove() {
-    if (!r || !window.confirm(`Delete "${r.title}"? This can't be undone.`)) return
+    if (!r) return
     setBusy(true); setActionErr('')
     try {
       await api(`/releases/${r.id}`, 'DELETE')
@@ -214,6 +222,11 @@ export default function ReleaseView() {
   return (
     <div className="stack">
       {ack && <AckModal list={ack} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
+      {askDelete && (
+        <ConfirmModal title="Delete this release?" danger confirmLabel="Delete release" busy={busy} onConfirm={remove} onClose={() => setAskDelete(false)}>
+          <p>“{r.title}” and everything in it (songs, audio files, cover art and splits) will be deleted. This can't be undone.</p>
+        </ConfirmModal>
+      )}
       <div className={r.artwork_id ? 'hero hero-art' : 'hero'} style={r.artwork_id && tint ? { background: tintGradient(tint) } : undefined}>
         {r.artwork_id && (
           <button type="button" className="cover viewable hero-cover" aria-label="View cover art full size" title="Click to view" onClick={() => setViewing(true)}>
@@ -223,7 +236,7 @@ export default function ReleaseView() {
         {viewing && <ImageViewer mediaId={r.artwork_id} alt="Cover art" onClose={() => setViewing(false)} />}
         <div className="hero-text">
           <Link to="/discography" className="back">← Back to Discography</Link>
-          <h1>{r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.released_at ? 'released' : r.status} /></h1>
+          <h1>{r.release_type === 'single' && tracks[0] ? featTitle(r.title, featuredNames(people.filter((c) => c.track_id === tracks[0].id))) : r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.released_at ? 'released' : r.status} /></h1>
           <div className="sub">Artist: {r.album_artist}</div>
           <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
           <div className="row actions">
@@ -231,7 +244,7 @@ export default function ReleaseView() {
             {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
             {r.status === 'draft' && <button disabled={busy} onClick={markReady}>Mark ready</button>}
             {r.status === 'ready' && !r.released_at && <button className="secondary" disabled={busy} onClick={revert}>Revert to draft</button>}
-            {r.status === 'draft' && <button className="danger" disabled={busy} onClick={remove}>Delete release</button>}
+            {r.status === 'draft' && <button className="danger" disabled={busy} onClick={() => setAskDelete(true)}>Delete release</button>}
           </div>
         </div>
       </div>
@@ -271,7 +284,7 @@ export default function ReleaseView() {
         <tbody>{tracks.map((t) => (
           <tr key={t.id}>
             <td>{t.track_number}</td>
-            <td><Link to={`/releases/${r.id}/tracks/${t.id}`}>{t.title}</Link></td>
+            <td><Link to={`/releases/${r.id}/tracks/${t.id}`}>{featTitle(t.title, featuredNames(people.filter((c) => c.track_id === t.id)))}</Link></td>
             <td>{t.isrc || '—'}</td>
             <td>{fmtDuration(t.duration_seconds)}</td>
           </tr>

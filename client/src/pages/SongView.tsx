@@ -7,6 +7,7 @@ import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loadin
 import type { Collaborator, Release, ReleaseExport, Track } from '../types'
 import { downloadJson } from './ReleaseView'
 import { formatCopyright } from '../components/CopyrightInput'
+import { featTitle, featuredNames } from '../lib/collab'
 
 interface Data { release: Release; track: Track; collaborators: Collaborator[] }
 
@@ -38,7 +39,7 @@ export default function SongView() {
     <div className="stack">
       <div className="hero">
         <Link to={backTo} className="back">← Back to {r.release_type === 'single' ? 'Discography' : r.title}</Link>
-        <h1>{String(t.track_number).padStart(2, '0')}. {t.title} <Badge status={r.status} /></h1>
+        <h1>{String(t.track_number).padStart(2, '0')}. {featTitle(t.title, featuredNames(collaborators))} <Badge status={r.status} /></h1>
         <div className="sub">Artist: {t.artist_name || r.album_artist}</div>
         <div className="row actions">
           <button className="secondary" onClick={async () => {
@@ -82,7 +83,7 @@ export default function SongView() {
         <tbody>{collaborators.map((c) => (
           <tr key={c.id}>
             <td>
-              {c.legal_name}{c.user_id === user?.id && ' (you)'}
+              {c.legal_name}{c.user_id === user?.id && ' (you)'}{c.is_featured && <span className="badge"> Featured</span>}
               {c.invited_email && !c.user_id && <span className="muted"> · invited, no account yet</span>}
             </td>
             <td>{c.role}</td>

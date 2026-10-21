@@ -24,6 +24,22 @@ export function Modal({ title, children, onClose }: { title: string; children: R
   )
 }
 
+// A question that needs a yes or no, in place of the browser's own confirm box.
+export function ConfirmModal({ title, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger, busy, onConfirm, onClose }: {
+  title: string; children: ReactNode; confirmLabel?: string; cancelLabel?: string; danger?: boolean; busy?: boolean
+  onConfirm: () => void; onClose: () => void
+}) {
+  return (
+    <Modal title={title} onClose={() => !busy && onClose()}>
+      {children}
+      <div className="row actions">
+        <button type="button" className={danger ? 'danger' : undefined} disabled={busy} onClick={onConfirm}>{busy ? 'Working…' : confirmLabel}</button>
+        <button type="button" className="ghost" disabled={busy} onClick={onClose}>{cancelLabel}</button>
+      </div>
+    </Modal>
+  )
+}
+
 // A section whose body can be minimised by clicking its title. The body stays mounted while hidden so form state survives.
 export function Collapsible({ title, children, defaultOpen = true, actions, level = 'h4', className = 'card' }: {
   title: ReactNode; children: ReactNode; defaultOpen?: boolean; actions?: ReactNode; level?: 'h2' | 'h4'; className?: string

@@ -86,3 +86,19 @@ test('rejects a bad IPI, bad writer status, and self-published plus a publisher 
   assert.match(parseCollaborators(body(person('Ada Obi', 100, { writerStatus: 'maybe' }))).error, /writer status/);
   assert.match(parseCollaborators(body(person('Ada Obi', 100, { isSelfPublished: true, publisherName: 'X' }))).error, /not both/);
 });
+
+test('a featured artist must be a performer, and a 0% featured credit does not change the total', () => {
+  const feat = (extra = {}) => person('Jean Mugisha', 0, { role: 'performer', isFeatured: true, ...extra });
+  const ok = parseCollaborators(body(person('Ada Obi', 100), feat()));
+  assert.equal(ok.error, undefined);
+  assert.equal(ok.data[1].isFeatured, true);
+  assert.equal(ok.data[0].isFeatured, false);
+  assert.match(parseCollaborators(body(person('Ada Obi', 100), feat({ role: 'producer' }))).error, /performer/);
+  assert.match(parseCollaborators(body(person('Ada Obi', 100), feat({ role: undefined }))).error, /performer/);
+});
+
+test('a featured artist can be given a share and stays featured', () => {
+  const r = parseCollaborators(body(person('Ada Obi', 80), person('Jean Mugisha', 20, { role: 'performer', isFeatured: true })));
+  assert.equal(r.error, undefined);
+  assert.equal(r.data[1].isFeatured, true);
+});

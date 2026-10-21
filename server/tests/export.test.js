@@ -86,3 +86,22 @@ test('with nothing to derive from, lines stay null and the export still has no i
   assert.equal(copyrightLine('©', null, ''), null);
   assert.deepEqual(findIdKeys(out), []);
 });
+
+test('featured artists are listed, flagged on their credit, and shown in the display title', () => {
+  const r = rows();
+  r.collaborators.push(
+    { id: 'c3', track_id: 't1', user_id: null, invited_email: null, legal_name: 'Sam K', role: 'performer', ownership_percent: '0.00', ipi: null, is_featured: true },
+    { id: 'c4', track_id: 't1', user_id: null, invited_email: null, legal_name: 'Lia M', role: 'performer', ownership_percent: '0.00', ipi: null, is_featured: true });
+  const { tracks } = shapeExport(r);
+  assert.deepEqual(tracks[0].featured_artists, ['Sam K', 'Lia M']);
+  assert.equal(tracks[0].display_title, 'Air It Out (feat. Sam K, Lia M)');
+  assert.equal(tracks[0].title, 'Air It Out');
+  assert.deepEqual(tracks[0].credits.map((c) => c.is_featured), [false, false, true, true]);
+  assert.deepEqual(findIdKeys(shapeExport(r)), []);
+});
+
+test('a song with no featured artists has an empty list and a plain display title', () => {
+  const { tracks } = shapeExport(rows());
+  assert.deepEqual(tracks[0].featured_artists, []);
+  assert.equal(tracks[0].display_title, 'Air It Out');
+});

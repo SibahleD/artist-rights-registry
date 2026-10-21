@@ -6,66 +6,16 @@ import { Collapsible } from '../components/ui'
 import { useBackGuard } from '../components/UnsavedGuard'
 import { useAuth } from '../auth'
 import type { ArtistLink, User } from '../types'
+import LinkRows from '../components/LinkRows'
+import { isBlankRow, OTHER, rowName, withScheme, type LinkRow } from '../data/services'
+import { Hint } from '../components/ui'
 import { COUNTRIES, NATIONALITIES } from '../data/options'
 import SaveBar from '../components/SaveBar'
 import SelectOrOther from '../components/SelectOrOther'
 
-type Platforms = readonly (readonly [string, string])[]
-
-const STREAMING: Platforms = [['spotify', 'Spotify'], ['apple_music', 'Apple Music'], ['soundcloud', 'SoundCloud'], ['youtube', 'YouTube']]
-const SOCIAL: Platforms = [['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['x', 'X (Twitter)']]
-
-function LinksCard({ title, platforms, saved, onSaved }: {
-  title: string
-  platforms: Platforms
-  saved: Record<string, string>
-  onSaved: (next: Record<string, string>) => void
-}) {
-  const [vals, setVals] = useState<Record<string, string>>({})
-  const [msg, setMsg] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    setVals(Object.fromEntries(platforms.map(([p]) => [p, saved[p] ?? ''])))
-  }, [saved, platforms])
-
-  async function save() {
-    setBusy(true); setMsg('')
-    const next = { ...saved }
-    try {
-      for (const [p] of platforms) {
-        const v = (vals[p] ?? '').trim()
-        if (v === (saved[p] ?? '')) continue
-        if (!v) {
-          await api(`/users/me/links/${p}`, 'DELETE')
-          delete next[p]
-        } else {
-          const url = /^https?:\/\//i.test(v) ? v : `https://${v}`
-          const r = await api<{ link: ArtistLink }>(`/users/me/links/${p}`, 'PUT', { url })
-          next[p] = r.link.url
-        }
-      }
-      setMsg('Saved.')
-    } catch (e) {
-      setMsg((e as Error).message)
-    } finally {
-      onSaved(next)
-      setBusy(false)
-    }
-  }
-
-  return (
-    <section className="card stack">
-      <h4>{title}</h4>
-      {platforms.map(([p, label]) => (
-        <label key={p}>{label}
-          <input value={vals[p] ?? ''} onChange={(e) => setVals({ ...vals, [p]: e.target.value })} placeholder="https://…" />
-        </label>
-      ))}
-      <div className="row actions"><button disabled={busy} onClick={save}>Save</button><span className="muted">{msg}</span></div>
-    </section>
-  )
-}
+const savedToRow = (l: ArtistLink): LinkRow => ({ id: l.id, service: l.service, label: l.service === OTHER ? l.label : '', kind: l.kind, url: l.url })
+// What counts as "changed": blank rows are ignored, and a typed address without https:// is compared as typed.
+const linkSnapshot = (rows: LinkRow[]) => JSON.stringify(rows.filter((r) => !isBlankRow(r)).map((r) => [r.id ?? null, r.service, r.service === OTHER ? r.label.trim() : '', r.kind, r.url.trim()]))
 
 export function Profile() {
   const { user, setUser } = useAuth()
@@ -79,24 +29,52 @@ export function Profile() {
   })
   const [msg, setMsg] = useState('')
   const [baseline, setBaseline] = useState(() => JSON.stringify(f))
-  const [links, setLinks] = useState<Record<string, string>>({})
+  const [linkRows, setLinkRows] = useState<LinkRow[]>([])
+  const [savedLinks, setSavedLinks] = useState<ArtistLink[]>([])
+  const [linkBase, setLinkBase] = useState(() => linkSnapshot([]))
   const [avatarFile, setAvatarFile] = useState<File | undefined>()
   const [avatarCleared, setAvatarCleared] = useState(false)
   const usage = useUsage()
 
+  function applyLinks(list: ArtistLink[]) {
+    const rows = list.map(savedToRow)
+    setSavedLinks(list); setLinkRows(rows); setLinkBase(linkSnapshot(rows))
+  }
+
   useEffect(() => {
-    api<{ user: User; links: ArtistLink[] }>('/users/me')
-      .then((r) => setLinks(Object.fromEntries(r.links.map((l) => [l.platform, l.url]))))
-      .catch(() => {})
+    api<{ user: User; links: ArtistLink[] }>('/users/me').then((r) => applyLinks(r.links)).catch(() => {})
   }, [])
 
-  const dirty = JSON.stringify(f) !== baseline || !!avatarFile || avatarCleared
+  const dirty = JSON.stringify(f) !== baseline || !!avatarFile || avatarCleared || linkSnapshot(linkRows) !== linkBase
   const { modal: backModal, backButton, goBack } = useBackGuard({ dirty, onSave: () => doSave(), fallback: '/' })
 
   function save(e: FormEvent) { e.preventDefault(); void doSave() }
 
+  // Brings the server's links in line with the rows on screen: removals first (frees the cap and the address), then edits, then additions.
+  async function syncLinks() {
+    const rows = linkRows.filter((r) => !isBlankRow(r))
+    const keep = new Set(rows.map((r) => r.id).filter(Boolean))
+    try {
+      for (const l of savedLinks) if (!keep.has(l.id)) await api(`/users/me/links/${l.id}`, 'DELETE')
+      for (const r of rows) {
+        const body = { service: r.service, label: r.service === OTHER ? r.label.trim() : undefined, kind: r.kind, url: withScheme(r.url) }
+        const old = savedLinks.find((l) => l.id === r.id)
+        if (!old) await api('/users/me/links', 'POST', body)
+        else if (linkSnapshot([savedToRow(old)]) !== linkSnapshot([r])) await api(`/users/me/links/${r.id}`, 'PATCH', body)
+      }
+    } finally {
+      const fresh = await api<{ links: ArtistLink[] }>('/users/me/links').catch(() => null)
+      if (fresh) applyLinks(fresh.links)
+    }
+  }
+
   async function doSave(): Promise<boolean> {
     setMsg('')
+    const bad = linkRows.filter((r) => !isBlankRow(r)).find((r) => !r.service || !r.url.trim() || (r.service === OTHER && !rowName(r)))
+    if (bad) {
+      setMsg(!bad.service ? 'Choose a service for each link.' : !bad.url.trim() ? 'Add the web address for each link.' : 'Give each "Other" link a name.')
+      return false
+    }
     try {
       if (avatarFile) await upload('/users/me/avatar', avatarFile)
       else if (avatarCleared && user?.avatar_id) await api('/users/me/avatar', 'DELETE')
@@ -106,6 +84,7 @@ export function Profile() {
       setUser(fresh.user)
       setAvatarFile(undefined); setAvatarCleared(false)
       setBaseline(JSON.stringify(f))   // what was just saved is the new starting point
+      await syncLinks()
       setMsg('Saved.')
       return true
     } catch (x) { setMsg((x as Error).message); return false }
@@ -157,9 +136,16 @@ export function Profile() {
 
       <Collapsible title="Links" level="h2" className="">
       <div className="grid2">
-        <LinksCard title="Artist Streaming Links" platforms={STREAMING} saved={links} onSaved={setLinks} />
-        <LinksCard title="Social Links" platforms={SOCIAL} saved={links} onSaved={setLinks} />
+        <section className="card stack">
+          <h4>Artist Streaming Links</h4>
+          <LinkRows rows={linkRows} onChange={setLinkRows} kinds={['streaming']} addLabel="Add streaming link" max={12} />
+        </section>
+        <section className="card stack">
+          <h4>Social Links</h4>
+          <LinkRows rows={linkRows} onChange={setLinkRows} kinds={['social']} addLabel="Add social link" max={12} />
+        </section>
       </div>
+      <Hint>Links are saved with the Save button at the top.</Hint>
       </Collapsible>
     </div>
   )

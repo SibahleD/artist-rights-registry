@@ -10,7 +10,7 @@ const TRACK_KEYS = ['track_number', 'title', 'composition_title', 'artist_name',
     'duration_seconds', 'explicit', 'composition_copyright_year', 'composition_copyright',
     'recording_copyright_year', 'recording_copyright', 'origin', 'version_title', 'language'];
 const AUDIO_KEYS = ['file_name', 'format', 'bitrate_kbps', 'sample_rate_hz', 'channels', 'size_bytes'];
-const CREDIT_KEYS = ['legal_name', 'role', 'ipi', 'writer_status', 'publisher_name', 'is_self_published'];
+const CREDIT_KEYS = ['legal_name', 'role', 'ipi', 'writer_status', 'publisher_name', 'is_self_published', 'is_featured'];
 const ARTWORK_KEYS = ['mime_type', 'width', 'height', 'size_bytes'];
 
 const pick = (row, keys) => Object.fromEntries(keys.map((k) => [k, row?.[k] ?? null]));
@@ -39,18 +39,25 @@ function shapeExport({ release, tracks, audio, collaborators, statuses, artwork,
             ready_at: iso(release.ready_at),
             artwork: artwork ? pick(artwork, ARTWORK_KEYS) : null,
         },
-        tracks: tracks.map((t) => ({
+        tracks: tracks.map((t) => {
+          const credits = creditsByTrack.get(t.id) ?? [];
+          const featured = credits.filter((c) => c.is_featured).map((c) => c.legal_name);
+          return {
             ...pick(t, TRACK_KEYS),
+            display_title: featured.length ? `${t.title} (feat. ${featured.join(', ')})` : t.title,
+            featured_artists: featured,
             artist_name: t.artist_name || release.album_artist || null,
             genre: t.genre || release.genre || firstGenre || null,
             audio: audioByTrack.has(t.id) ? pick(audioByTrack.get(t.id), AUDIO_KEYS) : null,
-            credits: (creditsByTrack.get(t.id) ?? []).map((c, i) => ({
+            credits: credits.map((c, i) => ({
                 position: i + 1,
                 ...pick(c, CREDIT_KEYS),
+                is_featured: !!c.is_featured,
                 ownership_percent: Number(c.ownership_percent),
                 confirmation: statuses.get(c.id) ?? 'unconfirmed',
             })),
-        })),
+          };
+        }),
     };
 }
 
