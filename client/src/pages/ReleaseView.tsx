@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Hero, { BackLink } from '../components/Hero'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import StoreButtons from '../components/StoreButtons'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { AuthImage, tintGradient } from '../components/files'
 import type { RGB } from '../components/files'
@@ -88,9 +89,7 @@ function ReleasedPanel({ release, links, onChanged }: { release: Release; links:
       {live && !editing ? (
         <div className="stack">
           <span className="muted">Marked released {fmtDate(release.released_at)}. This release is locked.</span>
-          <ul className="store-links">
-            {links.map((l) => <li key={l.url}>{l.store}: <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a></li>)}
-          </ul>
+          <StoreButtons links={links} />
           {err && <ErrorBox error={err} />}
           <div className="row actions">
             <button className="secondary" disabled={busy} onClick={open}>Edit links</button>
@@ -141,6 +140,10 @@ export default function ReleaseView() {
   const [problems, setProblems] = useState<string[] | undefined>()
   const [checks, setChecks] = useState<ReadinessCheck[] | null>(null)
   const [links, setLinks] = useState<ReleaseLink[]>([])
+  const { hash } = useLocation()
+  useEffect(() => {
+    if (hash === '#released' && r) document.getElementById('released-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [hash, r?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function load() {
     const x = await api<{ release: Release; tracks: Track[]; links: ReleaseLink[] }>(`/releases/${id}`)
@@ -237,7 +240,7 @@ export default function ReleaseView() {
       {actionErr && <ErrorBox error={actionErr} details={problems} />}
 
       {r.status === 'draft' && checks && <ReadinessChecklist checks={checks} />}
-      {r.status === 'ready' && <ReleasedPanel release={r} links={links} onChanged={load} />}
+      {r.status === 'ready' && <div id="released-panel"><ReleasedPanel release={r} links={links} onChanged={load} /></div>}
 
       <Collapsible title="General info">
        <div className="split">

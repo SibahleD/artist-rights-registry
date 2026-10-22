@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { AuthImage, vinylFallback } from '../components/files'
-import { Badge, Collapsible } from '../components/ui'
+import { Badge, Collapsible, fmtDate } from '../components/ui'
 import Hero from '../components/Hero'
 import { groupOf } from '../lib/groups'
 import type { ReadinessCheck, ReadinessReport, Release, SharedTrack } from '../types'
@@ -17,6 +17,22 @@ function nextStep(checks: ReadinessCheck[]): ReadinessCheck | null {
 }
 
 const MAX_DRAFTS_SHOWN = 6
+const JUST_RELEASED_DAYS = 30
+const ymd = (d: Date) => d.toLocaleDateString('en-CA') // YYYY-MM-DD in the user's own time zone
+
+// A release card on Home that leads straight to the next action.
+function ActionCard({ r, to, message, badge }: { r: Release; to: string; message: string; badge?: ReactNode }) {
+  return (
+    <Link to={to} className="card release">
+      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={vinylFallback} /></div>
+      <div>
+        <strong>{r.title}</strong>
+        <div className="muted">{message}</div>
+        {badge && <div className="badges">{badge}</div>}
+      </div>
+    </Link>
+  )
+}
 
 export default function Home() {
   const { user } = useAuth()
@@ -44,6 +60,12 @@ export default function Home() {
     )).then((pairs) => { if (live) setNext(Object.fromEntries(pairs)) })
     return () => { live = false }
   }, [key])
+
+  // Drafts with co-writer confirmations outstanding, and ready releases whose date passed in the last 30 days but have no store links yet.
+  const toManage = (releases ?? []).filter((r) => r.status === 'draft' && (r.pending_notices ?? 0) > 0)
+  const today = ymd(new Date())
+  const since = ymd(new Date(Date.now() - JUST_RELEASED_DAYS * 86_400_000))
+  const justReleased = (releases ?? []).filter((r) => r.status === 'ready' && !r.released_at && (r.link_count ?? 0) === 0 && !!r.release_date && r.release_date >= since && r.release_date <= today)
 
   const count = (g: ReturnType<typeof groupOf>) => releases?.filter((r) => groupOf(r) === g).length
   const drafts = releases?.filter((r) => r.status === 'draft').length
@@ -85,6 +107,29 @@ export default function Home() {
                 </Link>
               )
             })}
+          </div>
+        </Collapsible>
+      )}
+
+      {toManage.length > 0 && (
+        <Collapsible title="Manage splits" level="h2" className="">
+          <div className="stack">
+            {toManage.map((r) => (
+              <ActionCard key={r.id} r={r} to={`/releases/${r.id}/splits`}
+                message={`${r.pending_notices} co-writer${r.pending_notices === 1 ? '' : 's'} still to confirm. Open the splits to remind or resolve.`}
+                badge={<Badge status="pending" label={`${r.pending_notices} to confirm`} />} />
+            ))}
+          </div>
+        </Collapsible>
+      )}
+
+      {justReleased.length > 0 && (
+        <Collapsible title="Just released, add the links" level="h2" className="">
+          <div className="stack">
+            {justReleased.map((r) => (
+              <ActionCard key={r.id} r={r} to={`/releases/${r.id}#released`}
+                message={`Out since ${fmtDate(r.release_date)}. Add its store links to mark it released.`} />
+            ))}
           </div>
         </Collapsible>
       )}

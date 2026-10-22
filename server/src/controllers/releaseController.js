@@ -159,7 +159,8 @@ async function listReleases(req, res) {
                     (SELECT count(*)::int FROM tracks t WHERE t.release_id = releases.id) AS track_count,
                     (SELECT count(*)::int FROM collaborator_notices n JOIN tracks t ON t.id = n.track_id
                       WHERE t.release_id = releases.id AND n.status IN ('pending', 'disputed')
-                        AND NOT (n.status = 'pending' AND n.expires_at < now())) AS pending_notices
+                        AND NOT (n.status = 'pending' AND n.expires_at < now())) AS pending_notices,
+                    (SELECT count(*)::int FROM release_links l WHERE l.release_id = releases.id) AS link_count
              FROM releases
              WHERE ${where}
              ORDER BY created_at DESC`,

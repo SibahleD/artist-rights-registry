@@ -9,7 +9,7 @@ import { Badge, Collapsible, ErrorBox, fmtDate, Hint, Loading } from '../compone
 import SaveBar from '../components/SaveBar'
 import SplitsEditor from '../components/SplitsEditor'
 import { useUnsavedChanges } from '../components/UnsavedGuard'
-import { toCollaboratorInput } from '../lib/collab'
+import { sumPercent, toCollaboratorInput } from '../lib/collab'
 import type { Collaborator, CollaboratorInput, Notice, Release, Track } from '../types'
 
 // Everything about agreeing the splits for one release, so the track editor can stay about entering data.
@@ -29,7 +29,8 @@ export default function Splits() {
   const [saveMsg, setSaveMsg] = useState('')
   const firstSave = !!(useLocation().state as { first?: boolean } | null)?.first
 
-  async function load() {
+  // keepDrafts: refresh what the server has without throwing away edits that are not saved yet.
+  async function load(keepDrafts = false) {
     const x = await api<{ release: Release; tracks: Track[] }>(`/releases/${id}`)
     setR(x.release); setTracks(x.tracks)
     const [n, c] = await Promise.all([
@@ -38,7 +39,8 @@ export default function Splits() {
     ])
     setNotices(n.notices); setPeople(c.flatMap((z) => z.collaborators))
     const byTrack = Object.fromEntries(x.tracks.map((t, i) => [t.id, c[i].collaborators.map(toCollaboratorInput)]))
-    setDrafts(byTrack); setSaved(byTrack)
+    setSaved(byTrack)
+    if (!keepDrafts) setDrafts(byTrack)
   }
 
   const dirty = JSON.stringify(drafts) !== JSON.stringify(saved)
@@ -71,7 +73,7 @@ export default function Splits() {
 
   async function act(fn: () => Promise<void>) {
     setBusy(true); setActionErr('')
-    try { await fn(); await load() } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
+    try { await fn(); await load(dirty) } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
   }
   const sendInvitations = () => act(async () => {
     setSent(null)
@@ -81,6 +83,12 @@ export default function Splits() {
   const remind = (noticeId: string) => act(async () => { await api(`/releases/${r.id}/notices/${noticeId}/remind`, 'POST') })
 
   const locked = r.status !== 'draft'
+  // Invitations go out from what is saved, to credits that have an email other than the owner's own.
+  const myEmail = user?.email?.trim().toLowerCase()
+  const canInvite = Object.values(saved).flat().some((c) => {
+    const email = (c.invitedEmail ?? '').trim().toLowerCase()
+    return !c.discard && !c.removedByWriter && !!email && email !== myEmail
+  })
   const trackTitle = (tid: string) => tracks.find((t) => t.id === tid)?.title ?? 'Song'
   const rows = buildRows(notices, people, tracks, user?.email)
   const removedLines = people.filter((c) => c.removed_by_writer)
@@ -100,20 +108,24 @@ export default function Splits() {
 
       <Collapsible title={<>Royalty splits <small className="muted">(legal names)</small></>}>
         <Hint>Ownership must total exactly 100% for each song, with at most 2 decimals. Add emails for co-writers you want to ask to confirm, then send the invitations below. Once the release is marked ready, splits are locked. Revert it to draft to edit them (not possible after a dispute is raised).</Hint>
-        {tracks.map((t) => (
-          <div className="stack" key={t.id}>
-            {tracks.length > 1 && <h4>{t.title || 'Untitled'}</h4>}
-            <SplitsEditor collaborators={drafts[t.id] ?? []} disabled={locked}
-              onChange={(c) => setDrafts((d) => ({ ...d, [t.id]: c }))} />
-          </div>
-        ))}
+        {tracks.map((t) => {
+          const total = sumPercent(drafts[t.id] ?? [])
+          return (
+            <Collapsible key={t.id} level="h4" className="track-splits"
+              title={<><strong>{t.track_number}. {t.title || 'Untitled'}</strong> <span className={`total-pill ${total === 100 ? 'ok' : 'bad'}`}>{total}%</span></>}>
+              <SplitsEditor collaborators={drafts[t.id] ?? []} disabled={locked}
+                onChange={(c) => setDrafts((d) => ({ ...d, [t.id]: c }))} />
+            </Collapsible>
+          )
+        })}
       </Collapsible>
 
-      <Collapsible title="Splits and Credits" actions={
-        <button className="secondary" disabled={busy} onClick={sendInvitations}>
+      <Collapsible title="Splits and Credits" actions={canInvite ? (
+        <button className="secondary" disabled={busy || dirty} title={dirty ? 'Save your changes first' : undefined} onClick={sendInvitations}>
           {notices.length ? 'Send / update invitations' : 'Send invitations'}
         </button>
-      }>
+      ) : undefined}>
+        {canInvite && dirty && <small className="warn">You have unsaved changes. Save them first: invitations go out from what is saved, and sending never saves for you.</small>}
         {r.status === 'draft' && <small className="hint">Co-writers confirm their share from an emailed link, no account needed. A song with more than one credit can't be marked ready until each co-writer with a share has confirmed.</small>}
         {sent && <ul>{sent.map((s, i) => <li key={i}>{s.name || s.email}: {SEND_TEXT[s.action] ?? s.action}</li>)}</ul>}
         {removedLines.length > 0 && (

@@ -52,7 +52,7 @@ const router = createBrowserRouter([
           { path: '/shared-tracks/:id', element: <SharedTrackView /> },
           { path: '/profile', element: <Profile /> },
           { path: '/settings', element: <Settings /> },
-          { path: '/Glossary', element: <Glossary /> },
+          { path: '/glossary', element: <Glossary /> },
           { path: '/royalty-rights', element: <RegisterRights /> },
         ],
       },

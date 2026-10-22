@@ -1338,3 +1338,155 @@ button.cover.viewable {
 
 .legal h2 { font-size: 1.15rem; margin: 0; }
 .legal ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.45rem; }
+
+/* Discography bins: a labelled holder with a sunken tray for the releases inside */
+.bin {
+  padding: 12px 14px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid var(--border-mid);
+  border-radius: 16px;
+}
+
+.bin .collapse-body {
+  margin-top: 0.7rem;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-dark);
+  border-radius: 12px;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+
+.bin-count {
+  display: inline-block;
+  min-width: 1.6rem;
+  margin-left: 0.35rem;
+  padding: 1px 8px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--sec-font);
+  background: var(--active);
+  border-radius: 999px;
+}
+
+.bin-empty {
+  min-height: 96px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--sec-font);
+  font-size: 0.9rem;
+  padding: 0 1rem;
+}
+
+/* Glossary: reading cards in frosted glass, two across. Green once understood, red while still learning. */
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+@media (max-width: 760px) {
+  .glossary-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.glass-card {
+  --glass: 255, 255, 255;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 18px 20px 16px;
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(var(--glass), 0.16) 0%, rgba(var(--glass), 0.05) 55%, rgba(var(--glass), 0.09) 100%);
+  border: 1px solid rgba(var(--glass), 0.28);
+  border-top-color: rgba(var(--glass), 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card p { margin: 0; line-height: 1.5; }
+
+.glass-card.understood { --glass: 52, 211, 120; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 28px rgba(22, 163, 74, 0.28); }
+.glass-card.learning { --glass: 239, 68, 68; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 28px rgba(220, 38, 38, 0.28); }
+.glass-card.on { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.glass-actions {
+  margin-top: auto;
+  padding-top: 0.6rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+button.mark {
+  padding: 7px 10px;
+  color: var(--pri-font);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+}
+
+button.mark.understood.on { background: #16a34a; border-color: #86efac; }
+button.mark.learning.on { background: #dc2626; border-color: #fca5a5; }
+
+.glossary-tally { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem; margin: 0; }
+.tally-dot { display: inline-block; width: 0.65rem; height: 0.65rem; border-radius: 50%; margin-right: 0.3rem; }
+.tally-dot.understood { background: #22c55e; }
+.tally-dot.learning { background: #ef4444; }
+
+/* Splits: one collapsible panel per song, with its running total */
+.track-splits {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-mid);
+  border-radius: 12px;
+}
+
+.total-pill {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 1px 9px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.total-pill.ok { color: var(--ok); border-color: var(--ok); background: rgba(95, 208, 138, 0.12); }
+.total-pill.bad { color: var(--warn); border-color: var(--warn); background: rgba(240, 180, 76, 0.12); }
+
+/* Released: one logo button per store */
+.store-buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+a.store-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  height: 48px;
+  padding: 0 18px;
+  box-sizing: border-box;
+  color: #15171c;
+  font-weight: 600;
+  text-decoration: none;
+  background: #f3f4f7;
+  border: 2px solid #ffffff;
+  border-radius: 12px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+a.store-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+
+a.store-btn img { height: 26px; width: auto; max-width: 130px; }

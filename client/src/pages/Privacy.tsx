@@ -24,6 +24,7 @@ export default function Privacy() {
           <li><strong>Your releases:</strong> songs, credits, ownership splits, release dates and store links, plus the audio and cover files you upload.</li>
           <li><strong>Co-writer details you enter:</strong> a legal name, role, share and, if you want them to confirm, an email address.</li>
           <li><strong>Co-writer notices:</strong> the invitation we email on your behalf, when it was sent, and whether it was confirmed, disputed or removed. The notice link carries a secret code, and we keep only a scrambled version of it.</li>
+          <li><strong>Glossary progress:</strong> which glossary terms you marked as understood or still learning.</li>
           <li><strong>Your preferences:</strong> email notices, and the analytics and play-count choices in Settings.</li>
           <li><strong>Sign-in:</strong> after you sign in, your browser keeps a sign-in token in its local storage for up to 7 days, or until you sign out. We do not use advertising cookies or trackers.</li>
         </ul>

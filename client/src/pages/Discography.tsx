@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { Badge, Collapsible, ErrorBox, fmtDate, Loading } from '../components/ui'
@@ -55,13 +55,20 @@ const GROUPS: { key: Group; title: string; empty: string }[] = [
   { key: 'yet', title: 'Yet to release', empty: 'Nothing is ready and waiting. Finish a draft and mark it ready to see it here.' },
 ]
 
+// A bin: a labelled container that holds a set of releases. It collapses from its header, and when it is empty it says what belongs in it.
+function Bin({ title, count, empty, children }: { title: string; count: number; empty: string; children: ReactNode }) {
+  return (
+    <Collapsible className="bin" level="h2" title={<>{title} <span className="bin-count">{count}</span></>}>
+      {count ? children : <p className="bin-empty">{empty}</p>}
+    </Collapsible>
+  )
+}
+
 function ReleaseGroup({ title, items, empty }: { title: string; items: Release[]; empty: string }) {
   return (
-    <Collapsible title={`${title} (${items.length})`} level="h2" className="">
-      {items.length
-        ? <div className="cards">{items.map((r) => <ReleaseCard key={r.id} r={r} />)}</div>
-        : <p className="muted">{empty}</p>}
-    </Collapsible>
+    <Bin title={title} count={items.length} empty={empty}>
+      <div className="cards">{items.map((r) => <ReleaseCard key={r.id} r={r} />)}</div>
+    </Bin>
   )
 }
 
@@ -101,11 +108,9 @@ export default function DiscographyPage() {
         <ReleaseGroup key={g.key} title={g.title} empty={g.empty} items={releases.filter((r) => groupOf(r) === g.key)} />
       ))}
 
-      <Collapsible title={`Collaborations (${shared.length})`} level="h2" className="">
-        {shared.length
-          ? <div className="cards">{shared.map((t) => <SharedTrackCard key={t.id} t={t} />)}</div>
-          : <p className="muted">Songs where you are listed as a collaborator will appear here once the release is ready.</p>}
-      </Collapsible>
+      <Bin title="Collaborations" count={shared.length} empty="Songs where you are listed as a collaborator will appear here once the release is ready.">
+        <div className="cards">{shared.map((t) => <SharedTrackCard key={t.id} t={t} />)}</div>
+      </Bin>
     </div>
   )
 }

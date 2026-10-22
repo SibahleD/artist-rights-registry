@@ -66,6 +66,7 @@ export interface Release {
   artwork_id?: string | null
   track_count?: number
   pending_notices?: number              // co-writer notices still pending or disputed (list endpoint only)
+  link_count?: number                  // store links saved on the release (list endpoint only)
 }
 
 export interface ReleaseLink { store: string; url: string }

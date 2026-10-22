@@ -97,7 +97,7 @@ const PROFILE_KEYS = ['artist_name', 'first_name', 'last_name', 'username', 'con
 async function exportMyData(req, res) {
     try {
         const uid = req.user.id;
-        const [u, links, releases, sentNotices, credited, media] = await Promise.all([
+        const [u, links, releases, sentNotices, credited, media, glossary] = await Promise.all([
             pool.query(`SELECT ${PROFILE_KEYS.join(', ')}, preferences FROM users WHERE id = $1`, [uid]),
             pool.query('SELECT service, label, kind, url FROM artist_links WHERE user_id = $1 ORDER BY kind, created_at, id', [uid]),
             pool.query('SELECT * FROM releases WHERE owner_id = $1 ORDER BY created_at', [uid]),
@@ -109,6 +109,7 @@ async function exportMyData(req, res) {
                  FROM collaborators c JOIN tracks t ON t.id = c.track_id JOIN releases r ON r.id = t.release_id
                  WHERE c.user_id = $1 AND r.owner_id <> $1 ORDER BY r.created_at`, [uid]),
             pool.query(`SELECT mime_type, width, height, size_bytes FROM media WHERE owner_id = $1 AND kind = 'avatar'`, [uid]),
+            pool.query('SELECT term_id, status FROM glossary_progress WHERE user_id = $1 ORDER BY term_id', [uid]),
         ]);
 
         const releaseExports = [];
@@ -128,6 +129,7 @@ async function exportMyData(req, res) {
             releases: releaseExports,
             co_writer_notices_sent: sentNotices.rows,
             credited_on_other_releases: credited.rows.map((c) => ({ ...c, ownership_percent: Number(c.ownership_percent) })),
+            glossary_progress: glossary.rows,
         };
         res.setHeader('Content-Disposition', 'attachment; filename="my-registry-data.json"');
         return res.json(out);
@@ -164,6 +166,7 @@ async function deleteAccount(req, res) {
             await client.query('UPDATE collaborator_notices SET email = NULL WHERE email_hash = $1', [emailHash(me.email)]);
             await client.query('DELETE FROM media WHERE owner_id = $1', [uid]);
             await client.query('DELETE FROM artist_links WHERE user_id = $1', [uid]);
+            await client.query('DELETE FROM glossary_progress WHERE user_id = $1', [uid]);
             await client.query('DELETE FROM email_tokens WHERE user_id = $1', [uid]);
             await client.query(
                 `UPDATE users SET email = $2, password_hash = '!', artist_name = 'Deleted artist', contact_info = NULL,
