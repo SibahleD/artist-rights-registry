@@ -73,8 +73,7 @@ export function checkAudio(file: File, maxBytes: number): string | null {
   return null
 }
 
-// A two-stop gradient from the artwork's colour. Bright colours are scaled down so the white hero text always stays readable,
-// in the light theme as well as the dark one.
+// A two-stop gradient from the artwork's colour. Bright colours are scaled down so the white hero text always stays readable.
 export function tintGradient([r, g, b]: RGB): string {
   const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
   const k = lum > 0.4 ? 0.4 / lum : 1

@@ -24,11 +24,13 @@
   --border-dark: #3f3f3f;
 
   /* Buttons */
-  --btn-accent: #8b9fb387;
-  --btn-blue: #2a4d80;
-  --btn-blue-border: #5f84b8;
-  --btn-red: #8f3030b3;
-  --btn-red-border: #d65a5a;
+  --btn-text: #ffffff;
+  --btn-accent: #0a76b8;
+  --btn-accent-border: #4fc3ff;
+  --btn-blue: #3f4fd0;
+  --btn-blue-border: #8896ff;
+  --btn-red: #d9480f; /* danger buttons: fire orange */
+  --btn-red-border: #ff8c42;
 
   /* Accent: blue, as in the designs */
   --accent: #5b8def;
@@ -43,7 +45,7 @@
   /* Status */
   --ok: #5fd08a;
   --warn: #f0b44c;
-  --danger: #ff6b6b;
+  --danger: #ff8a4c;
 
   --social-bg: rgba(47, 48, 58, 0.5);
   --shadow:
@@ -308,7 +310,6 @@ small {
 .collapse-icon {
   width: 1.3rem;
   height: 1.3rem;
-  filter: invert(100%);
 }
 
 /* Collapsed sidebar (toggled by the button in Layout) */
@@ -339,10 +340,50 @@ body.sidebar-collapsed .sidebar a {
   background: var(--hero-bg);
   border: 1px solid var(--hero-border);
   border-radius: 14px;
-  padding: 16px 20px 18px;
+  padding: 16px 22px 22px;
+  min-height: var(--hero-min, 180px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.hero-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: 6px;
+}
+
+/* Back link in a hero's top-left corner (also used on its own) */
+.hero-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin-left: -0.35rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--link-blue);
+  text-decoration: none;
+}
+
+.hero-back:hover { text-decoration: underline; }
+
+button.hero-back {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-family: inherit;
+}
+
+button.hero-back:hover { filter: none; }
+
+@media (max-width: 700px) {
+  .hero { --hero-min: 150px; }
 }
 
 .hero h1 {
@@ -354,11 +395,6 @@ body.sidebar-collapsed .sidebar a {
   font-size: 15px;
 }
 
-.hero .back {
-  color: #8aa8d8;
-  font-size: 14px;
-  text-decoration: none;
-}
 
 /* Cards */
 
@@ -424,13 +460,20 @@ body.sidebar-collapsed .sidebar a {
 }
 
 .card.release::after {
-  content: "→";
+  content: "";
   margin-left: auto;
   align-self: center;
-  font-size: 22px;
-  color: #fff;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
+  background: #fff;
+  transform: rotate(-90deg);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 0.15s ease;
 }
+
+.card.release:hover::after { transform: translateX(3px) rotate(-90deg); }
 
 .cover {
   width: 96px;
@@ -670,11 +713,11 @@ button,
   font-size: 0.875rem;
   font-weight: 500;
 
-  color: var(--pri-font);
+  color: var(--btn-text);
   background-color: var(--btn-accent);
 
   border-radius: 8px;
-  border: 1.5px solid var(--sec-font);
+  border: 1.5px solid var(--btn-accent-border);
   text-decoration: none;
   text-align: center;
 
@@ -771,15 +814,28 @@ td {
   color: var(--sec-font);
 }
 
+/* Song titles in a tracklist: bold, in the main text colour; underlined on hover so they still read as links */
+a.track-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--pri-font);
+  text-decoration: none;
+}
+
+a.track-title:hover {
+  color: var(--link-blue);
+  text-decoration: underline;
+}
+
 /* Error + modal (class names assume the ui components use these) */
 
 .error,
 .error-box {
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(143, 48, 48, 0.25);
+  background: rgba(217, 72, 15, 0.2);
   border: 1px solid var(--btn-red-border);
-  color: #ffd6d6;
+  color: #ffe3d1;
   font-size: 14px;
 }
 
@@ -793,12 +849,27 @@ td {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 2000;
+  width: 100vw;
+  height: 100dvh;
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(3px);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(4, 6, 12, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-backdrop:focus,
+.lightbox:focus { outline: none; }
+
+/* Page behind an open modal or picture does not scroll */
+html.scroll-locked {
+  overflow: hidden;
+  padding-right: var(--scroll-gap, 0px);
 }
 
 .modal {
@@ -973,7 +1044,15 @@ td {
   border-color: rgba(var(--tint), 0.45);
 }
 
-.card.release:hover { border-color: rgba(var(--tint), 0.85); }
+.card.release { transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease; }
+
+/* Hover: a clearly stronger wash of the cover colour, a bright edge and a lift */
+.card.release:hover {
+  background-image:
+    linear-gradient(120deg, rgba(var(--tint), 0.7) 0%, rgba(var(--tint), 0.38) 55%, rgba(var(--tint), 0.16) 100%);
+  border-color: rgba(var(--tint), 1);
+  box-shadow: 0 8px 22px rgba(var(--tint), 0.38);
+}
 
 /* ---- Back button on edit pages ---- */
 
@@ -1020,45 +1099,6 @@ td {
 }
 
 
-/* Light theme (Settings > Preferences). Dark stays the default palette above. */
-
-:root[data-theme='light'] {
-  --active: #e4e7ee;
-  --input-bg: #ffffff;
-  --sidemenu-bg: #ffffffcc;
-  --bg-light-faded: #ffffffb3;
-  --card-hover: #e9ecf3cc;
-  --pri-font: #14161c;
-  --sec-font: #4a4f5c;
-  --border-light: #8a90a0;
-  --border-mid: #c3c8d4;
-  --border-dark: #d6dae3;
-  --btn-accent: #8b9fb3;
-  --btn-blue: #2a5fb8;
-  --btn-blue-border: #1f4a94;
-  --btn-red: #c24a4a;
-  --btn-red-border: #9c2f2f;
-  --accent: #2f6fe0;
-  --accent-bg: rgba(47, 111, 224, 0.1);
-  --accent-border: rgba(47, 111, 224, 0.5);
-  --link-blue: #1f58c4;
-  --hero-bg: linear-gradient(135deg, #dbe6ff, #eaf0ff);
-  --hero-border: #9db6ee;
-  --ok: #1f8f4e;
-  --warn: #a35f00;
-  --danger: #c62f2f;
-  --social-bg: rgba(255, 255, 255, 0.7);
-  --shadow: rgba(20, 30, 60, 0.12) 0 10px 15px -3px, rgba(20, 30, 60, 0.08) 0 4px 6px -2px;
-  --text: #2a2d36;
-  --bg: #f3f4f7;
-  --code-bg: #eceef4;
-  color-scheme: light;
-  background: var(--bg);
-  scrollbar-color: #b5bac6 transparent;
-}
-
-:root[data-theme='light'] .tab.on { color: var(--accent); }
-
 /* Tag pills (multi-select as tags) */
 
 .tags {
@@ -1099,26 +1139,36 @@ button.cover.viewable {
 .lightbox {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2100;
+  width: 100vw;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.88);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(0, 0, 0, 0.92);
   cursor: zoom-out;
 }
 
+/* At rest the picture fills the screen's height; it never grows wider than the screen */
 .lightbox img {
-  max-width: 92vw;
-  max-height: 92vh;
+  height: 100dvh;
+  width: auto;
+  max-width: 100vw;
   object-fit: contain;
-  border-radius: 6px;
 }
 
 .lightbox-close {
-  position: absolute;
+  position: fixed;
   top: 1rem;
   right: 1rem;
+  z-index: 1;
+  padding: 6px 12px;
+  font-size: 1rem;
   color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
 }
 
 /* A symbol (© or ℗) in front of an input */
@@ -1149,7 +1199,8 @@ button.cover.viewable {
 
 .savebar {
   position: sticky;
-  top: 0;
+  top: 0.5rem;
+  margin-top: 0.4rem;
   z-index: 20;
   display: flex;
   flex-wrap: wrap;
@@ -1158,7 +1209,7 @@ button.cover.viewable {
   padding: 0.6rem 0.9rem;
   background: var(--bg-light-faded);
   backdrop-filter: blur(8px);
-  border: 1px solid var(--border-mid);
+  border: 2px solid var(--border-light);
   border-radius: 12px;
 }
 
@@ -1170,10 +1221,14 @@ button.cover.viewable {
 /* Release hero with cover art */
 
 .hero.hero-art {
+  border-color: transparent;
+}
+
+.hero-art .hero-main {
   flex-direction: row;
   align-items: center;
+  justify-content: flex-start;
   gap: 1.2rem;
-  border-color: transparent;
 }
 
 .hero-art .hero-cover {
@@ -1191,7 +1246,7 @@ button.cover.viewable {
 
 .hero-art h1,
 .hero-art .sub,
-.hero-art .back {
+.hero-art .hero-back {
   color: #fff;
 }
 
@@ -1200,7 +1255,7 @@ button.cover.viewable {
 }
 
 @media (max-width: 700px) {
-  .hero.hero-art {
+  .hero-art .hero-main {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1245,3 +1300,41 @@ button.cover.viewable {
 .plain-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 
 .tag-pill .ghost { padding: 0 0 0 0.4rem; border: 0; background: none; min-height: 0; }
+
+/* Chevron icon: drawn pointing down, turned for the other directions */
+:where(.chevron) {
+  width: 1.25em;
+  height: 1.25em;
+  flex-shrink: 0;
+}
+.chevron-up { transform: rotate(180deg); }
+.chevron-left { transform: rotate(90deg); }
+.chevron-right { transform: rotate(-90deg); }
+
+/* Home: welcome and the four counts, centred in the hero */
+.hero-center .hero-main { align-items: stretch; gap: 16px; }
+.hero-center h1 { text-align: center; }
+.hero-center .stat { align-items: center; text-align: center; }
+
+/* Settings tab selector: three equal buttons across the full width */
+.tabs.tabs-fill {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.tabs-fill .tab {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+}
+
+/* Privacy statement (public page) */
+.legal {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 1.5rem 1.2rem 3rem;
+}
+
+.legal h2 { font-size: 1.15rem; margin: 0; }
+.legal ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.45rem; }

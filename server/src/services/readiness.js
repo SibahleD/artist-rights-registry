@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 const { noticeReadiness } = require('./notices');
 
-// Check levels: error blocks "mark ready", warn needs an acknowledgement (when needsAck is set), info is only advice.
+// Check levels: error blocks "mark ready", warn is worth a look but never blocks, info is only advice.
 const ORDER = { error: 0, warn: 1, info: 2 };
 const IPI_ROLES = ['composer', 'songwriter', 'lyricist', 'arranger', 'publisher'];
 
@@ -49,7 +49,7 @@ const trackList = (nums) => (nums.length === 1 ? `track ${nums[0]}` : `tracks ${
 
 async function readinessChecks(release) {
     const edit = `/releases/${release.id}/edit`;
-    const detail = `/releases/${release.id}`;
+    const splitsPage = `/releases/${release.id}/splits`;
     const checks = [];
     const add = (level, id, message, fix, extra = {}) => checks.push({ id, level, message, fix, ...extra });
 
@@ -81,11 +81,7 @@ async function readinessChecks(release) {
     // Co-writer state comes from the notices.
     const notice = await noticeReadiness(release);
     for (const it of notice.items) {
-        const removed = it.id === 'cowriter-removed';
-        add(it.level, it.id, it.message, removed ? `${edit}?track=${it.trackNumber}` : detail, {
-            track: it.trackNumber,
-            ...(it.level === 'warn' ? { needsAck: true, acknowledged: !!release.unconfirmed_acknowledged_at } : {}),
-        });
+        add(it.level, it.id, it.message, splitsPage, { track: it.trackNumber });
     }
 
     // Artist-name spelling, across the release and its tracks.
@@ -127,7 +123,4 @@ async function readinessChecks(release) {
 const errorsOf = (checks) => checks.filter((c) => c.level === 'error').map((c) => c.message);
 async function readinessProblems(release) { return errorsOf(await readinessChecks(release)); }
 
-// Warnings that still stop "mark ready" until the artist acknowledges them.
-const blockingWarnings = (checks) => checks.filter((c) => c.level === 'warn' && c.needsAck && !c.acknowledged);
-
-module.exports = { readinessChecks, readinessProblems, errorsOf, blockingWarnings, spellingConflicts };
+module.exports = { readinessChecks, readinessProblems, errorsOf, spellingConflicts };

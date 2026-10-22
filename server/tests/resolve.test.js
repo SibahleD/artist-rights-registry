@@ -72,8 +72,7 @@ test("'use_theirs' needs the credit to have been changed first", { skip }, async
   assert.equal((await noticeRow()).status, 'disputed');
 });
 
-test('keep my numbers: closes the dispute, wipes personal data, resets the acknowledgement, and the notice can be sent again', { skip }, async () => {
-  await pool.query('UPDATE releases SET unconfirmed_acknowledged_at = now() WHERE id = $1', [releaseId]);
+test('keep my numbers: closes the dispute, wipes personal data, and the notice can be sent again', { skip }, async () => {
   const n = await noticeRow();
   const r = await call(nc.resolveNotice, { params: { noticeId: n.id }, body: { decision: 'keep', note: '  Agreed 40% in the studio  ' } });
   assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -81,12 +80,11 @@ test('keep my numbers: closes the dispute, wipes personal data, resets the ackno
 
   const row = await noticeRow();
   assert.deepEqual([row.status, row.email, row.co_writer_name, row.resolution_note], ['cancelled', null, null, 'Agreed 40% in the studio']);
-  assert.equal((await pool.query('SELECT unconfirmed_acknowledged_at FROM releases WHERE id = $1', [releaseId])).rows[0].unconfirmed_acknowledged_at, null);
 
   // resolving twice is refused
   assert.equal((await call(nc.resolveNotice, { params: { noticeId: n.id }, body: { decision: 'keep' } })).status, 409);
 
-  // the disputed error is gone, replaced by an unconfirmed warning that says what to do
+  // the disputed error is gone, replaced by an unconfirmed error that says what to do
   const rel = { ...(await pool.query('SELECT * FROM releases WHERE id = $1', [releaseId])).rows[0], release_date: '2026-12-01' };
   const checks = await readiness.readinessChecks(rel);
   assert.ok(!checks.some((c) => c.id === 'cowriter-disputed'));

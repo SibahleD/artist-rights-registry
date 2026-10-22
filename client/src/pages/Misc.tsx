@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import Hero from '../components/Hero'
 import { api, upload } from '../api'
 import ImagePicker from '../components/ImagePicker'
 import { useUsage } from '../components/files'
@@ -93,11 +95,10 @@ export function Profile() {
   return (
     <div className="stack">
       {backModal}
-      <div className="hero">
-        {backButton}
+      <Hero back={backButton}>
         <h1>Artist Profile</h1>
         <div className="sub">Artist: {user?.artist_name}</div>
-      </div>
+      </Hero>
       <SaveBar dirty={dirty} busy={false} onSave={() => void doSave()} onCancel={goBack} message={msg} />
       <Collapsible title="General Info" level="h2" className="">
       <form className="card stack" onSubmit={save}>
@@ -124,7 +125,7 @@ export function Profile() {
           </label>
           <SelectOrOther label="Nationality" options={NATIONALITIES} value={f.nationality} onChange={(v) => setF({ ...f, nationality: v })} otherPlaceholder="Type your nationality" />
         </div>
-        <small className="hint">Your roles, rights society, IPI and publisher are in Settings → Account → Credit details.</small>
+        <small className="hint">Your roles, rights society, IPI and publisher are in <Link to="/settings?tab=credits">Settings, Credits</Link>.</small>
         </div>
         <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
           mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 300 * 1024}

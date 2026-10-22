@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Hero, { BackLink } from '../components/Hero'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
@@ -37,8 +38,7 @@ export default function SongView() {
 
   return (
     <div className="stack">
-      <div className="hero">
-        <Link to={backTo} className="back">← Back to {r.release_type === 'single' ? 'Discography' : r.title}</Link>
+      <Hero back={<BackLink to={backTo}>Back to {r.release_type === 'single' ? 'Discography' : r.title}</BackLink>}>
         <h1>{String(t.track_number).padStart(2, '0')}. {featTitle(t.title, featuredNames(collaborators))} <Badge status={r.status} /></h1>
         <div className="sub">Artist: {t.artist_name || r.album_artist}</div>
         <div className="row actions">
@@ -50,7 +50,7 @@ export default function SongView() {
           }}>Export JSON</button>
           {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
         </div>
-      </div>
+      </Hero>
 
       <Collapsible title="General info">
         <div className="split">

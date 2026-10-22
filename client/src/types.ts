@@ -11,16 +11,14 @@ export type CollaboratorRole = (typeof COLLABORATOR_ROLES)[number]
 export type ExplicitValue = (typeof EXPLICIT_VALUES)[number]
 export type AudioFormat = (typeof AUDIO_FORMATS)[number]
 
-export type Theme = 'system' | 'light' | 'dark'
 export interface Preferences {
-  theme: Theme
   analytics_opt_in: boolean
   play_counts_opt_in: boolean
   notify_disputes: boolean
   notify_approvals: boolean
 }
 export const DEFAULT_PREFERENCES: Preferences = {
-  theme: 'system', analytics_opt_in: false, play_counts_opt_in: false, notify_disputes: true, notify_approvals: true,
+  analytics_opt_in: false, play_counts_opt_in: false, notify_disputes: true, notify_approvals: true,
 }
 
 export interface User {
@@ -78,8 +76,6 @@ export interface ReadinessCheck {
   message: string
   fix: string            // client route to fix it, e.g. /releases/:id/edit?track=2
   track?: number
-  needsAck?: boolean
-  acknowledged?: boolean
 }
 
 export interface ReadinessReport { status: ReleaseStatus; canMarkReady: boolean; checks: ReadinessCheck[] }

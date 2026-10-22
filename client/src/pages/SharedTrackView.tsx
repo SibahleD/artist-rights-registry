@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import Hero, { BackLink } from '../components/Hero'
+import { useParams } from 'react-router-dom'
 import { api } from '../api'
 import { Collapsible, ErrorBox, fmtDate, fmtDuration, Loading } from '../components/ui'
 import type { SharedTrackDetail } from '../types'
@@ -28,7 +29,7 @@ export default function SharedTrackView() {
   if (err) {
     return (
       <div className="stack">
-        <Link to="/discography" className="back">← Back to Discography</Link>
+        <BackLink to="/discography">Back to Discography</BackLink>
         <ErrorBox error={err} />
       </div>
     )
@@ -39,13 +40,12 @@ export default function SharedTrackView() {
 
   return (
     <div className="stack">
-      <div className="hero">
-        <Link to="/discography" className="back">← Back to Discography</Link>
+      <Hero back={<BackLink to="/discography">Back to Discography</BackLink>}>
         <h1>{t.title}</h1>
         <div className="sub">From “{t.release_title}” by {t.album_artist}</div>
         <div className="sub">Release owner: {t.owner_artist_name}</div>
         <div className="sub">Release date: {t.release_date ? fmtDate(t.release_date) : '—'}</div>
-      </div>
+      </Hero>
 
       <Collapsible title="General info">
       <div className="grid2">

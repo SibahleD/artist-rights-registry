@@ -4,15 +4,16 @@ import { api } from '../api'
 import { useAuth } from '../auth'
 import { AuthImage, vinylFallback } from '../components/files'
 import { Badge, Collapsible } from '../components/ui'
+import Hero from '../components/Hero'
 import { groupOf } from '../lib/groups'
 import type { ReadinessCheck, ReadinessReport, Release, SharedTrack } from '../types'
 
 // Slot for analytics on released tracks. Intentionally empty until play counts are sorted out (build guide step 11).
 function AnalyticsSlot(): null { return null }
 
-// What to do next on a draft: the first thing still blocking it, else the first unacknowledged warning.
+// What to do next on a draft: the first thing still blocking it, else the first warning.
 function nextStep(checks: ReadinessCheck[]): ReadinessCheck | null {
-  return checks.find((c) => c.level === 'error') ?? checks.find((c) => c.level === 'warn' && !c.acknowledged) ?? null
+  return checks.find((c) => c.level === 'error') ?? checks.find((c) => c.level === 'warn') ?? null
 }
 
 const MAX_DRAFTS_SHOWN = 6
@@ -49,13 +50,15 @@ export default function Home() {
 
   return (
     <div className="stack">
-      <h1>Welcome, {user?.artist_name}</h1>
-      <div className="stats">
-        <Link to="/discography" className="option stat"><b>{count('released') ?? ''}</b>Released</Link>
-        <Link to="/discography" className="option stat"><b>{count('yet') ?? ''}</b>Yet to release</Link>
-        <Link to="/discography" className="option stat"><b>{drafts ?? ''}</b>Drafts</Link>
-        <Link to="/discography" className="option stat"><b>{shared?.length ?? ''}</b>Collaborations</Link>
-      </div>
+      <Hero centered>
+        <h1>Welcome, {user?.artist_name}</h1>
+        <div className="stats">
+          <Link to="/discography" className="option stat"><b>{count('released') ?? ''}</b>Released</Link>
+          <Link to="/discography" className="option stat"><b>{count('yet') ?? ''}</b>Yet to release</Link>
+          <Link to="/discography" className="option stat"><b>{drafts ?? ''}</b>Drafts</Link>
+          <Link to="/discography" className="option stat"><b>{shared?.length ?? ''}</b>Collaborations</Link>
+        </div>
+      </Hero>
       <div className="row">
         <Link className="btn" to="/new/song">+ New Song Listing</Link>
         <Link className="btn secondary" to="/new/album">+ New Album / EP</Link>

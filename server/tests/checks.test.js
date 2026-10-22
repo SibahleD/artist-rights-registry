@@ -87,28 +87,40 @@ test('missing ISRC, ISWC, UPC and IPI are info only, never errors', { skip }, as
   assert.ok(!svc.errorsOf(checks).some((m) => /ISRC|ISWC|UPC|IPI/.test(m)));
 });
 
-test('inconsistent artist spelling is a warning that does not need acknowledging', { skip }, async () => {
+test('inconsistent artist spelling is a warning that never blocks', { skip }, async () => {
   const checks = await svc.readinessChecks({ ...(await fresh()), release_date: '2026-12-01' });
   const w = checks.find((c) => c.id === 'artist-name-spelling');
   assert.equal(w.level, 'warn');
-  assert.ok(!w.needsAck);
   assert.match(w.message, /Kenny TL/);
-  assert.ok(!svc.blockingWarnings(checks).some((c) => c.id === 'artist-name-spelling'));
+  assert.ok(!svc.errorsOf(checks).some((m) => /spelled/.test(m)));
 });
 
-test('an unconfirmed co-writer is a warning that blocks until acknowledged', { skip }, async () => {
-  let rel = { ...(await fresh()), release_date: '2026-12-01' };
-  let checks = await svc.readinessChecks(rel);
+test('an unconfirmed co-writer on a shared song is an error with no way around it', { skip }, async () => {
+  const rel = { ...(await fresh()), release_date: '2026-12-01' };
+  const checks = await svc.readinessChecks(rel);
   const w = checks.find((c) => c.id === 'cowriter-unconfirmed');
-  assert.equal(w.level, 'warn');
-  assert.equal(w.needsAck, true);
-  assert.equal(w.acknowledged, false);
-  assert.equal(svc.blockingWarnings(checks).length, 1);
+  assert.equal(w.level, 'error');
+  assert.equal(w.fix, `/releases/${release.id}/splits`);
+  assert.match(w.message, /Waiting for Jean Mugisha to confirm their 40%/);
+  assert.equal(w.needsAck, undefined);
+  // acknowledging used to unlock this; the column no longer matters
+  const acked = await svc.readinessChecks({ ...rel, unconfirmed_acknowledged_at: new Date() });
+  assert.equal(acked.find((c) => c.id === 'cowriter-unconfirmed').level, 'error');
+  assert.equal(svc.blockingWarnings, undefined);
+});
 
-  rel = { ...rel, unconfirmed_acknowledged_at: new Date() };
-  checks = await svc.readinessChecks(rel);
-  assert.equal(svc.blockingWarnings(checks).length, 0);
-  assert.equal(checks.find((c) => c.id === 'cowriter-unconfirmed').acknowledged, true);
+test('a 0% credit does not need confirming, and a solo song is unaffected', { skip }, async () => {
+  const rel = { ...(await fresh()), release_date: '2026-12-01' };
+  await pool.query(`UPDATE collaborators SET ownership_percent = 100 WHERE id = $1`, [collabs.me]);
+  await pool.query(`UPDATE collaborators SET ownership_percent = 0 WHERE id = $1`, [collabs.jean]);
+  const checks = await svc.readinessChecks(rel);
+  assert.ok(!checks.some((c) => c.id === 'cowriter-unconfirmed'));
+  await pool.query(`DELETE FROM collaborators WHERE id = $1`, [collabs.jean]);
+  assert.ok(!(await svc.readinessChecks(rel)).some((c) => c.id === 'cowriter-unconfirmed'));
+  // put the fixture back for the tests below
+  await pool.query(`UPDATE collaborators SET ownership_percent = 60 WHERE id = $1`, [collabs.me]);
+  collabs.jean = (await pool.query(
+    `INSERT INTO collaborators (track_id, invited_email, legal_name, ownership_percent) VALUES ($1,'jean-checks@example.com','Jean Mugisha',40) RETURNING id`, [t2])).rows[0].id;
 });
 
 test('export marks credits confirmed / unconfirmed / removed and leaks nothing', { skip }, async () => {

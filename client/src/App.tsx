@@ -16,6 +16,7 @@ import CoWriterNotice from './pages/CoWriterNotice'
 import Glossary from './pages/Glossary'
 import RegisterRights from './pages/RegisterRights'
 import Settings from './pages/Settings'
+import Privacy from './pages/Privacy'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: '/register', element: <AuthPage mode="register" /> },
       { path: '/verify-email', element: <VerifyEmail /> },
       { path: '/notice/:token', element: <CoWriterNotice /> },
+      { path: '/privacy', element: <Privacy /> },
       {
         element: <Protected />,
         children: [

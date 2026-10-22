@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import chevron from '../assets/ico/chevron-down.svg'
+import Chevron from './Chevron'
+import { Overlay } from './overlay'
 
 export function Loading({ what = 'Loading' }: { what?: string }) {
   const [slow, setSlow] = useState(false)
@@ -16,11 +17,11 @@ export const ErrorBox = ({ error, details }: { error: string; details?: string[]
 
 export function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <Overlay label={title} onClose={onClose}>
+      <div className="modal">
         <h3>{title}</h3>{children}
       </div>
-    </div>
+    </Overlay>
   )
 }
 
@@ -50,7 +51,7 @@ export function Collapsible({ title, children, defaultOpen = true, actions, leve
     <section className={className}>
       <div className="section-head">
         <button type="button" className="section-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-          <img className={`collapse-icon${open ? '' : ' closed'}`} src={chevron} alt="" />
+          <Chevron className={`collapse-icon${open ? '' : ' closed'}`} />
           <Heading>{title}</Heading>
         </button>
         {actions}

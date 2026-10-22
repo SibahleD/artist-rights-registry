@@ -1,10 +1,7 @@
 // Pure rules for the Settings endpoints, kept free of the database so they can be unit tested.
 
-const THEMES = ['system', 'light', 'dark'];
-
 // The only keys allowed in users.preferences, each with its validator and default.
 const PREFERENCE_KEYS = {
-    theme: { check: (v) => THEMES.includes(v), def: 'system', msg: `Theme must be one of: ${THEMES.join(', ')}.` },
     analytics_opt_in: { check: (v) => typeof v === 'boolean', def: false, msg: 'Analytics must be on or off.' },
     play_counts_opt_in: { check: (v) => typeof v === 'boolean', def: false, msg: 'Play counts must be on or off.' },
     notify_disputes: { check: (v) => typeof v === 'boolean', def: true, msg: 'Dispute emails must be on or off.' },
@@ -59,4 +56,4 @@ function splitLegalName(v) {
     return i < 0 ? { first: t, last: null } : { first: t.slice(0, i), last: t.slice(i + 1) };
 }
 
-module.exports = { splitLegalName, THEMES, PREFERENCE_KEYS, validatePreferences, withDefaults, validateNewPassword, normaliseEmail, tokenPredatesPasswordChange };
+module.exports = { splitLegalName, PREFERENCE_KEYS, validatePreferences, withDefaults, validateNewPassword, normaliseEmail, tokenPredatesPasswordChange };

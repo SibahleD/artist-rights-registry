@@ -1,12 +1,13 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import Hero from '../components/Hero'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fetchBlob, setToken } from '../api'
 import { useAuth } from '../auth'
 import { Collapsible, ErrorBox, Hint } from '../components/ui'
 import { DirtyProvider, useReportDirty } from '../components/UnsavedGuard'
 import TagPicker from '../components/TagPicker'
 import { COLLABORATOR_ROLES, DEFAULT_PREFERENCES } from '../types'
-import type { CollaboratorRole, Preferences, Theme, User } from '../types'
+import type { CollaboratorRole, Preferences, User } from '../types'
 import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
 
 type Note = { ok: boolean; text: string } | null
@@ -151,6 +152,7 @@ function PrivacyCard() {
   return (
     <Collapsible title="Security and privacy" level="h2" className="">
       <section className="card stack">
+        <p>The full details are in the <Link to="/privacy">privacy statement</Link>.</p>
         <h4>What is stored</h4>
         <ul>
           <li>Your account: email, a scrambled (hashed) password, artist name, and the profile details you fill in.</li>
@@ -231,7 +233,7 @@ function PreferencesTab() {
   const s = useSection()
   const prefs: Preferences = { ...DEFAULT_PREFERENCES, ...(user?.preferences ?? {}) }
 
-  // Each change saves straight away; the screen updates first so the theme switches at once.
+  // Each change saves straight away; the screen updates first.
   const set = (patch: Partial<Preferences>) => {
     const before = user!
     setUser({ ...before, preferences: { ...prefs, ...patch } })
@@ -243,17 +245,6 @@ function PreferencesTab() {
 
   return (
     <div className="stack">
-      <section className="card stack">
-        <h4>Appearance</h4>
-        <label>Theme
-          <select value={prefs.theme} onChange={(e) => set({ theme: e.target.value as Theme })}>
-            <option value="system">Match my device</option>
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-        </label>
-      </section>
-
       <section className="card stack">
         <h4>Sharing</h4>
         <Toggle label="Include me in play counts" checked={prefs.play_counts_opt_in} onChange={(v) => set({ play_counts_opt_in: v })}
@@ -273,19 +264,25 @@ function PreferencesTab() {
   )
 }
 
+type Tab = 'account' | 'credits' | 'preferences'
+const TABS: [Tab, string][] = [['account', 'Account'], ['credits', 'Credits'], ['preferences', 'Preferences']]
+
 export default function Settings() {
-  const [tab, setTab] = useState<'account' | 'preferences'>('account')
+  const [params] = useSearchParams()
+  const first = params.get('tab')
+  const [tab, setTab] = useState<Tab>(TABS.some(([k]) => k === first) ? (first as Tab) : 'account')
   return (
     <div className="stack">
-      <div className="hero"><h1>Settings</h1></div>
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'account'} className={`tab${tab === 'account' ? ' on' : ''}`} onClick={() => setTab('account')}>Account</button>
-        <button role="tab" aria-selected={tab === 'preferences'} className={`tab${tab === 'preferences' ? ' on' : ''}`} onClick={() => setTab('preferences')}>Preferences</button>
+      <Hero><h1>Settings</h1></Hero>
+      <div className="tabs tabs-fill" role="tablist">
+        {TABS.map(([key, label]) => (
+          <button key={key} role="tab" aria-selected={tab === key} className={`tab${tab === key ? ' on' : ''}`} onClick={() => setTab(key)}>{label}</button>
+        ))}
       </div>
       <DirtyProvider>
-        {tab === 'account' ? (
-          <div className="stack"><SignInCard /><CreditDetailsCard /><PrivacyCard /><DeleteCard /></div>
-        ) : <PreferencesTab />}
+        {tab === 'account' && <div className="stack"><SignInCard /><PrivacyCard /><DeleteCard /></div>}
+        {tab === 'credits' && <div className="stack"><CreditDetailsCard /></div>}
+        {tab === 'preferences' && <PreferencesTab />}
       </DirtyProvider>
     </div>
   )

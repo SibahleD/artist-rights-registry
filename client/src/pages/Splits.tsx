@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import Hero, { BackLink } from '../components/Hero'
+import Chevron from '../components/Chevron'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
@@ -85,12 +87,11 @@ export default function Splits() {
 
   return (
     <div className="stack">
-      <div className="hero">
-        <Link to={`/releases/${r.id}`} className="back">← Back to {r.title}</Link>
+      <Hero back={<BackLink to={`/releases/${r.id}`}>Back to {r.title}</BackLink>}>
         <h1>Splits <Badge status={r.released_at ? 'released' : r.status} /></h1>
         <div className="sub">{r.title} · {r.album_artist}</div>
-        {firstSave && <Link to={`/releases/${r.id}`} className="back">Skip for now →</Link>}
-      </div>
+        {firstSave && <Link to={`/releases/${r.id}`} className="hero-back">Skip for now<Chevron dir="right" /></Link>}
+      </Hero>
       {guardModal}
       {locked
         ? <p className="muted">This release is locked, so the splits can't be edited. Revert it to draft on the release page to change them.</p>
@@ -113,7 +114,7 @@ export default function Splits() {
           {notices.length ? 'Send / update invitations' : 'Send invitations'}
         </button>
       }>
-        {r.status === 'draft' && <small className="hint">Co-writers confirm their share from an emailed link, no account needed. You can mark the release ready without them, but you'll be asked to acknowledge it.</small>}
+        {r.status === 'draft' && <small className="hint">Co-writers confirm their share from an emailed link, no account needed. A song with more than one credit can't be marked ready until each co-writer with a share has confirmed.</small>}
         {sent && <ul>{sent.map((s, i) => <li key={i}>{s.name || s.email}: {SEND_TEXT[s.action] ?? s.action}</li>)}</ul>}
         {removedLines.length > 0 && (
           <p className="warn">{removedLines.map((c) => `${Number(c.ownership_percent)}%`).join(', ')} {removedLines.length === 1 ? 'is' : 'are'} held by a co-writer who removed themselves.

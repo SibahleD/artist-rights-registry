@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Hero, { BackLink } from '../components/Hero'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { AuthImage, tintGradient } from '../components/files'
@@ -7,7 +8,7 @@ import ImageViewer from '../components/ImageViewer'
 import { formatCopyright } from '../components/CopyrightInput'
 import { useAuth } from '../auth'
 import { buildRows, summarize } from '../lib/splitRows'
-import { AckModal, acknowledgeUnconfirmed, tryMarkReady } from '../components/ready'
+import { tryMarkReady } from '../components/ready'
 import { Badge, Collapsible, ConfirmModal, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Hint, Loading } from '../components/ui'
 import { featTitle, featuredNames } from '../lib/collab'
 import LinkRows from '../components/LinkRows'
@@ -114,8 +115,8 @@ function ReadinessChecklist({ checks }: { checks: ReadinessCheck[] }) {
         {checks.map((c, i) => (
           <li key={`${c.id}-${c.track ?? ''}-${i}`} className={`check ${c.level}`}>
             <span className="lvl">{LEVEL_LABEL[c.level]}</span>
-            <span>{c.message}{c.acknowledged && <small className="muted"> (acknowledged)</small>}</span>
-            {c.level !== 'info' && !c.acknowledged && <Link to={c.fix}>Open</Link>}
+            <span>{c.message}</span>
+            {c.level !== 'info' && <Link to={c.fix}>Open</Link>}
           </li>
         ))}
       </ul>
@@ -138,7 +139,6 @@ export default function ReleaseView() {
   const [notices, setNotices] = useState<Notice[]>([])
   const [people, setPeople] = useState<Collaborator[]>([])
   const [problems, setProblems] = useState<string[] | undefined>()
-  const [ack, setAck] = useState<string[] | null>(null)
   const [checks, setChecks] = useState<ReadinessCheck[] | null>(null)
   const [links, setLinks] = useState<ReleaseLink[]>([])
 
@@ -174,21 +174,8 @@ export default function ReleaseView() {
     try {
       const res = await tryMarkReady(r.id)
       if (res.ok) await load()
-      else if (res.unconfirmed) setAck(res.unconfirmed)
       else { setActionErr(res.error); setProblems(res.problems) }
     } catch (e) { setActionErr((e as Error).message) } finally { setBusy(false) }
-  }
-
-  async function confirmAck() {
-    if (!r) return
-    setBusy(true)
-    try {
-      await acknowledgeUnconfirmed(r.id)
-      const res = await tryMarkReady(r.id)
-      setAck(null)
-      if (res.ok) await load()
-      else { setActionErr(res.error); setProblems(res.problems) }
-    } catch (e) { setAck(null); setActionErr((e as Error).message) } finally { setBusy(false) }
   }
 
   async function revert() {
@@ -221,33 +208,32 @@ export default function ReleaseView() {
 
   return (
     <div className="stack">
-      {ack && <AckModal list={ack} busy={busy} onConfirm={confirmAck} onClose={() => setAck(null)} />}
       {askDelete && (
         <ConfirmModal title="Delete this release?" danger confirmLabel="Delete release" busy={busy} onConfirm={remove} onClose={() => setAskDelete(false)}>
           <p>“{r.title}” and everything in it (songs, audio files, cover art and splits) will be deleted. This can't be undone.</p>
         </ConfirmModal>
       )}
-      <div className={r.artwork_id ? 'hero hero-art' : 'hero'} style={r.artwork_id && tint ? { background: tintGradient(tint) } : undefined}>
-        {r.artwork_id && (
+      {viewing && <ImageViewer mediaId={r.artwork_id} alt="Cover art" onClose={() => setViewing(false)} />}
+      <Hero
+        back={<BackLink to="/discography">Back to Discography</BackLink>}
+        style={r.artwork_id && tint ? { background: tintGradient(tint) } : undefined}
+        art={r.artwork_id ? (
           <button type="button" className="cover viewable hero-cover" aria-label="View cover art full size" title="Click to view" onClick={() => setViewing(true)}>
             <AuthImage mediaId={r.artwork_id} alt="Cover art" onColor={setTint} />
           </button>
-        )}
-        {viewing && <ImageViewer mediaId={r.artwork_id} alt="Cover art" onClose={() => setViewing(false)} />}
-        <div className="hero-text">
-          <Link to="/discography" className="back">← Back to Discography</Link>
-          <h1>{r.release_type === 'single' && tracks[0] ? featTitle(r.title, featuredNames(people.filter((c) => c.track_id === tracks[0].id))) : r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.released_at ? 'released' : r.status} /></h1>
-          <div className="sub">Artist: {r.album_artist}</div>
-          <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
-          <div className="row actions">
-            <button className="secondary" disabled={busy} onClick={exportMetadata}>Export metadata (JSON)</button>
-            {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
-            {r.status === 'draft' && <button disabled={busy} onClick={markReady}>Mark ready</button>}
-            {r.status === 'ready' && !r.released_at && <button className="secondary" disabled={busy} onClick={revert}>Revert to draft</button>}
-            {r.status === 'draft' && <button className="danger" disabled={busy} onClick={() => setAskDelete(true)}>Delete release</button>}
-          </div>
+        ) : undefined}
+      >
+        <h1>{r.release_type === 'single' && tracks[0] ? featTitle(r.title, featuredNames(people.filter((c) => c.track_id === tracks[0].id))) : r.title} ({TYPE_LABEL[r.release_type]}) <Badge status={r.released_at ? 'released' : r.status} /></h1>
+        <div className="sub">Artist: {r.album_artist}</div>
+        <div className="sub">Set to release: {r.release_date ? fmtDate(r.release_date) : '—'}</div>
+        <div className="row actions">
+          <button className="secondary" disabled={busy} onClick={exportMetadata}>Export metadata (JSON)</button>
+          {r.status === 'draft' && <Link className="btn secondary" to={`/releases/${r.id}/edit`}>Edit draft</Link>}
+          {r.status === 'draft' && <button disabled={busy} onClick={markReady}>Mark ready</button>}
+          {r.status === 'ready' && !r.released_at && <button className="secondary" disabled={busy} onClick={revert}>Revert to draft</button>}
+          {r.status === 'draft' && <button className="danger" disabled={busy} onClick={() => setAskDelete(true)}>Delete release</button>}
         </div>
-      </div>
+      </Hero>
       {actionErr && <ErrorBox error={actionErr} details={problems} />}
 
       {r.status === 'draft' && checks && <ReadinessChecklist checks={checks} />}
@@ -284,7 +270,7 @@ export default function ReleaseView() {
         <tbody>{tracks.map((t) => (
           <tr key={t.id}>
             <td>{t.track_number}</td>
-            <td><Link to={`/releases/${r.id}/tracks/${t.id}`}>{featTitle(t.title, featuredNames(people.filter((c) => c.track_id === t.id)))}</Link></td>
+            <td><Link className="track-title" to={`/releases/${r.id}/tracks/${t.id}`}>{featTitle(t.title, featuredNames(people.filter((c) => c.track_id === t.id)))}</Link></td>
             <td>{t.isrc || '—'}</td>
             <td>{fmtDuration(t.duration_seconds)}</td>
           </tr>

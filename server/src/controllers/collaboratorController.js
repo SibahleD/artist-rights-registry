@@ -99,8 +99,6 @@ async function replaceCollaborators(req, res) {
                 AND NOT (email_hash = ANY($2::text[]))`,
             [found[0].id, emails.map(emailHash)]
         );
-        
-        await client.query('UPDATE releases SET unconfirmed_acknowledged_at = NULL WHERE id = $1', [req.params.releaseId]);
 
         const { rows } = await client.query(
             `SELECT ${COLLAB_COLS} FROM collaborators WHERE track_id = $1

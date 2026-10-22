@@ -6,7 +6,7 @@ const {
     markReleased, unmarkReleased,
 } = require('../controllers/releaseController');
 const { 
-    sendNotices, listNotices, remindNotice, resolveNotice, acknowledgeUnconfirmed 
+    sendNotices, listNotices, remindNotice, resolveNotice
 } = require('../controllers/noticesController');
 const { putArtwork, deleteArtwork } = require('../controllers/imageController')
 
@@ -41,7 +41,6 @@ router.post('/:id/notices/send', sendNotices);
 router.get('/:id/notices', listNotices);
 router.post('/:id/notices/:noticeId/remind', remindNotice);
 router.post('/:id/notices/:noticeId/resolve', resolveNotice);
-router.post('/:id/acknowledge-unconfirmed', acknowledgeUnconfirmed);
 router.put('/:id/artwork', putArtwork)
 router.delete('/:id/artwork', deleteArtwork)
 

@@ -6,7 +6,7 @@ const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
     upc, p_line, c_line, label_name, language, status, created_at, ready_at, released_at, unconfirmed_acknowledged_at,
     (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
-const { readinessChecks, readinessProblems, errorsOf, blockingWarnings } = require('../services/readiness');
+const { readinessChecks, readinessProblems, errorsOf } = require('../services/readiness');
 const { buildExport } = require('../services/exportRelease');
 const { setReleased, clearReleased, listLinks } = require('../services/lifecycle');
 const { optionalLanguage } = require('../lib/codes');
@@ -92,8 +92,7 @@ async function getReadiness(req, res) {
         const release = await findOwned(req.params.id, req.user.id);
         if (!release) return res.status(404).json({ error: 'Release not found.' });
         const checks = await readinessChecks(release);
-        const canMarkReady = errorsOf(checks).length === 0
-            && (blockingWarnings(checks).length === 0 || !!release.unconfirmed_acknowledged_at);
+        const canMarkReady = errorsOf(checks).length === 0;
         return res.json({ status: release.status, canMarkReady, checks });
     } catch (err) {
         console.error('getReadiness error:', err);
@@ -234,14 +233,6 @@ async function markReady(req, res) {
         if (problems.length > 0) {
             return res.status(400).json({ error: 'Release is not ready.', problems, checks });
         }
-        const waiting = blockingWarnings(checks);
-        if (waiting.length > 0 && !release.unconfirmed_acknowledged_at) {
-            return res.status(409).json({
-                error: 'Some co-writers have not confirmed. Acknowledge this to continue.',
-                needsAcknowledgement: true, unconfirmed: waiting.map((c) => c.message), checks,
-            });
-        }
-
         const { rows } = await pool.query(
             `UPDATE releases SET status = 'ready', ready_at = now()
              WHERE id = $1 AND owner_id = $2

@@ -91,9 +91,6 @@ async function sendNotices(req, res) {
             results.push({ ...base, action });
         }
 
-        if (mail.length) {
-            await client.query('UPDATE releases SET unconfirmed_acknowledged_at = NULL WHERE id = $1', [release.id]);
-        }
         await client.query('COMMIT');
 
         for (const m of mail) {
@@ -218,8 +215,6 @@ async function resolveNotice(req, res) {
           RETURNING id, status, resolution, resolution_note, resolved_at`,
             [n.id, decision === 'keep' ? 'kept' : 'adopted', note || null]
         );
-        // Whoever releases with this person unconfirmed has to say so again, knowingly.
-        await client.query('UPDATE releases SET unconfirmed_acknowledged_at = NULL WHERE id = $1', [req.params.id]);
         await client.query('COMMIT');
         return res.json({ notice: done.rows[0] });
     } catch (err) {
@@ -231,18 +226,4 @@ async function resolveNotice(req, res) {
     }
 }
 
-async function acknowledgeUnconfirmed(req, res) {
-    try {
-        const { rowCount } = await pool.query(
-            'UPDATE releases SET unconfirmed_acknowledged_at = now() WHERE id = $1 AND owner_id = $2',
-            [req.params.id, req.user.id]
-        );
-        if (!rowCount) return res.status(404).json({ error: 'Release not found.' });
-        return res.status(204).end();
-    } catch (err) {
-        console.error('acknowledgeUnconfirmed error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-}
-
-module.exports = { sendNotices, listNotices, remindNotice, resolveNotice, acknowledgeUnconfirmed };
+module.exports = { sendNotices, listNotices, remindNotice, resolveNotice };

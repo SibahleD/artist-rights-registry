@@ -66,29 +66,43 @@ function classify(p, release, ctx) {
     return { state: 'unconfirmed', why: !n ? 'no notice sent' : !same ? 'details changed since the notice' : n.resolution ? 'you resolved the dispute but have not sent the notice again' : n.status };
 }
 
-// Co-writer problems as strings (errors block, unconfirmed needs acknowledging) plus the same as structured items.
+// What the owner should do next, by the reason a credit is unconfirmed.
+const NEXT_STEP = {
+    'no notice sent': 'Send them the invitation from the splits page.',
+    'details changed since the notice': 'Their role or share changed after the notice, so send an updated invitation from the splits page.',
+    'you resolved the dispute but have not sent the notice again': 'You resolved the dispute, so send the notice again from the splits page.',
+    pending: 'Ask them to use the link in their invitation, or send a reminder from the splits page.',
+    expired: 'Their invitation expired, so send it again from the splits page.',
+    cancelled: 'Their invitation was cancelled, so send it again from the splits page.',
+};
+
+// Co-writer problems as strings plus the same as structured items. A song with more than one credit cannot be marked
+// ready until every shared credit has been confirmed by that person: there is no way around it.
+// The owner's own credit counts as confirmed, and so does a 0% credit-only entry (a featured artist, for example),
+// because there is no share for it to agree to.
 async function noticeReadiness(release) {
     const ctx = await loadNoticeContext(release);
-    const errors = [], unconfirmed = [], items = [];
+    const errors = [], items = [];
+    const credits = new Map();
+    for (const p of ctx.people) if (!p.removed_by_writer) credits.set(p.track_id, (credits.get(p.track_id) || 0) + 1);
+    const push = (id, p, message) => { errors.push(message); items.push({ level: 'error', id, trackNumber: p.track_number, message }); };
+
     for (const p of ctx.people) {
         const where = `Track ${p.track_number} ("${p.title}")`;
+        const pct = Number(p.ownership_percent);
         const { state, why } = classify(p, release, ctx);
-        let message;
         if (state === 'removed') {
-            message = `${where}: a co-writer removed themselves (${Number(p.ownership_percent)}%). Reassign that share and discard the line before marking ready.`;
-            errors.push(message);
-            items.push({ level: 'error', id: 'cowriter-removed', trackNumber: p.track_number, message });
+            push('cowriter-removed', p, `${where}: a co-writer removed themselves (${pct}%). Reassign that share and discard the line on the splits page before marking ready.`);
         } else if (state === 'disputed') {
-            message = `${where}: ${p.legal_name} disputed these details. Agree the correct split with them, change it and send a new notice.`;
-            errors.push(message);
-            items.push({ level: 'error', id: 'cowriter-disputed', trackNumber: p.track_number, message });
-        } else if (state === 'unconfirmed') {
-            message = `${where}: ${p.legal_name} has not confirmed (${why}).`;
-            unconfirmed.push(message);
-            items.push({ level: 'warn', id: 'cowriter-unconfirmed', trackNumber: p.track_number, message });
+            push('cowriter-disputed', p, `${where}: ${p.legal_name} disputed these details. Agree the correct split with them, change it and send a new notice from the splits page.`);
+        } else if ((state === 'unconfirmed' || state === 'no_email') && pct > 0 && credits.get(p.track_id) > 1) {
+            const step = state === 'no_email'
+                ? 'Add their email on the splits page and send them the invitation.'
+                : NEXT_STEP[why] || 'Ask them from the splits page.';
+            push('cowriter-unconfirmed', p, `${where}: Waiting for ${p.legal_name} to confirm their ${pct}%. ${step}`);
         }
     }
-    return { errors, unconfirmed, items };
+    return { errors, items };
 }
 
 // 'confirmed' | 'unconfirmed' | 'removed' for every credit on the release, keyed by collaborator id.

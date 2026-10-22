@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import Chevron from './Chevron'
 import { useBlocker, useLocation, useNavigate } from 'react-router-dom'
 import { Modal } from './ui'
 
@@ -64,7 +65,7 @@ export function useBackGuard({ dirty, onSave, fallback = '/discography', saveLab
   const hasHistory = useLocation().key !== 'default'
   const { modal, allowLeave } = useUnsavedChanges({ dirty, onSave, saveLabel })
   const goBack = () => (hasHistory ? nav(-1) : nav(fallback))
-  const backButton = <button type="button" className="ghost back-btn" onClick={goBack}>← Back</button>
+  const backButton = <button type="button" className="hero-back back-btn" onClick={goBack}><Chevron dir="left" />Back</button>
   return { goBack, modal, backButton, allowLeave }
 }
 
