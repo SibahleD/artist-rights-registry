@@ -18,6 +18,10 @@
   --btn: #2a4d80;
   --btn-border: #5f84b8;
   --ok: #5fd08a;
+  /* Neon on glass: "r, g, b" triplets, so rims, fills and glows share one value */
+  --neon: 91, 141, 239;
+  --neon-2: 168, 85, 247;
+  --cyan: 34, 211, 238;
   --font-heading: "Space Grotesk", system-ui, sans-serif;
   --font-body: "Poppins", system-ui, sans-serif;
   color-scheme: dark;
@@ -27,7 +31,12 @@
 html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(760px 520px at 6% 10%, rgba(91, 141, 239, 0.17), transparent 62%),
+    radial-gradient(820px 600px at 96% 48%, rgba(168, 85, 247, 0.14), transparent 62%),
+    radial-gradient(760px 520px at 18% 96%, rgba(34, 211, 238, 0.10), transparent 62%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font: 16px/1.6 var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -47,7 +56,7 @@ a { color: var(--accent); }
 .muted { color: var(--sec); font-size: 0.9rem; }
 
 /* Nav */
-.nav { position: sticky; top: 0; z-index: 50; background: rgba(22, 23, 29, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.nav { position: sticky; top: 0; z-index: 50; background: rgba(22, 23, 29, 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgba(var(--neon), 0.75), rgba(var(--neon-2), 0.75), transparent) 1; }
 .nav-in { display: flex; align-items: center; justify-content: space-between; min-height: 60px; gap: 1rem; }
 .logo { font-family: var(--font-heading); font-weight: 700; font-size: 1.15rem; color: var(--pri); text-decoration: none; }
 .menu { display: flex; align-items: center; gap: 1.25rem; }
@@ -55,16 +64,54 @@ a { color: var(--accent); }
 .menu a:not(.btn):hover { color: var(--pri); }
 .menu-btn { display: none; background: none; border: 1px solid var(--border); color: var(--pri); border-radius: 8px; padding: 0.4rem 0.8rem; font: inherit; cursor: pointer; }
 
-/* Buttons */
+/* Buttons: tinted glass, gradient rim, glow */
 .btn {
-  display: inline-block; padding: 0.5rem 1.1rem; border-radius: 10px; text-decoration: none; cursor: pointer;
-  background: var(--btn); border: 1px solid var(--btn-border); color: var(--pri); font-weight: 500; font-size: 0.95rem;
-  transition: transform 0.15s, background 0.15s;
+  position: relative; display: inline-block; padding: 0.5rem 1.1rem; border-radius: 10px; text-decoration: none; cursor: pointer;
+  color: var(--pri); font-weight: 500; font-size: 0.95rem; text-shadow: 0 0 10px rgba(var(--neon), 0.7);
+  border: 1.5px solid transparent;
+  background: linear-gradient(135deg, rgba(var(--neon), 0.4), rgba(var(--cyan), 0.18)), rgba(12, 14, 22, 0.5);
+  box-shadow: inset 0 0 12px rgba(var(--neon), 0.2), 0 0 14px rgba(var(--neon), 0.32), 0 4px 16px rgba(var(--cyan), 0.14);
+  backdrop-filter: blur(8px) saturate(1.3); -webkit-backdrop-filter: blur(8px) saturate(1.3);
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.btn:hover { background: #335c99; transform: translateY(-1px); }
-.btn.ghost { background: transparent; border-color: var(--border); color: var(--text); }
-.btn.ghost:hover { background: rgba(255, 255, 255, 0.06); }
+.btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(var(--neon), 0.58), rgba(var(--cyan), 0.3)), rgba(12, 14, 22, 0.5);
+  box-shadow: inset 0 0 16px rgba(var(--neon), 0.3), 0 0 24px rgba(var(--neon), 0.55), 0 6px 22px rgba(var(--cyan), 0.28);
+}
+.btn.ghost { text-shadow: none; color: var(--text); background: rgba(255, 255, 255, 0.04); box-shadow: none; }
+.btn.ghost:hover { color: var(--pri); background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 18px rgba(var(--neon), 0.35); }
+.btn.ghost::before { opacity: 0.6; transition: opacity 0.15s; }
+.btn.ghost:hover::before { opacity: 1; }
 .btn.big { padding: 0.8rem 1.6rem; font-size: 1.02rem; }
+
+/* Neon glass surfaces: dark frosted pane, two-colour gradient rim, soft glow in both colours */
+.card, .steps li, details, .chip {
+  position: relative; border: 1px solid transparent;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(var(--neon), 0.15) 0%, transparent 55%),
+    radial-gradient(100% 90% at 100% 100%, rgba(var(--neon-2), 0.11) 0%, transparent 60%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(12, 14, 22, 0.55);
+  box-shadow: inset 0 0 26px rgba(var(--neon), 0.07), 0 0 18px rgba(var(--neon), 0.16), 0 8px 26px rgba(var(--neon-2), 0.12), 0 12px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  transition: box-shadow 0.2s, transform 0.5s, opacity 0.5s;
+}
+.chip { box-shadow: inset 0 0 14px rgba(var(--neon), 0.1), 0 0 12px rgba(var(--neon), 0.18); }
+.card:hover, .steps li:hover, details[open] {
+  box-shadow: inset 0 0 32px rgba(var(--neon), 0.13), 0 0 30px rgba(var(--neon), 0.35), 0 10px 34px rgba(var(--neon-2), 0.24), 0 14px 34px rgba(0, 0, 0, 0.4);
+}
+
+/* The gradient rim: a ring cut out of a gradient, so it follows each corner radius */
+.btn::before, .card::before, .steps li::before, details::before, .chip::before {
+  content: ""; position: absolute; inset: -1px; padding: 1px; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(135deg, rgb(var(--neon)) 0%, rgba(var(--neon), 0.55) 38%, rgba(var(--neon-2), 0.55) 62%, rgb(var(--neon-2)) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.btn::before { inset: -1.5px; padding: 1.5px; background: linear-gradient(135deg, rgb(var(--neon)), rgb(var(--cyan))); }
+.chip::before { background: linear-gradient(135deg, rgb(var(--neon)), rgb(var(--neon-2))); }
+.n { box-shadow: 0 0 14px rgba(var(--neon), 0.5); background: linear-gradient(135deg, rgba(var(--neon), 0.3), rgba(var(--neon-2), 0.25)); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* Hero */
@@ -84,25 +131,25 @@ a { color: var(--accent); }
 
 /* Sections */
 .section { padding: clamp(3rem, 7vw, 5.5rem) 0; }
-.alt { background: var(--bg-alt); border-block: 1px solid var(--border); }
-.band { padding: 3rem 0; border-block: 1px solid var(--border); background: var(--bg-alt); }
+.alt { background: rgba(27, 28, 36, 0.5); border-block: 1px solid rgba(255, 255, 255, 0.06); }
+.band { padding: 3rem 0; border-block: 1px solid rgba(255, 255, 255, 0.06); background: rgba(27, 28, 36, 0.5); }
 .sub { color: var(--sec); max-width: 620px; margin-bottom: 2rem; }
 
 .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.1rem; }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.4rem; }
+.card { border-radius: 14px; padding: 1.3rem 1.4rem; }
 .card p { margin: 0; color: var(--sec); font-size: 0.95rem; }
 
 .steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; gap: 1.1rem; }
-.steps li { display: flex; gap: 1rem; align-items: flex-start; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.4rem; }
+.steps li { display: flex; gap: 1rem; align-items: flex-start; border-radius: 14px; padding: 1.2rem 1.4rem; }
 .steps p { margin: 0; color: var(--sec); }
 .n { flex: none; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent); display: grid; place-items: center; font-family: var(--font-heading); font-weight: 700; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.2rem; }
-.chip { padding: 0.4rem 1rem; border-radius: 999px; background: var(--accent-bg); border: 1px solid rgba(91, 141, 239, 0.5); color: var(--pri); font-size: 0.95rem; }
+.chip { padding: 0.4rem 1rem; border-radius: 999px; color: var(--pri); font-size: 0.95rem; }
 .note { color: var(--sec); max-width: 640px; }
 
 /* FAQ */
-details { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.7rem; padding: 0.2rem 1.1rem; }
+details { border-radius: 12px; margin-bottom: 0.7rem; padding: 0.2rem 1.1rem; }
 summary { cursor: pointer; padding: 0.8rem 0; color: var(--pri); font-weight: 500; }
 details[open] summary { color: var(--accent); }
 details p { color: var(--sec); }
@@ -110,7 +157,7 @@ details p { color: var(--sec); }
 .final { text-align: center; padding: clamp(3rem, 7vw, 5rem) 0; background: radial-gradient(700px 300px at 50% 0%, rgba(42, 77, 128, 0.5), transparent 70%); }
 .final p { color: var(--sec); }
 
-.foot { border-top: 1px solid var(--border); padding: 1.5rem 0; }
+.foot { border-top: 1px solid transparent; border-image: linear-gradient(90deg, transparent, rgba(var(--neon), 0.6), rgba(var(--neon-2), 0.6), transparent) 1; padding: 1.5rem 0; }
 .foot-in { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem; color: var(--pri); font-family: var(--font-heading); }
 .foot-in .muted { font-family: var(--font-body); }
 
@@ -129,5 +176,5 @@ details p { color: var(--sec); }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .js .reveal { opacity: 1; transform: none; transition: none; }
-  .btn { transition: none; }
+  .btn, .card, .steps li, details { transition: none; }
 }

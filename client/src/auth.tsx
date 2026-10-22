@@ -5,7 +5,7 @@ import type { User } from './types'
 interface Ctx {
   user: User | null; loading: boolean
   login: (e: string, p: string) => Promise<void>
-  register: (b: Record<string, string>) => Promise<void>
+  register: (b: Record<string, string | boolean>) => Promise<void>
   logout: () => void; setUser: (u: User) => void
   refresh: () => Promise<void>
 }

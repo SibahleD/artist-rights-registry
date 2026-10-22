@@ -11,6 +11,8 @@ const { emailChangedMessage } = require('../services/emailChange');
 
 const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 
+// Bump when the Terms page changes in a way users must re-accept; stored with each acceptance.
+const TERMS_VERSION = '2026-10-22';
 const SALT_ROUNDS = 10;
 const JWT_EXPIRE = '7d';
 
@@ -37,6 +39,9 @@ async function register(req, res) {
     if ((req.body.legalName ?? '').length > 200) {
         return res.status(400).json({ error: 'Legal name must be at most 200 characters.' });
     }
+    if (req.body.acceptedTerms !== true) {
+        return res.status(400).json({ error: 'You must accept the Terms and Conditions to create an account.' });
+    }
     if (typeof password !== 'string' || password.length < 8) {
         return res.status(400).json({ error: 'Password must be at least eight (8) characters' });
     }
@@ -53,10 +58,10 @@ async function register(req, res) {
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         const result = await pool.query(
-            `INSERT INTO users (email, password_hash, artist_name, contact_info, first_name, last_name)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO users (email, password_hash, artist_name, contact_info, first_name, last_name, terms_accepted_at, terms_version)
+             VALUES ($1, $2, $3, $4, $5, $6, now(), $7)
              RETURNING id, email, artist_name, contact_info, first_name, last_name, email_verified_at, created_at`,
-            [email, hashedPassword, artistName, contactInfo ?? null, legal.first, legal.last]
+            [email, hashedPassword, artistName, contactInfo ?? null, legal.first, legal.last, TERMS_VERSION]
         );
 
         const user = result.rows[0];

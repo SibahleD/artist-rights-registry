@@ -17,6 +17,7 @@ import Glossary from './pages/Glossary'
 import RegisterRights from './pages/RegisterRights'
 import Settings from './pages/Settings'
 import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -38,6 +39,7 @@ const router = createBrowserRouter([
       { path: '/verify-email', element: <VerifyEmail /> },
       { path: '/notice/:token', element: <CoWriterNotice /> },
       { path: '/privacy', element: <Privacy /> },
+      { path: '/terms', element: <Terms /> },
       {
         element: <Protected />,
         children: [

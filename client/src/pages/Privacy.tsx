@@ -25,6 +25,7 @@ export default function Privacy() {
           <li><strong>Co-writer details you enter:</strong> a legal name, role, share and, if you want them to confirm, an email address.</li>
           <li><strong>Co-writer notices:</strong> the invitation we email on your behalf, when it was sent, and whether it was confirmed, disputed or removed. The notice link carries a secret code, and we keep only a scrambled version of it.</li>
           <li><strong>Glossary progress:</strong> which glossary terms you marked as understood or still learning.</li>
+          <li><strong>Society registrations:</strong> the collecting societies you chose to track, with your status for each, an optional registration date and an optional member number. Only you can see this list.</li>
           <li><strong>Your preferences:</strong> email notices, and the analytics and play-count choices in Settings.</li>
           <li><strong>Sign-in:</strong> after you sign in, your browser keeps a sign-in token in its local storage for up to 7 days, or until you sign out. We do not use advertising cookies or trackers.</li>
         </ul>

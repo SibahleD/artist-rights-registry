@@ -5,6 +5,7 @@ const { getMe, updateMe, getUsage, listLinks, createLink, updateLink, deleteLink
 const {
     changePassword, requestEmailChange, cancelEmailChange, updatePreferences, exportMyData, deleteAccount,
 } = require('../controllers/accountController');
+const { listSocieties, createSociety, updateSociety, deleteSociety } = require('../controllers/societyController');
 const { putAvatar, deleteAvatar } = require('../controllers/imageController')
 
 const router = express.Router();
@@ -26,6 +27,10 @@ router.get('/me/links', listLinks);
 router.post('/me/links', createLink);
 router.patch('/me/links/:id', updateLink);
 router.delete('/me/links/:id', deleteLink);
+router.get('/me/societies', listSocieties);
+router.post('/me/societies', createSociety);
+router.patch('/me/societies/:id', updateSociety);
+router.delete('/me/societies/:id', deleteSociety);
 router.get('/me/usage', getUsage);
 
 router.patch('/me/password', sensitiveLimiter, changePassword);

@@ -301,3 +301,12 @@ export interface ReleaseForm {
   language: string
   tracks: TrackForm[]
 }
+export type SocietyStatus = 'planned' | 'applied' | 'registered'
+export interface UserSociety {
+  id: string
+  body_name: string
+  country: string              // ISO code, or INT for international options
+  status: SocietyStatus
+  registered_on: string | null // YYYY-MM-DD, only once registered
+  member_ref: string | null    // the artist's own member number; private to them
+}

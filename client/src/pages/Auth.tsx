@@ -7,12 +7,14 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const { login, register } = useAuth()
   const nav = useNavigate()
   const [params] = useSearchParams()
-  const [f, setF] = useState({ email: params.get('email') ?? '', password: '', artistName: '', legalName: '' })
+  const [f, setF] = useState({ email: params.get('email') ?? '', password: '', artistName: '', legalName: '', acceptedTerms: false })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
 
   async function submit(e: FormEvent) {
-    e.preventDefault(); setErr(''); setBusy(true)
+    e.preventDefault(); setErr('')
+    if (mode === 'register' && !f.acceptedTerms) { setErr('Please accept the Terms and Conditions to create your account.'); return }
+    setBusy(true)
     try {
       if (mode === 'login') await login(f.email, f.password); else await register(f)
       nav('/')
@@ -30,7 +32,10 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           <label>Email<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
         <label>Password<input type="password" required minLength={mode === 'register' ? 8 : undefined} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
         </label>
-        
+        <label className="consent">
+          <input type="checkbox" required checked={f.acceptedTerms} onChange={(e) => setF({ ...f, acceptedTerms: e.target.checked })} />
+          <span>I accept the <Link to="/terms" target="_blank" rel="noopener">Terms and Conditions</Link> and have read the <Link to="/privacy" target="_blank" rel="noopener">Privacy statement</Link>.</span>
+        </label>
         </>}
         {mode ==='login' && <>
         <label>Email<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>

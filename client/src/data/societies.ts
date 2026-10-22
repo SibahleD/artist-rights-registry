@@ -244,3 +244,12 @@ export const MONEY_TYPES = [
   { name: 'Mechanical royalties', who: 'A collecting society or mechanical agency', detail: 'Reproduction of the composition, including streaming. Some societies, such as UPRS and COSOTA, handle this as well as performance.' },
   { name: 'Sync licensing', who: 'You, directly', detail: 'Use in a film, advert or game is negotiated with the rights holders. The society collects performance royalties when it is broadcast.' },
 ]
+// Every body the artist can track: the bodies in the country guide, plus the international options.
+export interface TrackableBody { name: string; country: string; countryName: string; website?: string }
+export const TRACKABLE: TrackableBody[] = [
+  ...COUNTRIES.flatMap((c) => c.bodies.map((b) => ({ name: b.name, country: c.code, countryName: c.name, website: b.website }))),
+  ...INTERNATIONAL.options.map((o) => ({ name: o.name, country: 'INT', countryName: 'International', website: o.url })),
+]
+
+export const countryNameOf = (code: string) => (code === 'INT' ? 'International' : COUNTRIES.find((c) => c.code === code)?.name ?? code)
+export const websiteOf = (name: string, country: string) => TRACKABLE.find((t) => t.name === name && t.country === country)?.website

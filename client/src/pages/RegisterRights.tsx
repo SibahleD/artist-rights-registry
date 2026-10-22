@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Term from '../components/Term'
+import SocietyTracker, { useSocieties } from '../components/SocietyTracker'
 import {
   BODY_LABEL, CHECKED, COUNTRIES, INTERNATIONAL, MONEY_TYPES, STATUS_LABEL,
 } from '../data/societies'
@@ -13,6 +14,9 @@ export default function RegisterRights() {
   const [code, setCode] = useState(read)
   useEffect(() => { write(code) }, [code])
   const country = COUNTRIES.find((c) => c.code === code)
+  const societies = useSocieties()
+  const [trackErr, setTrackErr] = useState('')
+  const track = (name: string, cc: string) => { setTrackErr(''); societies.add({ body_name: name, country: cc }).catch((e: Error) => setTrackErr(e.message)) }
 
   return (
     <div className="stack">
@@ -22,6 +26,8 @@ export default function RegisterRights() {
         <Term id="cmo"> collecting society (PRO / CMO)</Term> in your country. Tell us where you are from and we will show which body applies
         and how to register. Guidance last checked {CHECKED}. This changes quickly, so confirm with the body before paying or signing.
       </p>
+
+      <SocietyTracker societies={societies} />
 
       <section className="card stack">
         <h4>What gets collected, and by whom</h4>
@@ -55,6 +61,7 @@ export default function RegisterRights() {
               </span>
             </div>
             <p><strong>{country.headline}</strong></p>
+            {trackErr && <p className="error" role="alert">{trackErr}</p>}
           </section>
 
           <section className="card stack">
@@ -68,6 +75,9 @@ export default function RegisterRights() {
                 <p>{b.does}</p>
                 {b.note && <p className="muted">{b.note}</p>}
                 {b.website && <p><a href={b.website} target="_blank" rel="noreferrer">{b.website}</a></p>}
+                {societies.list && (societies.tracked(b.name, country.code)
+                  ? <p className="muted">On your list.</p>
+                  : <p><button type="button" className="secondary" onClick={() => track(b.name, country.code)}>Track this body</button></p>)}
               </div>
             ))}
           </section>

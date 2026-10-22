@@ -11,4 +11,5 @@ module.exports = {
   maxNoticesPerDay: n('MAX_NOTICES_PER_DAY', 20),
   maxReleaseLinks: n('MAX_RELEASE_LINKS', 10),
   maxArtistLinks: n('MAX_ARTIST_LINKS', 12),
+  maxSocieties: n('MAX_SOCIETIES', 10),
 };
