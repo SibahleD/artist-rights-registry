@@ -48,7 +48,7 @@ export default function SplitsEditor({ collaborators, onChange, disabled }: {
                   </select>
                 </label>
                 <label>Publisher (optional)<input value={c.publisherName ?? ''} disabled={!!c.isSelfPublished} onChange={(e) => setCollab(i, { publisherName: e.target.value })} placeholder="Publishing company name" /></label>
-                <label className="check"><input type="checkbox" checked={!!c.isSelfPublished} onChange={(e) => setCollab(i, { isSelfPublished: e.target.checked, ...(e.target.checked ? { publisherName: '' } : {}) })} /> Self-published</label>
+                <label className="check-inline"><input type="checkbox" checked={!!c.isSelfPublished} onChange={(e) => setCollab(i, { isSelfPublished: e.target.checked, ...(e.target.checked ? { publisherName: '' } : {}) })} /> Self-published</label>
               </div>
             )}
           </div>

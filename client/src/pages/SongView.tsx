@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { AuthImage, vinylFallback } from '../components/files'
-import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Loading } from '../components/ui'
+import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, Loading } from '../components/ui'
 import type { Collaborator, Release, ReleaseExport, Track } from '../types'
 import { downloadJson } from './ReleaseView'
 import { formatCopyright } from '../components/CopyrightInput'
@@ -56,7 +56,7 @@ export default function SongView() {
         <div className="split">
           <div className="grid2">
             <div><span className="muted">Album artist</span><br />{r.album_artist}</div>
-            <div><span className="muted">Genre / duration</span><br />{t.genre || '—'} · {fmtDuration(t.duration_seconds)}</div>
+            <div><span className="muted">Genre</span><br />{t.genre || '—'}</div>
             <div><span className="muted">Explicit content</span><br />{t.explicit ? EXPLICIT_LABEL[t.explicit] : '—'}</div>
             <div><span className="muted">Release date / ready</span><br />{r.release_date ? fmtDate(r.release_date) : '—'}<br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
           </div>

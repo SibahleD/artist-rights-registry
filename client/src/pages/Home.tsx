@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { AuthImage, vinylFallback } from '../components/files'
+import { ArtCard } from '../components/files'
 import { Badge, Collapsible, fmtDate } from '../components/ui'
 import Hero from '../components/Hero'
 import { groupOf } from '../lib/groups'
@@ -23,14 +23,13 @@ const ymd = (d: Date) => d.toLocaleDateString('en-CA') // YYYY-MM-DD in the user
 // A release card on Home that leads straight to the next action.
 function ActionCard({ r, to, message, badge }: { r: Release; to: string; message: string; badge?: ReactNode }) {
   return (
-    <Link to={to} className="card release">
-      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={vinylFallback} /></div>
+    <ArtCard to={to} artworkId={r.artwork_id}>
       <div>
         <strong>{r.title}</strong>
         <div className="muted">{message}</div>
         {badge && <div className="badges">{badge}</div>}
       </div>
-    </Link>
+    </ArtCard>
   )
 }
 
@@ -94,8 +93,7 @@ export default function Home() {
               const known = r.id in next
               const waiting = (r.pending_notices ?? 0) > 0
               return (
-                <Link key={r.id} to={step ? step.fix : `/releases/${r.id}`} className="card release">
-                  <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={vinylFallback} /></div>
+                <ArtCard key={r.id} to={step ? step.fix : `/releases/${r.id}`} artworkId={r.artwork_id}>
                   <div>
                     <strong>{r.title}</strong>
                     <div className="muted">{known ? (step ? `Next: ${step.message}` : 'Everything required is done. Mark it ready.') : 'Checking what is left…'}</div>
@@ -104,7 +102,7 @@ export default function Home() {
                       {waiting && <Badge status="pending" label={`${r.pending_notices} to confirm`} />}
                     </div>
                   </div>
-                </Link>
+                </ArtCard>
               )
             })}
           </div>

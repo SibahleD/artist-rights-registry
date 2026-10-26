@@ -60,13 +60,13 @@ function SignInCard() {
   return (
     <Collapsible title="Sign-in details" level="h2" className="">
       <div className="stack">
-        <form className="card stack" onSubmit={saveUsername}>
+        <form className="card stack tight" onSubmit={saveUsername}>
           <h4>Username</h4>
           <label>Username<input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="letters, numbers, _ and ." /></label>
           <div className="row actions"><button disabled={un.busy}>Save</button><Msg n={un.note} /></div>
         </form>
 
-        <form className="card stack" onSubmit={changeEmail}>
+        <form className="card stack tight" onSubmit={changeEmail}>
           <h4>Email</h4>
           <p>Signed in as <strong>{user?.email}</strong></p>
           {user?.pending_email && (
@@ -81,7 +81,7 @@ function SignInCard() {
           <div className="row actions"><button disabled={em.busy || !newEmail || !emailPw}>Send confirmation</button><Msg n={em.note} /></div>
         </form>
 
-        <form className="card stack" onSubmit={changePw}>
+        <form className="card stack tight" onSubmit={changePw}>
           <h4>Password</h4>
           <label>Current password<input type="password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" /></label>
           <div className="grid2">
@@ -116,7 +116,7 @@ function CreditDetailsCard() {
   }) }
   return (
     <Collapsible title="Credit details" level="h2" className="">
-      <form className="card stack" onSubmit={submit}>
+      <form className="card stack tight" onSubmit={submit}>
         <Hint>Used to pre-fill your credits on new songs. Your public artist details stay on the Artist Profile page.</Hint>
         <div className="stack">
           <strong>What you do</strong>
@@ -151,7 +151,7 @@ function PrivacyCard() {
   })
   return (
     <Collapsible title="Security and privacy" level="h2" className="">
-      <section className="card stack">
+      <section className="card stack tight">
         <p>The full details are in the <Link to="/privacy">privacy statement</Link>.</p>
         <h4>What is stored</h4>
         <ul>
@@ -194,7 +194,7 @@ function DeleteCard() {
 
   return (
     <Collapsible title="Delete account" level="h2" className="" defaultOpen={false}>
-      <section className="card stack">
+      <section className="card stack tight">
         <p>This permanently removes your profile, links, draft releases and uploaded files, and signs you out everywhere. It cannot be undone.</p>
         <ul>
           <li>Releases marked ready or released must be moved back to draft and deleted first.</li>
@@ -207,7 +207,7 @@ function DeleteCard() {
           <form className="stack" onSubmit={submit}>
             {err && <ErrorBox error={err.message} />}
             <label>Your password<input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></label>
-            <label className="check"><input type="checkbox" checked={sure} onChange={(e) => setSure(e.target.checked)} /> I understand this cannot be undone</label>
+            <Toggle label="I understand this cannot be undone" checked={sure} onChange={setSure} />
             <div className="row actions">
               <button className="danger" disabled={busy || !pw || !sure}>Delete my account</button>
               <button type="button" className="ghost" onClick={() => { setOpen(false); setPw(''); setSure(false); setErr(null) }}>Keep my account</button>
@@ -221,9 +221,12 @@ function DeleteCard() {
 
 function Toggle({ label, hint, checked, onChange }: { label: string; hint?: ReactNode; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="check stack">
-      <span><input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} /> {label}</span>
-      {hint && <Hint>{hint}</Hint>}
+    <label className="pref">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <div className="pref-text">
+        <p className="pref-title">{label}</p>
+        {hint && <p className="pref-hint">{hint}</p>}
+      </div>
     </label>
   )
 }
@@ -245,7 +248,7 @@ function PreferencesTab() {
 
   return (
     <div className="stack">
-      <section className="card stack">
+      <section className="card stack tight">
         <h4>Sharing</h4>
         <Toggle label="Include me in play counts" checked={prefs.play_counts_opt_in} onChange={(v) => set({ play_counts_opt_in: v })}
           hint="Off by default. Takes effect when play counts are added." />
@@ -253,7 +256,7 @@ function PreferencesTab() {
           hint="Off by default. Takes effect when analytics are added." />
       </section>
 
-      <section className="card stack">
+      <section className="card stack tight">
         <h4>Email notifications</h4>
         <Toggle label="Split disputes" checked={prefs.notify_disputes} onChange={(v) => set({ notify_disputes: v })} />
         <Toggle label="Approvals from co-writers" checked={prefs.notify_approvals} onChange={(v) => set({ notify_approvals: v })} />
@@ -280,9 +283,10 @@ export default function Settings() {
         ))}
       </div>
       <DirtyProvider>
-        {tab === 'account' && <div className="stack"><SignInCard /><PrivacyCard /><DeleteCard /></div>}
-        {tab === 'credits' && <div className="stack"><CreditDetailsCard /></div>}
-        {tab === 'preferences' && <PreferencesTab />}
+        {/* All three stay mounted so edits survive a tab switch; the unsaved-changes guard still covers leaving the page. */}
+        <div className="stack" hidden={tab !== 'account'}><SignInCard /><PrivacyCard /><DeleteCard /></div>
+        <div className="stack" hidden={tab !== 'credits'}><CreditDetailsCard /></div>
+        <div hidden={tab !== 'preferences'}><PreferencesTab /></div>
       </DirtyProvider>
     </div>
   )

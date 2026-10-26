@@ -10,11 +10,11 @@ function ReleaseCard({ r }: { r: Release }) {
   // Every release opens its release page. Drafts are edited from there ("Edit draft").
   const waiting = r.pending_notices ?? 0
   const to = `/releases/${r.id}`
-  const [tint, setTint] = useState<RGB | null>(null)
-  const style = tint ? ({ '--tint': tint.join(', ') } as CSSProperties) : undefined
+  const [tints, setTints] = useState<[RGB, RGB] | null>(null)
+  const style = tints ? ({ '--tint': tints[0].join(', '), '--tint-2': tints[1].join(', ') } as CSSProperties) : undefined
   return (
-    <Link to={to} className="card release" style={style}>
-      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={vinylFallback} onColor={setTint} /></div>
+    <Link to={to} className={`card release${tints ? ' art' : ''}`} style={style}>
+      <div className="cover"><AuthImage mediaId={r.artwork_id} alt="" fallback={vinylFallback} onColors={setTints} /></div>
       <div>
         <strong>{r.title}</strong>
         <div className="muted">{r.album_artist}</div>

@@ -1035,7 +1035,7 @@ html.scroll-locked {
 .card.release {
   --tint: 120, 120, 130;
   background-image:
-    linear-gradient(120deg, rgba(var(--tint), 0.42) 0%, rgba(var(--tint), 0.16) 55%, rgba(var(--tint), 0.04) 100%);
+    linear-gradient(120deg, rgba(var(--tint), 0.42) 0%, rgba(var(--tint-2, var(--tint)), 0.22) 60%, rgba(var(--tint-2, var(--tint)), 0.08) 100%);
   border-color: rgba(var(--tint), 0.7);
 }
 
@@ -1044,7 +1044,7 @@ html.scroll-locked {
 /* Hover: a clearly stronger wash of the cover colour, a bright edge and a lift */
 .card.release:hover {
   background-image:
-    linear-gradient(120deg, rgba(var(--tint), 0.7) 0%, rgba(var(--tint), 0.38) 55%, rgba(var(--tint), 0.16) 100%);
+    linear-gradient(120deg, rgba(var(--tint), 0.7) 0%, rgba(var(--tint-2, var(--tint)), 0.4) 60%, rgba(var(--tint-2, var(--tint)), 0.18) 100%);
   border-color: rgba(var(--tint), 1);
   box-shadow: 0 8px 22px rgba(var(--tint), 0.38);
 }
@@ -1349,18 +1349,11 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
 .bin {
   padding: 12px 14px 14px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1.5px solid var(--border-mid);
+  border: none;
   border-radius: 16px;
 }
 
-.bin .collapse-body {
-  margin-top: 0.7rem;
-  padding: 14px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-dark);
-  border-radius: 12px;
-  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.45);
-}
+.bin .collapse-body { margin-top: 0.7rem; }
 
 .bin-count {
   display: inline-block;
@@ -1399,9 +1392,9 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
   .glossary-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* ---- Neon on glass: the one surface used site-wide ----
-   Dark frosted pane with a two-colour gradient rim (no lighter top edge) and a soft glow in both colours.
-   Any card can be recoloured by setting --neon and --neon-2 (each an "r, g, b" triplet). */
+/* ---- Glass surfaces: the one card look used site-wide ----
+   Dark frosted pane, a single dampened blue rim and a faint, tight glow.
+   A card can still be recoloured by setting --neon (an "r, g, b" triplet); --neon-2 follows it so there is only ever one colour. */
 .glass-card,
 .card,
 .society-row,
@@ -1409,25 +1402,22 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
 .hero,
 .stats .option {
   --neon: var(--neon-blue);
-  --neon-2: var(--neon-violet);
+  --neon-2: var(--neon);
   position: relative;
   border: 1px solid transparent;
   background:
-    radial-gradient(120% 100% at 0% 0%, rgba(var(--neon), 0.15) 0%, transparent 55%),
-    radial-gradient(100% 90% at 100% 100%, rgba(var(--neon-2), 0.11) 0%, transparent 60%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%),
+    radial-gradient(120% 100% at 0% 0%, rgba(var(--neon), 0.09) 0%, transparent 55%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%),
     rgba(12, 14, 22, 0.55);
   box-shadow:
-    inset 0 0 26px rgba(var(--neon), 0.07),
-    0 0 18px rgba(var(--neon), 0.18),
-    0 8px 26px rgba(var(--neon-2), 0.14),
-    0 12px 30px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    0 0 6px rgba(var(--neon), 0.1),
+    0 10px 24px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* The gradient rim: a ring cut out of a gradient, so it follows the corner radius */
+/* The rim: a 1px ring cut out of a flat, softened blue, so it follows the corner radius */
 .glass-card::before,
 .card::before,
 .society-row::before,
@@ -1439,12 +1429,12 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
   inset: -1px;
   padding: 1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgb(var(--neon)) 0%, rgba(var(--neon), 0.55) 38%, rgba(var(--neon-2), 0.55) 62%, rgb(var(--neon-2)) 100%);
+  background: rgba(var(--neon), 0.45);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   pointer-events: none;
-  transition: filter 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .glass-card {
@@ -1457,56 +1447,72 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
 
 .glass-card p { margin: 0; line-height: 1.5; }
 
+/* Cards inside a card (per-song splits, society rows...) are flat: a quiet hairline, no glow, no blur */
+.card .card:not(.release),
+.card .glass-card,
+.card .track-splits,
+.card .society-row,
+.track-splits,
+.society-row {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.card .card:not(.release)::before,
+.card .glass-card::before,
+.card .track-splits::before,
+.card .society-row::before,
+.track-splits::before,
+.society-row::before { display: none; }
+
 /* Page header banner: deeper blue glass */
 .hero {
-  --neon-2: var(--neon-cyan);
   background:
-    radial-gradient(120% 120% at 0% 0%, rgba(var(--neon), 0.26) 0%, transparent 60%),
-    radial-gradient(100% 100% at 100% 100%, rgba(var(--neon-2), 0.16) 0%, transparent 60%),
+    radial-gradient(120% 120% at 0% 0%, rgba(var(--neon), 0.18) 0%, transparent 60%),
     rgba(6, 18, 54, 0.62);
   border-radius: 16px;
 }
 
-/* Modal: a scroll container, so its rim is a solid-fill gradient border instead of a ring layer */
+/* Modal: a scroll container, so its rim is a plain border */
 .modal {
   --neon: var(--neon-blue);
-  --neon-2: var(--neon-violet);
-  border: 1px solid transparent;
+  border: 1px solid rgba(var(--neon), 0.45);
   background:
-    radial-gradient(120% 90% at 0% 0%, rgba(var(--neon), 0.16) 0%, transparent 55%) padding-box,
-    linear-gradient(#11131d, #11131d) padding-box,
-    linear-gradient(135deg, rgb(var(--neon)), rgb(var(--neon-2))) border-box;
-  box-shadow: 0 0 24px rgba(var(--neon), 0.25), 0 10px 34px rgba(var(--neon-2), 0.18), 0 14px 40px rgba(0, 0, 0, 0.55);
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--neon), 0.1) 0%, transparent 55%),
+    #11131d;
+  box-shadow: 0 0 8px rgba(var(--neon), 0.12), 0 14px 40px rgba(0, 0, 0, 0.55);
 }
 
-/* Colour variants */
-.card.blue { --neon: var(--neon-blue); --neon-2: var(--neon-cyan); }
-.card.release { --neon: var(--tint); --neon-2: var(--neon-violet); border-color: transparent; }
+/* Colour variants (state colours only; the rim stays single-colour) */
+.card.release { --neon: var(--neon-blue); border-color: transparent; }
 .card.release:hover { border-color: transparent; }
-.glass-card.understood { --neon: var(--neon-green); --neon-2: var(--neon-cyan); }
-.glass-card.learning { --neon: var(--neon-red); --neon-2: var(--neon-pink); }
-.glass-card.on { outline: 2px solid rgba(var(--neon), 0.9); outline-offset: 3px; }
+.glass-card.understood { --neon: var(--neon-green); }
+.glass-card.learning { --neon: var(--neon-red); }
+.glass-card.on { outline: 2px solid rgba(var(--neon), 0.7); outline-offset: 3px; }
 
-/* Home stat tiles: one colour pair each */
+/* Release cards with artwork: the rim runs between the art's two accent colours, matching the card's own gradient */
+.card.release.art::before { background: linear-gradient(120deg, rgba(var(--tint), 0.7), rgba(var(--tint-2), 0.7)); }
+.card.release.art:hover::before { background: linear-gradient(120deg, rgb(var(--tint)), rgb(var(--tint-2))); }
+.card.release.art { box-shadow: 0 0 6px rgba(var(--tint), 0.12), 0 10px 24px rgba(0, 0, 0, 0.38); }
+.card.release.art:hover { box-shadow: 0 0 10px rgba(var(--tint), 0.22), 0 12px 28px rgba(0, 0, 0, 0.42); }
+
+/* Home stat tiles share the same blue as everything else */
 .stats .option { border-radius: 12px; }
-.stats .option:nth-child(1) { --neon: var(--neon-green); --neon-2: var(--neon-cyan); }
-.stats .option:nth-child(2) { --neon: var(--neon-blue); --neon-2: var(--neon-violet); }
-.stats .option:nth-child(3) { --neon: var(--neon-amber); --neon-2: var(--neon-orange); }
-.stats .option:nth-child(4) { --neon: var(--neon-violet); --neon-2: var(--neon-pink); }
 
-/* Interactive surfaces brighten on hover */
+/* Interactive surfaces get a slightly firmer rim on hover */
 .card.release:hover,
 .glass-card:hover,
 .stats .option:hover {
   box-shadow:
-    inset 0 0 32px rgba(var(--neon), 0.14),
-    0 0 30px rgba(var(--neon), 0.42),
-    0 10px 34px rgba(var(--neon-2), 0.3),
-    0 14px 34px rgba(0, 0, 0, 0.45);
+    0 0 10px rgba(var(--neon), 0.2),
+    0 12px 28px rgba(0, 0, 0, 0.42);
 }
 .card.release:hover::before,
 .glass-card:hover::before,
-.stats .option:hover::before { filter: brightness(1.35) saturate(1.2); }
+.stats .option:hover::before { background: rgba(var(--neon), 0.7); }
 
 /* ---- Neon glass buttons ----
    Tinted glass fill, gradient rim, glow. Ghost and icon-style buttons keep their own look. */
@@ -1517,10 +1523,9 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
   color: #fff;
   border: 1.5px solid transparent;
   background:
-    linear-gradient(135deg, rgba(var(--neon), 0.4), rgba(var(--neon-2), 0.18)),
+    linear-gradient(135deg, rgba(var(--neon), 0.3), rgba(var(--neon-2), 0.14)),
     rgba(12, 14, 22, 0.5);
-  box-shadow: inset 0 0 12px rgba(var(--neon), 0.2), 0 0 12px rgba(var(--neon), 0.3), 0 4px 14px rgba(var(--neon-2), 0.16);
-  text-shadow: 0 0 10px rgba(var(--neon), 0.7);
+  box-shadow: inset 0 0 8px rgba(var(--neon), 0.12), 0 0 6px rgba(var(--neon), 0.16);
   backdrop-filter: blur(8px) saturate(1.3);
   -webkit-backdrop-filter: blur(8px) saturate(1.3);
   transition: box-shadow 0.15s ease, background 0.15s ease, transform 0.12s ease;
@@ -1532,7 +1537,7 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
   inset: -1.5px;
   padding: 1.5px;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgb(var(--neon)), rgb(var(--neon-2)));
+  background: linear-gradient(135deg, rgba(var(--neon), 0.75), rgba(var(--neon-2), 0.75));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
@@ -1545,7 +1550,7 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
   background:
     linear-gradient(135deg, rgba(var(--neon), 0.58), rgba(var(--neon-2), 0.3)),
     rgba(12, 14, 22, 0.5);
-  box-shadow: inset 0 0 16px rgba(var(--neon), 0.3), 0 0 22px rgba(var(--neon), 0.55), 0 6px 20px rgba(var(--neon-2), 0.3);
+  box-shadow: inset 0 0 10px rgba(var(--neon), 0.2), 0 0 10px rgba(var(--neon), 0.3);
 }
 :is(button, a.btn, .btn):not(.ghost, .linklike, .expand, .section-toggle, .cover, .hero-back, .tab, .tab-x, .tag-pill, .lightbox-close, .mark, .menu-btn):hover::before { filter: brightness(1.3); }
 :is(button, a.btn, .btn):not(.ghost, .linklike, .expand, .section-toggle, .cover, .hero-back, .tab, .tab-x, .tag-pill, .lightbox-close, .mark, .menu-btn):active { transform: translateY(1px); }
@@ -1559,7 +1564,7 @@ label.consent input { flex-shrink: 0; width: 1rem; height: 1rem; margin: 0.15rem
 button.ghost:hover,
 .btn.ghost:hover {
   border-color: rgba(var(--neon-blue), 0.7);
-  box-shadow: 0 0 14px rgba(var(--neon-blue), 0.3);
+  box-shadow: 0 0 8px rgba(var(--neon-blue), 0.2);
   color: #fff;
 }
 button.ghost.danger:hover { border-color: rgba(var(--neon-orange), 0.8); box-shadow: 0 0 14px rgba(var(--neon-orange), 0.3); }
@@ -1569,8 +1574,8 @@ button.ghost.danger:hover { border-color: rgba(var(--neon-orange), 0.8); box-sha
 .tab:hover { border-color: rgba(var(--neon-blue), 0.6); }
 .tab.on {
   background: rgba(var(--neon-blue), 0.2);
-  border-color: rgba(var(--neon-blue), 0.85);
-  box-shadow: 0 0 12px rgba(var(--neon-blue), 0.4), inset 0 0 10px rgba(var(--neon-violet), 0.18);
+  border-color: rgba(var(--neon-blue), 0.6);
+  box-shadow: 0 0 6px rgba(var(--neon-blue), 0.2);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1666,3 +1671,77 @@ a.store-btn img { height: 26px; width: auto; max-width: 130px; }
 .society-edit { padding-top: 0.25rem; }
 .society-empty { text-align: center; padding: 1.2rem 0; color: var(--sec-font); }
 .society-add { padding-top: 0.6rem; border-top: 1px solid var(--border-mid); }
+
+/* ---- Settings: tighter forms ---- */
+.card.tight { gap: 0.5rem; }
+.card.tight label { padding: 2px 0; gap: 0.2rem; }
+.card.tight .grid2 { gap: 0.15rem 1rem; }
+.card.tight h4 { margin-bottom: 0.1rem; }
+
+/* ---- Checkbox rows: box on the left, heading over a smaller hint on the right ---- */
+.pref {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.pref-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pref-title { font-size: 14px; font-weight: 500; line-height: 1.35; color: var(--pri-font); }
+.pref-hint { font-size: 12px; line-height: 1.4; color: var(--sec-font); }
+
+.pref input[type="checkbox"],
+.check-inline input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.pref input[type="checkbox"]:hover,
+.check-inline input[type="checkbox"]:hover { border-color: rgba(var(--neon-blue), 0.6); }
+
+.pref input[type="checkbox"]:checked,
+.check-inline input[type="checkbox"]:checked {
+  background: rgba(var(--neon-blue), 0.4);
+  border-color: rgba(var(--neon-blue), 0.7);
+}
+
+.pref input[type="checkbox"]:checked::after,
+.check-inline input[type="checkbox"]:checked::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg);
+}
+
+.pref input[type="checkbox"]:focus-visible,
+.check-inline input[type="checkbox"]:focus-visible { box-shadow: 0 0 0 2px var(--accent-bg); outline: none; }
+
+.check-inline { flex-direction: row; align-items: center; gap: 0.6rem; cursor: pointer; }
+
+/* ---- Album song tabs: same full-width tab layout as the Settings selector, with the X kept ---- */
+.tabs.tabs-songs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.5rem;
+}
+
+.tabs-songs .tab-group { display: flex; width: 100%; }
+.tabs-songs .tab-group .tab { flex: 1; min-width: 0; padding: 9px 12px; font-size: 0.95rem; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tabs-songs > .tab { width: 100%; padding: 9px 12px; font-size: 0.95rem; }
+.tabs-songs .tab-group .tab-x { padding: 0 0.8rem; font-size: 0.95rem; }

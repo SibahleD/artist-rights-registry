@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api, fetchBlob } from '../api'
 import type { Usage } from '../types'
 import vinyl from '../assets/vinyl-placeholder.png'
@@ -36,8 +37,43 @@ function dominantColor(img: HTMLImageElement): RGB | null {
   } catch { return null }
 }
 
-export function AuthImage({ mediaId, file, alt, fallback, onColor }: {
-  mediaId?: string | null; file?: File | null; alt: string; fallback?: React.ReactNode; onColor?: (c: RGB | null) => void
+// The artwork's two accent colours: the strongest saturated hue, and the strongest hue clearly different from it.
+// When the art really has only one hue, the second is a darker shade of the first.
+function accentColors(img: HTMLImageElement): [RGB, RGB] | null {
+  try {
+    const size = 32
+    const c = document.createElement('canvas'); c.width = c.height = size
+    const g = c.getContext('2d', { willReadFrequently: true }); if (!g) return null
+    g.drawImage(img, 0, 0, size, size)
+    const d = g.getImageData(0, 0, size, size).data
+    const BINS = 12
+    const bins = Array.from({ length: BINS }, () => ({ w: 0, r: 0, g: 0, b: 0 }))
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue
+      const r = d[i], gr = d[i + 1], b = d[i + 2]
+      const max = Math.max(r, gr, b), min = Math.min(r, gr, b), sat = max ? (max - min) / max : 0
+      if (sat < 0.18 || max < 40) continue                      // skip greys, near-black and washed-out pixels
+      const dl = max - min
+      let h = max === r ? ((gr - b) / dl) % 6 : max === gr ? (b - r) / dl + 2 : (r - gr) / dl + 4
+      h = (h * 60 + 360) % 360
+      const bin = bins[Math.floor(h / (360 / BINS)) % BINS]
+      const wt = sat * (max / 255)
+      bin.w += wt; bin.r += r * wt; bin.g += gr * wt; bin.b += b * wt
+    }
+    const ranked = bins.map((b, i) => ({ ...b, i })).filter((b) => b.w > 0).sort((a, b) => b.w - a.w)
+    if (!ranked.length) return null
+    const rgb = (b: typeof ranked[number]): RGB => [Math.round(b.r / b.w), Math.round(b.g / b.w), Math.round(b.b / b.w)]
+    const first = ranked[0]
+    const apart = (b: typeof first) => { const x = Math.abs(b.i - first.i); return Math.min(x, BINS - x) >= 2 }   // at least ~60 degrees of hue away
+    const second = ranked.find((b) => b !== first && apart(b) && b.w > first.w * 0.15)
+    const a = rgb(first)
+    return [a, second ? rgb(second) : (a.map((v) => Math.round(v * 0.55)) as RGB)]
+  } catch { return null }
+}
+
+export function AuthImage({ mediaId, file, alt, fallback, onColor, onColors }: {
+  mediaId?: string | null; file?: File | null; alt: string; fallback?: React.ReactNode
+  onColor?: (c: RGB | null) => void; onColors?: (c: [RGB, RGB] | null) => void
 }) {
   const [src, setSrc] = useState<string | null>(null)
   useEffect(() => {
@@ -49,7 +85,19 @@ export function AuthImage({ mediaId, file, alt, fallback, onColor }: {
     } else setSrc(null)
     return () => { live = false; if (url) URL.revokeObjectURL(url) }
   }, [mediaId, file])
-  return src ? <img src={src} alt={alt} onLoad={(e) => onColor?.(dominantColor(e.currentTarget))} /> : <>{fallback ?? null}</>
+  return src ? <img src={src} alt={alt} onLoad={(e) => { onColor?.(dominantColor(e.currentTarget)); onColors?.(accentColors(e.currentTarget)) }} /> : <>{fallback ?? null}</>
+}
+
+// A release card link: cover on the left, `children` beside it. With artwork, the card's gradient and rim use the art's two accent colours.
+export function ArtCard({ to, artworkId, children }: { to: string; artworkId?: string | null; children: React.ReactNode }) {
+  const [tints, setTints] = useState<[RGB, RGB] | null>(null)
+  const style = tints ? ({ '--tint': tints[0].join(', '), '--tint-2': tints[1].join(', ') } as React.CSSProperties) : undefined
+  return (
+    <Link to={to} className={`card release${tints ? ' art' : ''}`} style={style}>
+      <div className="cover"><AuthImage mediaId={artworkId} alt="" fallback={vinylFallback} onColors={setTints} /></div>
+      {children}
+    </Link>
+  )
 }
 
 export function UsageLine({ usage }: { usage: Usage | null }) {

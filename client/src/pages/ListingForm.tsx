@@ -307,7 +307,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       </Collapsible>
 
       {!isSong && (
-        <div className="tabs">
+        <div className="tabs tabs-songs">
           {form.tracks.map((t, i) => (
             <div key={i} className={i === active ? 'tab-group on' : 'tab-group'}>
               <button type="button" className={i === active ? 'tab on' : 'tab'} onClick={() => setActive(i)}>{i + 1}. {t.title || 'Untitled'}</button>
