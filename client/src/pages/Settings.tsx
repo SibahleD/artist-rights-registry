@@ -6,6 +6,7 @@ import { useAuth } from '../auth'
 import { Collapsible, ErrorBox, Hint } from '../components/ui'
 import { DirtyProvider, useReportDirty } from '../components/UnsavedGuard'
 import TagPicker from '../components/TagPicker'
+import PasswordInput from '../components/PasswordInput'
 import { COLLABORATOR_ROLES, DEFAULT_PREFERENCES } from '../types'
 import type { CollaboratorRole, Preferences, User } from '../types'
 import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
@@ -76,17 +77,17 @@ function SignInCard() {
             </div>
           )}
           <label>New email<input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} autoComplete="email" /></label>
-          <label>Current password<input type="password" value={emailPw} onChange={(e) => setEmailPw(e.target.value)} autoComplete="current-password" /></label>
+          <label>Current password<PasswordInput value={emailPw} onChange={(e) => setEmailPw(e.target.value)} autoComplete="current-password" /></label>
           <Hint>We email a link to the new address. The change only applies once you open it.</Hint>
           <div className="row actions"><button disabled={em.busy || !newEmail || !emailPw}>Send confirmation</button><Msg n={em.note} /></div>
         </form>
 
         <form className="card stack tight" onSubmit={changePw}>
           <h4>Password</h4>
-          <label>Current password<input type="password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" /></label>
+          <label>Current password<PasswordInput value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" /></label>
           <div className="grid2">
-            <label>New password<input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" /></label>
-            <label>Repeat new password<input type="password" value={again} onChange={(e) => setAgain(e.target.value)} autoComplete="new-password" /></label>
+            <label>New password<PasswordInput value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" /></label>
+            <label>Repeat new password<PasswordInput value={again} onChange={(e) => setAgain(e.target.value)} autoComplete="new-password" /></label>
           </div>
           <Hint>At least 8 characters.</Hint>
           <div className="row actions"><button disabled={pw.busy || !cur || !next}>Change password</button><Msg n={pw.note} /></div>
@@ -206,7 +207,7 @@ function DeleteCard() {
         ) : (
           <form className="stack" onSubmit={submit}>
             {err && <ErrorBox error={err.message} />}
-            <label>Your password<input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></label>
+            <label>Your password<PasswordInput value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></label>
             <Toggle label="I understand this cannot be undone" checked={sure} onChange={setSure} />
             <div className="row actions">
               <button className="danger" disabled={busy || !pw || !sure}>Delete my account</button>

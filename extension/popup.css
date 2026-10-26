@@ -1,0 +1,31 @@
+:root { color-scheme: dark; }
+body { width: 360px; margin: 0; padding: 12px 14px 14px; font: 13px/1.4 system-ui, sans-serif; background: #14161d; color: #e6e6e6; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+h3 { margin: 14px 0 6px; font-size: 13px; color: #9db8f5; }
+label { display: flex; flex-direction: column; gap: 3px; margin: 6px 0; font-size: 12px; color: #cacaca; }
+input, select { padding: 6px 8px; font: inherit; color: #fff; background: #242730; border: 1px solid #4d4d4d; border-radius: 5px; }
+input:focus, select:focus { outline: none; border-color: #5b8def; }
+button { padding: 6px 12px; font: inherit; font-weight: 500; color: #fff; background: rgba(91, 141, 239, 0.3); border: 1px solid rgba(91, 141, 239, 0.6); border-radius: 7px; cursor: pointer; }
+button:hover { background: rgba(91, 141, 239, 0.45); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.ghost { background: none; border-color: transparent; color: #cacaca; }
+button.copy { padding: 1px 7px; font-size: 11px; background: none; border-color: rgba(255, 255, 255, 0.2); }
+#signin, #fillRelease, #fillTrack { width: 100%; margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+td { padding: 3px 4px; border-top: 1px solid rgba(255, 255, 255, 0.08); vertical-align: top; }
+td:first-child { color: #9a9a9a; width: 34%; }
+td:last-child { width: 1%; white-space: nowrap; }
+.note { margin: 8px 0 0; font-size: 11.5px; color: #9a9a9a; }
+#status { margin: 10px 0 0; min-height: 1em; }
+#status.ok { color: #5fd08a; } #status.warn { color: #f0b44c; } #status.err { color: #ff8a4c; }
+details { margin-top: 12px; } summary { cursor: pointer; color: #cacaca; }
+.dist { display: flex; align-items: center; gap: 8px; flex-direction: row; margin: 4px 0; }
+
+/* Password field with show/hide button */
+.pw-field { position: relative; display: flex; }
+.pw-field > input { flex: 1; width: 100%; box-sizing: border-box; padding-right: 2.2rem; }
+.pw-toggle { position: absolute; top: 0; right: 0; bottom: 0; width: 2.2rem; display: grid; place-items: center; padding: 0; color: #9a9a9a; background: none; border: 0; border-radius: 0 5px 5px 0; cursor: pointer; }
+.pw-toggle:hover { color: #fff; background: none; }
+.pw-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+.pw-icon { width: 18px; height: 18px; background-color: currentColor; -webkit-mask: url(icons/eye.svg) center / contain no-repeat; mask: url(icons/eye.svg) center / contain no-repeat; }
+.pw-icon.on { -webkit-mask-image: url(icons/eye-off.svg); mask-image: url(icons/eye-off.svg); }

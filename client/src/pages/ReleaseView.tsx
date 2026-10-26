@@ -14,6 +14,7 @@ import { Badge, Collapsible, ConfirmModal, ErrorBox, fmtDate, fmtDateTime, fmtDu
 import { featTitle, featuredNames } from '../lib/collab'
 import LinkRows from '../components/LinkRows'
 import { useUnsavedChanges } from '../components/UnsavedGuard'
+import { languageName } from '../data/options'
 import { blankRow, isBlankRow, rowName, rowToStore, storeToRow, type LinkRow } from '../data/services'
 import type { Collaborator, Notice, ReadinessCheck, ReadinessReport, Release, ReleaseExport, ReleaseLink, Track } from '../types'
 
@@ -252,7 +253,7 @@ export default function ReleaseView() {
         <div><span className="muted">℗ line</span><br />{r.p_line || derivedLine('℗', tracks[0]?.recording_copyright_year, tracks[0]?.recording_copyright)}</div>
         <div><span className="muted">© line</span><br />{r.c_line || derivedLine('©', tracks[0]?.composition_copyright_year, tracks[0]?.composition_copyright)}</div>
         <div><span className="muted">Label</span><br />{r.label_name || '—'}</div>
-        <div><span className="muted">Language</span><br />{r.language || '—'}</div>
+        <div><span className="muted">Language</span><br />{languageName(r.language) || '—'}</div>
         <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
         <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>
         </div>

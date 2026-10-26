@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { ErrorBox } from '../components/ui'
+import PasswordInput from '../components/PasswordInput'
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const { login, register } = useAuth()
@@ -30,7 +31,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           <label>Artist name<input required value={f.artistName} onChange={(e) => setF({ ...f, artistName: e.target.value })} /></label>
           <label>Legal name<input value={f.legalName} onChange={(e) => setF({ ...f, legalName: e.target.value })} placeholder="Used for royalty splits" /></label>
           <label>Email<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
-        <label>Password<input type="password" required minLength={mode === 'register' ? 8 : undefined} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+        <label>Password<PasswordInput required minLength={mode === 'register' ? 8 : undefined} autoComplete="new-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
         </label>
         <label className="consent">
           <input type="checkbox" required checked={f.acceptedTerms} onChange={(e) => setF({ ...f, acceptedTerms: e.target.checked })} />
@@ -39,7 +40,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         </>}
         {mode ==='login' && <>
         <label>Email<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
-        <label>Password<input type="password" required value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></label>
+        <label>Password<PasswordInput required autoComplete="current-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></label>
         <p className='muted'><Link to="/register" className='muted'>Forgot password </Link></p>
         </>}
         <button disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Login' : 'Register'}</button>

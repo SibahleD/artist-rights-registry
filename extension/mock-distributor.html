@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Mock distributor</title>
+<style>body{font:15px system-ui;max-width:560px;margin:2rem auto;padding:0 1rem}label{display:block;margin:.6rem 0}input,select{display:block;width:100%;padding:6px}</style></head>
+<body>
+<h1>Mock distributor: new release</h1>
+<p>A stand-in form for testing the helper. Serve it with <code>python3 -m http.server 8000</code> from this folder and open <code>http://localhost:8000/mock-distributor.html</code>.</p>
+<form onsubmit="event.preventDefault();alert('Submitted (mock). The helper never does this for you.')">
+  <h2>Release</h2>
+  <label>Release title<input name="release_title"></label>
+  <label>Primary artist<input name="primary_artist"></label>
+  <label>Label name<input name="label"></label>
+  <label>Genre<select name="genre"><option value="">Select…</option><option>Afrobeats</option><option>Amapiano</option><option>Gospel</option><option>Hip-Hop/Rap</option><option>R&amp;B/Soul</option><option>Pop</option><option>Other</option></select></label>
+  <label>Original release date<input type="date" name="release_date"></label>
+  <label>UPC / barcode<input name="upc"></label>
+  <label>℗ line<input name="p_line"></label>
+  <label>© line<input name="c_line"></label>
+  <h2>Song</h2>
+  <label>Track title<input name="track_title"></label>
+  <label>Track version<input name="version"></label>
+  <label>ISRC<input name="isrc"></label>
+  <label>Songwriters<input name="songwriters"></label>
+  <label>Producers<input name="producers"></label>
+  <label>Account password (never touched)<input type="password" name="pw"></label>
+  <button>Submit release</button>
+</form>
+</body></html>

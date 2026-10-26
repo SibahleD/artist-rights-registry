@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header><strong>Registry helper</strong><button id="signout" class="ghost" hidden>Sign out</button></header>
+
+  <section id="login" hidden>
+    <label>Registry API address<input id="api" placeholder="http://localhost:4000/api" /></label>
+    <label>Email<input id="email" type="email" autocomplete="username" /></label>
+    <label>Password
+      <span class="pw-field">
+        <input id="pw" type="password" autocomplete="current-password" />
+        <button type="button" id="pwToggle" class="pw-toggle" aria-label="Show password" aria-pressed="false" title="Show password"><span class="pw-icon" id="pwIcon"></span></button>
+      </span>
+    </label>
+    <button id="signin">Sign in</button>
+    <p class="note">Your password is only sent to the address above. The sign-in is kept until you close the browser.</p>
+  </section>
+
+  <section id="main" hidden>
+    <label>Release to send
+      <select id="release"></select>
+    </label>
+    <p class="note" id="where"></p>
+
+    <div id="preview" hidden>
+      <h3>Release details</h3>
+      <table id="relTable"></table>
+      <button id="fillRelease">Fill release details on this page</button>
+
+      <h3>Songs</h3>
+      <label>Song<select id="track"></select></label>
+      <table id="trackTable"></table>
+      <button id="fillTrack">Fill this song on this page</button>
+    </div>
+    <p id="status" role="status"></p>
+
+    <details>
+      <summary>Distributors</summary>
+      <div id="dists"></div>
+      <p class="note">Switch one on only after you have read its terms on automated tools.</p>
+    </details>
+    <p class="note">Fills text boxes and drop-downs only. It never submits, accepts terms, uploads files or enters payment details. Check every field, then submit yourself.</p>
+  </section>
+
+  <script src="languages.js"></script>
+  <script src="distributors.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
