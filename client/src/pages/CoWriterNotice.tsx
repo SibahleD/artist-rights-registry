@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api'
 import { ErrorBox, Loading } from '../components/ui'
+import AuthShell from '../components/AuthShell'
 import type { PublicNotice } from '../types'
 
 type Choice = 'confirm' | 'dispute' | 'remove' | 'unrecognized'
@@ -38,8 +39,8 @@ export default function CoWriterNotice() {
   }
 
   return (
-    <div className="auth">
-      <div className="card stack">
+    <AuthShell>
+      <div className="stack">
         <h1>Confirm your share</h1>
         {err && <ErrorBox error={err} />}
         {!notice && !err && <Loading />}
@@ -76,6 +77,6 @@ export default function CoWriterNotice() {
           </>
         )}
       </div>
-    </div>
+    </AuthShell>
   )
 }

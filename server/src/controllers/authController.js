@@ -4,10 +4,11 @@ const pool = require('../db/pool');
 
 
 const { newToken, hashToken } = require('../services/tokens');
-const { splitLegalName } = require('../lib/account');
+const { splitLegalName, validateNewPassword, normaliseEmail } = require('../lib/account');
 const { sendMail } = require('../services/mailer');
 const verifyEmailMessage = require('../services/verifyEmail');
 const { emailChangedMessage } = require('../services/emailChange');
+const { passwordResetMessage, passwordChangedMessage } = require('../services/passwordReset');
 
 const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 
@@ -15,6 +16,9 @@ const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 const TERMS_VERSION = '2026-10-22';
 const SALT_ROUNDS = 10;
 const JWT_EXPIRE = '7d';
+
+// One clock for the stored value and the token's iat (whole seconds), as in accountController.
+const nowSeconds = () => new Date(Math.floor(Date.now() / 1000) * 1000);
 
 function signToken(user) {
     return jwt.sign(
@@ -134,7 +138,7 @@ async function verifyEmail(req, res) {
         await client.query('BEGIN');
         const { rows } = await client.query(
             `SELECT id, user_id, kind, new_email FROM email_tokens
-             WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+             WHERE token_hash = $1 AND kind IN ('verify', 'email_change') AND used_at IS NULL AND expires_at > now()
              FOR UPDATE`,
             [hashToken(token)]
         );
@@ -212,8 +216,97 @@ async function resendVerification(req, res) {
     }
 }
 
+async function forgotPassword(req, res) {
+    const email = normaliseEmail(req.body?.email);
+    if (!email) return res.status(400).json({ error: 'Enter a valid email address.' });
+
+    try {
+        const { rows } = await pool.query(
+            'SELECT id, email, artist_name FROM users WHERE email = $1 AND deleted_at IS NULL',
+            [email]
+        );
+        const user = rows[0];
+        if (user) {
+            const recent = await pool.query(
+                `SELECT 1 FROM email_tokens
+                 WHERE user_id = $1 AND kind = 'password_reset' AND used_at IS NULL AND created_at > now() - interval '60 seconds'`,
+                [user.id]
+            );
+            if (recent.rowCount === 0) {
+                const { raw, hash } = newToken();
+                await pool.query(`DELETE FROM email_tokens WHERE user_id = $1 AND kind = 'password_reset' AND used_at IS NULL`, [user.id]);
+                await pool.query(
+                    `INSERT INTO email_tokens (user_id, token_hash, kind, expires_at)
+                     VALUES ($1, $2, 'password_reset', now() + interval '1 hour')`,
+                    [user.id, hash]
+                );
+                const link = `${APP_URL}/reset-password?token=${raw}`;
+                // Not awaited: the reply must look the same whether or not the address has an account.
+                sendMail({ to: user.email, ...passwordResetMessage({ artistName: user.artist_name, link }) })
+                    .catch((e) => console.error('password reset email failed:', e.message));
+            }
+        }
+        // Same answer for known and unknown addresses, so this cannot be used to find out who has an account.
+        return res.json({ sent: true });
+    } catch (err) {
+        console.error('forgotPassword error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+async function resetPassword(req, res) {
+    const token = typeof req.body?.token === 'string' ? req.body.token : '';
+    if (!token) return res.status(400).json({ error: 'Missing token.' });
+    const problem = validateNewPassword(req.body?.newPassword);
+    if (problem) return res.status(400).json({ error: problem });
+
+    const client = await pool.connect();
+    let notify = null;
+    try {
+        await client.query('BEGIN');
+        const { rows } = await client.query(
+            `SELECT t.id, t.user_id, u.email, u.artist_name
+             FROM email_tokens t JOIN users u ON u.id = t.user_id
+             WHERE t.token_hash = $1 AND t.kind = 'password_reset' AND t.used_at IS NULL
+               AND t.expires_at > now() AND u.deleted_at IS NULL
+             FOR UPDATE OF t`,
+            [hashToken(token)]
+        );
+        if (!rows[0]) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'This link is invalid or has expired. Request a new one.' });
+        }
+        const t = rows[0];
+
+        const hashed = await bcrypt.hash(req.body.newPassword, SALT_ROUNDS);
+        // Stamping password_changed_at signs out every session that existed before the reset.
+        await client.query(
+            'UPDATE users SET password_hash = $1, password_changed_at = $2 WHERE id = $3',
+            [hashed, nowSeconds(), t.user_id]
+        );
+        // The link is single use, and any other pending reset or email-change link is now moot.
+        await client.query(
+            `UPDATE email_tokens SET used_at = now()
+             WHERE user_id = $1 AND used_at IS NULL AND kind IN ('password_reset', 'email_change')`,
+            [t.user_id]
+        );
+        await client.query('COMMIT');
+        notify = { to: t.email, artistName: t.artist_name };
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('resetPassword error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+
+    sendMail({ to: notify.to, ...passwordChangedMessage({ artistName: notify.artistName }) })
+        .catch((e) => console.error('password changed notice failed:', e.message));
+    return res.json({ reset: true });
+}
+
 function logout(_req, res) {
     return res.status(204).end();
 }
 
-module.exports = { register, login, logout, verifyEmail, resendVerification, signToken };
+module.exports = { register, login, logout, verifyEmail, resendVerification, forgotPassword, resetPassword, signToken };

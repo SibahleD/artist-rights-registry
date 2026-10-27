@@ -48,6 +48,9 @@ function normaliseEmail(v) {
 const tokenPredatesPasswordChange = (iat, changedAt) =>
     !!changedAt && typeof iat === 'number' && iat < Math.floor(new Date(changedAt).getTime() / 1000);
 
+// One clock for both a stored password_changed_at and a token's iat (whole seconds), so a fresh token is never rejected.
+const nowSeconds = () => new Date(Math.floor(Date.now() / 1000) * 1000);
+
 // "Jean Claude Van Damme" -> first "Jean Claude Van", last "Damme". One word goes to first_name only.
 function splitLegalName(v) {
     const t = typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '';
@@ -56,4 +59,4 @@ function splitLegalName(v) {
     return i < 0 ? { first: t, last: null } : { first: t.slice(0, i), last: t.slice(i + 1) };
 }
 
-module.exports = { splitLegalName, PREFERENCE_KEYS, validatePreferences, withDefaults, validateNewPassword, normaliseEmail, tokenPredatesPasswordChange };
+module.exports = { splitLegalName, PREFERENCE_KEYS, validatePreferences, withDefaults, validateNewPassword, normaliseEmail, tokenPredatesPasswordChange, nowSeconds };

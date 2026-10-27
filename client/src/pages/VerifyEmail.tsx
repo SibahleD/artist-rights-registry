@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { ErrorBox } from '../components/ui'
+import AuthShell from '../components/AuthShell'
 
 export default function VerifyEmail() {
   const [params] = useSearchParams()
@@ -23,8 +24,8 @@ export default function VerifyEmail() {
   }, [])
 
   return (
-    <div className="auth">
-      <div className="card">
+    <AuthShell>
+      <div className="stack">
         <h1>Confirm your email</h1>
         {state === 'working' && <p className="muted">Checking your link…</p>}
         {state === 'done' && <><p>{changed ? 'Your sign-in email has been updated.' : 'Your email is confirmed.'}</p><Link to="/">Continue</Link></>}
@@ -34,6 +35,6 @@ export default function VerifyEmail() {
           <Link to="/login">Log in</Link>
         </>}
       </div>
-    </div>
+    </AuthShell>
   )
 }

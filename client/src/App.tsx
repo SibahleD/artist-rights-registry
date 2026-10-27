@@ -12,6 +12,9 @@ import SharedTrackView from './pages/SharedTrackView'
 import Splits from './pages/Splits'
 import SongView from './pages/SongView'
 import VerifyEmail from './pages/VerifyEmail'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import Extension from './pages/Extension'
 import CoWriterNotice from './pages/CoWriterNotice'
 import Glossary from './pages/Glossary'
 import RegisterRights from './pages/RegisterRights'
@@ -37,6 +40,9 @@ const router = createBrowserRouter([
       { path: '/login', element: <AuthPage mode="login" /> },
       { path: '/register', element: <AuthPage mode="register" /> },
       { path: '/verify-email', element: <VerifyEmail /> },
+      { path: '/forgot-password', element: <ForgotPassword /> },
+      { path: '/reset-password', element: <ResetPassword /> },
+      { path: '/extension', element: <Extension /> },
       { path: '/notice/:token', element: <CoWriterNotice /> },
       { path: '/privacy', element: <Privacy /> },
       { path: '/terms', element: <Terms /> },
