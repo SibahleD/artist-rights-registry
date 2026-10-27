@@ -933,12 +933,14 @@ html.scroll-locked {
 
 .auth-brand {
   align-self: flex-start;
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--pri-font);
-  text-decoration: none;
+  display: block;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: #fff; /* the logo is dark blue, so it sits on a white chip */
+  line-height: 0;
 }
+
+.auth-brand img { height: 44px; width: auto; display: block; }
 
 .auth-body {
   width: min(400px, 100%);
@@ -1837,3 +1839,41 @@ a.store-btn .store-name { font-size: 0.875rem; white-space: nowrap; }
 .tabs-songs .tab-group .tab { flex: 1; min-width: 0; padding: 9px 12px; font-size: 0.95rem; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tabs-songs > .tab { width: 100%; padding: 9px 12px; font-size: 0.95rem; }
 .tabs-songs .tab-group .tab-x { padding: 0 0.8rem; font-size: 0.95rem; }
+
+/* Charts */
+
+.chart { margin: 0; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart-grid { stroke: var(--border-mid); stroke-width: 1; }
+.chart-axis { fill: var(--sec-font); font-size: 11px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin-top: 0.4rem; font-size: 12.5px; color: var(--sec-font); }
+.chart-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+
+.bar-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.bar-list li { display: grid; grid-template-columns: minmax(80px, 140px) 1fr 64px; align-items: center; gap: 0.75rem; font-size: 13px; }
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { height: 10px; border-radius: 5px; background: var(--input-bg); overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
+.bar-value { text-align: right; color: var(--sec-font); font-variant-numeric: tabular-nums; }
+
+/* Performance page and stream import */
+.perf-head { justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.perf-actions { gap: 0.5rem; }
+.performance > * + * { margin-top: 1rem; }
+.perf-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
+.perf-range { gap: 0.75rem; flex-wrap: wrap; }
+.perf-range label, .map-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--sec-font); }
+.perf-selected { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; font-size: 14px; }
+.perf-search { justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.perf-search input[type="search"] { max-width: 280px; }
+.perf-table .num, table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.perf-release td { font-weight: 600; }
+.perf-track td:first-child { padding-left: 1.75rem; }
+.perf-release.on td, .perf-track.on td { background: var(--accent-bg); }
+.perf-table button.linklike { font: inherit; text-align: left; }
+.perf-table button.linklike:disabled { color: var(--sec-font); cursor: default; text-decoration: none; }
+.table-scroll { overflow-x: auto; }
+.import-body { display: flex; flex-direction: column; gap: 0.9rem; min-width: min(560px, 80vw); max-height: 65vh; overflow-y: auto; }
+.map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
+.import-problems { margin: 0.5rem 0 0; padding-left: 1.2rem; font-size: 13px; }
+.check { display: flex; align-items: center; gap: 0.5rem; font-size: 14px; margin: 0.5rem 0; }

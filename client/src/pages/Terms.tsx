@@ -14,8 +14,8 @@ export default function Terms() {
 
       <section className="card stack">
         <h2>About these terms</h2>
-        <p>These terms are the agreement between you and [CONFIRM: your name or organisation] ("we") for using Royalty Registry. By creating an account you confirm that you have read them and accept them. If you do not accept them, please do not create an account.</p>
-        <p>Royalty Registry is a pilot. Features may change, and the service may be unavailable from time to time.</p>
+        <p>These terms are the agreement between you and [CONFIRM: your name or organisation] ("we") for using Track Record. By creating an account you confirm that you have read them and accept them. If you do not accept them, please do not create an account.</p>
+        <p>Track Record is a pilot. Features may change, and the service may be unavailable from time to time.</p>
       </section>
 
       <section className="card stack">

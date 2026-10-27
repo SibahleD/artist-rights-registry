@@ -18,6 +18,7 @@ import Extension from './pages/Extension'
 import CoWriterNotice from './pages/CoWriterNotice'
 import Glossary from './pages/Glossary'
 import RegisterRights from './pages/RegisterRights'
+import Performance from './pages/Performance'
 import Settings from './pages/Settings'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
@@ -61,6 +62,7 @@ const router = createBrowserRouter([
           { path: '/profile', element: <Profile /> },
           { path: '/settings', element: <Settings /> },
           { path: '/glossary', element: <Glossary /> },
+          { path: '/performance', element: <Performance /> },
           { path: '/royalty-rights', element: <RegisterRights /> },
         ],
       },

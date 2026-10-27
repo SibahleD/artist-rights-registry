@@ -11,9 +11,10 @@ import infoIco from '../assets/ico/info.svg'
 import settingsIco from '../assets/ico/settings.svg'
 import expandIco from '../assets/ico/reduce.svg'
 import moneyIco from '../assets/ico/money.svg'
+import chartIco from '../assets/ico/chart.svg'
 
 const links = [
-  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
+  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/performance', 'Performance', chartIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
 
 function VerifyBanner() {
@@ -45,7 +46,7 @@ export default function Layout() {
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-header" >
-          <div className="brand">Royalty Registry<small>{user?.artist_name}</small></div>
+          <div className="brand">Track Record<small>{user?.artist_name}</small></div>
           <button className="expand" onClick={() => document.body.classList.toggle('sidebar-collapsed')}><img className='nav-icon' src={expandIco} /></button>
         </div>
         <nav>

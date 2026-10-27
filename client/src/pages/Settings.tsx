@@ -146,7 +146,7 @@ function PrivacyCard() {
     const blob = await fetchBlob('/users/me/export')
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = 'my-registry-data.json'; a.click()
+    a.href = url; a.download = 'my-track-record-data.json'; a.click()
     URL.revokeObjectURL(url)
     return 'Downloaded.'
   })

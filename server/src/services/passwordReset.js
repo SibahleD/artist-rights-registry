@@ -1,4 +1,4 @@
-const PLATFORM = process.env.PLATFORM_NAME || 'Artist Rights Registry';
+const PLATFORM = process.env.PLATFORM_NAME || 'Track Record';
 
 const passwordResetMessage = ({ artistName, link }) => ({
     subject: `Reset your ${PLATFORM} password`,

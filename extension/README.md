@@ -1,11 +1,11 @@
-# Registry helper (Chrome extension)
+# Track Record helper (Chrome extension)
 
-Copies a **ready** release from the registry into a distributor's release form. It fills text boxes and drop-downs only.
+Copies a **ready** release from Track Record into a distributor's release form. It fills text boxes and drop-downs only.
 It never submits, ticks terms, uploads files, or touches login, payment or bank fields. You check everything and submit yourself.
 
 ## Load it
 1. Chrome, `chrome://extensions`, switch on Developer mode, Load unpacked, pick this `extension` folder.
-2. Click the extension, enter the registry API address (default `http://localhost:4000/api`) and sign in.
+2. Click the extension, enter the Track Record API address (default `http://localhost:4000/api`) and sign in.
 3. Pick a ready release. The popup previews the values (from `GET /releases/:id/export`, which carries no internal ids or co-writer emails).
 
 ## Try it on the mock page

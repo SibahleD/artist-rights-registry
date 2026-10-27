@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import panel from '../assets/login-panel.jpg'
+import logo from '../assets/logo.png'
 
 // Set VITE_EXTENSION_URL (e.g. a Chrome Web Store listing) to send "Get the extension" there.
 // Without it the link opens the built-in install page at /extension.
@@ -12,7 +13,7 @@ export default function AuthShell({ children, footer }: { children: ReactNode; f
   return (
     <div className="auth-split">
       <main className="auth-main">
-        <Link to="/login" className="auth-brand">Royalty Registry</Link>
+        <Link to="/login" className="auth-brand"><img src={logo} alt="Track Record" /></Link>
         <div className="auth-body">{children}</div>
         <div className="auth-foot">
           <span>{footer}</span>

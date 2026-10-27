@@ -7,7 +7,7 @@ const { emailHash } = require('../services/notices');
 const { buildExport } = require('../services/exportRelease');
 const { confirmEmailChangeMessage } = require('../services/emailChange');
 const { signToken } = require('./authController');
-const { validatePreferences, withDefaults, validateNewPassword, normaliseEmail, nowSeconds } = require('../lib/account');
+const { validatePreferences, withDefaults, validateNewPassword, normaliseEmail } = require('../lib/account');
 
 const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
 const SALT_ROUNDS = 10;
@@ -19,6 +19,9 @@ async function checkPassword(userId, password) {
     const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1 AND deleted_at IS NULL', [userId]);
     return !!rows[0] && bcrypt.compare(password, rows[0].password_hash);
 }
+
+// One clock for both the stored value and the token's iat (whole seconds), so the new token is never rejected.
+const nowSeconds = () => new Date(Math.floor(Date.now() / 1000) * 1000);
 
 async function changePassword(req, res) {
     const { currentPassword, newPassword } = req.body ?? {};
@@ -132,7 +135,7 @@ async function exportMyData(req, res) {
             glossary_progress: glossary.rows,
             societies: societies.rows,
         };
-        res.setHeader('Content-Disposition', 'attachment; filename="my-registry-data.json"');
+        res.setHeader('Content-Disposition', 'attachment; filename="my-track-record-data.json"');
         return res.json(out);
     } catch (e) { return fail(res, e, 'exportMyData'); }
 }

@@ -1,4 +1,4 @@
-const PLATFORM = process.env.PLATFORM_NAME || 'Artist Rights Registry';
+const PLATFORM = process.env.PLATFORM_NAME || 'Track Record';
 
 module.exports = ({ artistName, link }) => ({
     subject: `Confirm your email for ${PLATFORM}`,

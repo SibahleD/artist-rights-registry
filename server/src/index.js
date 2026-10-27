@@ -10,12 +10,16 @@ const sharedTrackRoutes = require('./routes/sharedTracks');
 const publicNoticeRoutes = require('./routes/publicNotices');
 const mediaRoutes = require('./routes/media');
 const glossaryRoutes = require('./routes/glossary');
+const streamRoutes = require('./routes/streams');
 
 const { sweepNotices } = require('./services/notices');
 
 const app = express();
 
 app.use(cors());
+// Imports can carry thousands of rows, so this route gets a larger body limit. It is mounted first so the
+// default parser below sees an already-parsed body and leaves it alone.
+app.use('/api/streams', express.json({ limit: '4mb' }), streamRoutes);
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok'}));

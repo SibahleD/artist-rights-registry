@@ -14,7 +14,7 @@ async function call(path, opts = {}) {
   let res
   try {
     res = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}) } })
-  } catch { throw new Error('Cannot reach the registry. Is it running, and is the address right?') }
+  } catch { throw new Error('Cannot reach Track Record. Is it running, and is the address right?') }
   const data = await res.json().catch(() => ({}))
   if (res.status === 401 && TOKEN) { await signOut(); throw new Error('Signed out. Please sign in again.') }
   if (!res.ok) throw new Error(data.error || 'Something went wrong.')

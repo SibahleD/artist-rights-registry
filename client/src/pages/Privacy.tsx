@@ -12,8 +12,8 @@ export default function Privacy() {
       <p className="muted">Last updated 22 October 2026. Draft: items marked [CONFIRM] are still to be filled in.</p>
 
       <section className="card stack">
-        <h2>Who runs Royalty Registry</h2>
-        <p>Royalty Registry is a tool that helps independent artists record who owns what on a release, so the details are ready for distributors and collecting societies. It is run by [CONFIRM: your name or organisation]. For any privacy question, write to [CONFIRM: contact email].</p>
+        <h2>Who runs Track Record</h2>
+        <p>Track Record is a tool that helps independent artists record who owns what on a release, so the details are ready for distributors and collecting societies. It is run by [CONFIRM: your name or organisation]. For any privacy question, write to [CONFIRM: contact email].</p>
         <p>It is a pilot. It does not submit anything to a distributor, store or society for you, and it is general guidance, not legal or financial advice.</p>
       </section>
 
