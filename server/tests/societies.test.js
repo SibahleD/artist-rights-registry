@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseSocietyInput } = require('../src/lib/societies');
+const { parseSocietyInput, cleanDashboardUrl } = require('../src/lib/societies');
 
 const NOW = new Date('2026-10-22T12:00:00Z');
 const ok = (body, existing) => parseSocietyInput(body, existing, NOW).society;
@@ -8,7 +8,7 @@ const bad = (body, existing) => parseSocietyInput(body, existing, NOW).error;
 
 test('a new entry needs a name and a country, and starts as planned', () => {
     assert.deepEqual(ok({ body_name: ' COSOTA ', country: 'tz' }),
-        { body_name: 'COSOTA', country: 'TZ', status: 'planned', registered_on: null, member_ref: null });
+        { body_name: 'COSOTA', country: 'TZ', status: 'planned', registered_on: null, member_ref: null, dashboard_url: null });
     assert.match(bad({ country: 'TZ' }), /name/);
     assert.match(bad({ body_name: 'x'.repeat(121), country: 'TZ' }), /name/);
     assert.match(bad({ body_name: 'COSOTA' }), /country/);
@@ -46,15 +46,40 @@ test('the member number is trimmed, optional and bounded', () => {
 });
 
 test('updating changes only status, date and member number, and keeps what is not sent', () => {
-    const existing = { body_name: 'UPRS', country: 'UG', status: 'applied', registered_on: null, member_ref: 'APP-9' };
+    const existing = { body_name: 'UPRS', country: 'UG', status: 'applied', registered_on: null, member_ref: 'APP-9', dashboard_url: 'https://portal.example.org/me' };
     assert.deepEqual(ok({ body_name: 'Other', country: 'KE', status: 'registered', registered_on: '2026-09-01' }, existing),
-        { body_name: 'UPRS', country: 'UG', status: 'registered', registered_on: '2026-09-01', member_ref: 'APP-9' });
+        { body_name: 'UPRS', country: 'UG', status: 'registered', registered_on: '2026-09-01', member_ref: 'APP-9', dashboard_url: 'https://portal.example.org/me' });
     assert.deepEqual(ok({}, existing), existing);
     assert.equal(ok({ member_ref: null }, existing).member_ref, null);
 });
 
 test('moving back from registered clears the date', () => {
-    const existing = { body_name: 'UPRS', country: 'UG', status: 'registered', registered_on: '2026-09-01', member_ref: null };
+    const existing = { body_name: 'UPRS', country: 'UG', status: 'registered', registered_on: '2026-09-01', member_ref: null, dashboard_url: null };
     assert.equal(ok({ status: 'applied' }, existing).registered_on, null);
     assert.equal(ok({ member_ref: 'M1' }, existing).registered_on, '2026-09-01');
+});
+
+test('the dashboard link is optional, must be a plain web address, and is cleaned', () => {
+    const base = { body_name: 'A', country: 'UG' };
+    assert.equal(ok(base).dashboard_url, null);
+    assert.equal(ok({ ...base, dashboard_url: '' }).dashboard_url, null);
+    assert.equal(ok({ ...base, dashboard_url: '  https://portal.uprs.go.ug/login  ' }).dashboard_url, 'https://portal.uprs.go.ug/login');
+    assert.equal(ok({ ...base, dashboard_url: 'uprs.go.ug/members' }).dashboard_url, 'https://uprs.go.ug/members');
+    assert.equal(ok({ ...base, dashboard_url: 'http://example.org/a?b=1#c' }).dashboard_url, 'http://example.org/a?b=1#c');
+    for (const v of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'data:text/html,hi', 'ftp://example.org/x', 'https://user:pw@example.org/', 'https://exa mple.org',
+        'not a link', 'https://localhost', 'https://' + 'a'.repeat(500) + '.org', 42, {}]) {
+        assert.match(bad({ ...base, dashboard_url: v }), /dashboard link/, String(v));
+    }
+});
+
+test('updating can set, keep and clear the dashboard link', () => {
+    const existing = { body_name: 'UPRS', country: 'UG', status: 'applied', registered_on: null, member_ref: null, dashboard_url: 'https://portal.example.org/me' };
+    assert.equal(ok({ status: 'registered' }, existing).dashboard_url, 'https://portal.example.org/me');
+    assert.equal(ok({ dashboard_url: null }, existing).dashboard_url, null);
+    assert.equal(ok({ dashboard_url: 'https://new.example.org' }, existing).dashboard_url, 'https://new.example.org');
+    assert.match(bad({ dashboard_url: 'javascript:1' }, existing), /dashboard link/);
+});
+
+test('cleanDashboardUrl refuses empty input', () => {
+    assert.equal(cleanDashboardUrl('   '), null);
 });

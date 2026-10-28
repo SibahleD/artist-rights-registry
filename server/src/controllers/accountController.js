@@ -111,7 +111,7 @@ async function exportMyData(req, res) {
             pool.query(`SELECT mime_type, width, height, size_bytes FROM media WHERE owner_id = $1 AND kind = 'avatar'`, [uid]),
             pool.query('SELECT term_id, status FROM glossary_progress WHERE user_id = $1 ORDER BY term_id', [uid]),
             pool.query(
-                `SELECT body_name, country, status, to_char(registered_on, 'YYYY-MM-DD') AS registered_on, member_ref
+                `SELECT body_name, country, status, to_char(registered_on, 'YYYY-MM-DD') AS registered_on, member_ref, dashboard_url
                  FROM user_societies WHERE user_id = $1 ORDER BY created_at, id`, [uid]),
         ]);
 

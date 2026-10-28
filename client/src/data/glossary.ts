@@ -144,6 +144,12 @@ export const GLOSSARY: GlossaryEntry[] = [
     related: ['performance-royalties', 'mechanical-royalties', 'ipi', 'iswc'],
   },
   {
+    id: 'sync-licensing', term: 'Sync licensing', category: 'Royalties',
+    short: 'Permission, usually for a fee, to use a song and its recording in a film, advert, game or video.',
+    details: 'Sync means synchronising music with moving images. Because it uses both the composition and the recording, the deal is normally agreed with the owners of each, and the fee is whatever they negotiate. It is separate from the royalties that societies and distributors collect.',
+    related: ['composition', 'sound-recording', 'publisher'],
+  },
+  {
     id: 'work-registration', term: 'Work registration', category: 'Royalties',
     short: 'Telling your collecting society about a new song, including its writers and splits.',
     details: 'Registering gives the song its identity in the society’s system, and often produces the ISWC. Registration is separate from distributing the song to streaming services, and one does not do the other.',

@@ -5,12 +5,32 @@ const storage = require('../services/storage');
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
     upc, p_line, c_line, label_name, language, status, created_at, ready_at, released_at, unconfirmed_acknowledged_at,
+    album_version, is_compilation, has_lyrics, explicit, secondary_genre,
+    originally_released::text AS originally_released, preorder_date::text AS preorder_date, sales_start_date::text AS sales_start_date,
     (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
 const { readinessChecks, readinessProblems, errorsOf } = require('../services/readiness');
 const { buildExport } = require('../services/exportRelease');
 const { setReleased, clearReleased, listLinks } = require('../services/lifecycle');
 const { optionalLanguage } = require('../lib/codes');
+const { checkReleaseDates } = require('../lib/distribution');
 const RELEASE_TYPES = ['single', 'ep', 'album'];
+const EXPLICIT_VALUES = ['explicit', 'not_explicit', 'cleaned'];
+
+function optionalBool(label) {
+    return (v) => {
+        if (v === null || v === '') return { value: null };
+        return typeof v === 'boolean' ? { value: v } : { error: `${label} must be yes or no.` };
+    };
+}
+
+function requiredBool(label) {
+    return (v) => (typeof v === 'boolean' ? { value: v } : { error: `${label} must be yes or no.` });
+}
+
+function optionalExplicit(v) {
+    if (v === null || v === '') return { value: null };
+    return EXPLICIT_VALUES.includes(v) ? { value: v } : { error: `Explicit must be one of: ${EXPLICIT_VALUES.join(', ')}.` };
+}
 
 function requiredText(label, max) {
     return (v) => {
@@ -65,6 +85,15 @@ const FIELDS = {
     cLine:       { column: 'c_line',       validate: optionalText('C line', 200) },
     labelName:   { column: 'label_name',   validate: optionalText('Label name', 200) },
     language:    { column: 'language',     validate: optionalLanguage('Language') },
+    // Distribution details (migration 017). All optional.
+    albumVersion:       { column: 'album_version',       validate: optionalText('Album version', 200) },
+    isCompilation:      { column: 'is_compilation',      validate: requiredBool('Compilation') },
+    hasLyrics:          { column: 'has_lyrics',          validate: optionalBool('Lyrics') },
+    explicit:           { column: 'explicit',            validate: optionalExplicit },
+    secondaryGenre:     { column: 'secondary_genre',     validate: optionalText('Secondary genre', 100) },
+    originallyReleased: { column: 'originally_released', validate: optionalDate('Originally released') },
+    preorderDate:       { column: 'preorder_date',       validate: optionalDate('Pre-order date') },
+    salesStartDate:     { column: 'sales_start_date',    validate: optionalDate('Sales start date') },
 };
 
 function parseBody(body) {
@@ -117,6 +146,8 @@ async function createRelease(req, res) {
     if (error) return res.status(400).json({ error });
     if (!('title' in data)) return res.status(400).json({ error: 'Title is required.' });
     if (!('album_artist' in data)) data.album_artist = req.user.artistName;
+    const dateProblem = checkReleaseDates(data);
+    if (dateProblem) return res.status(400).json({ error: dateProblem });
 
     const columns = ['owner_id', ...Object.keys(data)];
     const values = [req.user.id, ...Object.values(data)];
@@ -203,6 +234,9 @@ async function updateRelease(req, res) {
         if (existing.status !== 'draft') {
             return res.status(409).json({ error: 'Ready releases are locked. Revert to draft to edit.' });
         }
+        // Check the dates as they will be after this change, so a partial update is compared with what is already saved.
+        const dateProblem = checkReleaseDates({ ...existing, ...data });
+        if (dateProblem) return res.status(400).json({ error: dateProblem });
 
         const columns = Object.keys(data);
         const values = [...Object.values(data), existing.id, req.user.id];

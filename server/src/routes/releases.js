@@ -9,6 +9,7 @@ const {
     sendNotices, listNotices, remindNotice, resolveNotice
 } = require('../controllers/noticesController');
 const { putArtwork, deleteArtwork } = require('../controllers/imageController')
+const { getContributors, putContributors } = require('../controllers/contributorController');
 
 const router = express.Router();
 const trackRoutes = require('./tracks');
@@ -41,6 +42,8 @@ router.post('/:id/notices/send', sendNotices);
 router.get('/:id/notices', listNotices);
 router.post('/:id/notices/:noticeId/remind', remindNotice);
 router.post('/:id/notices/:noticeId/resolve', resolveNotice);
+router.get('/:id/contributors', getContributors);
+router.put('/:id/contributors', putContributors);
 router.put('/:id/artwork', putArtwork)
 router.delete('/:id/artwork', deleteArtwork)
 

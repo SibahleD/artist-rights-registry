@@ -1,0 +1,107 @@
+/* Styles for the Info tab on the Royalties page. Uses the app's existing colour variables. */
+
+.info-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+}
+
+.info-sides .option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 12px 14px;
+}
+
+.info-sides h5,
+.info-money h5 {
+  margin: 0;
+}
+
+.info-sides ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.info-steps {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.info-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.info-money {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-dark);
+}
+
+.info-money:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.info-money-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-money-head .badge {
+  margin-top: 0;
+}
+
+.info-action {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.badge.side-recording {
+  color: var(--link-blue);
+  border-color: var(--accent-border);
+}
+
+.badge.side-composition {
+  color: var(--ok);
+  border-color: rgba(95, 208, 138, 0.45);
+}
+
+.badge.side-either {
+  color: var(--warn);
+  border-color: rgba(240, 180, 76, 0.45);
+}
+
+.info-defs {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) 1fr;
+  gap: 0.55rem 1.1rem;
+  margin: 0;
+}
+
+.info-defs dd {
+  margin: 0;
+  color: var(--sec-font);
+}
+
+@media (max-width: 560px) {
+  .info-defs {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+
+  .info-defs dd {
+    margin-bottom: 0.6rem;
+  }
+}

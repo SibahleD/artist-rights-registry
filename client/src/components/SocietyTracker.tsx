@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
-import { COUNTRIES, TRACKABLE, countryNameOf, websiteOf } from '../data/societies'
+import { COUNTRIES, TRACKABLE, countryNameOf, dashboardOf, websiteOf } from '../data/societies'
 import type { SocietyStatus, UserSociety } from '../types'
 import { useUnsavedChanges } from './UnsavedGuard'
 import { Badge, ConfirmModal, ErrorBox, Hint, Loading, fmtDate } from './ui'
@@ -9,6 +9,8 @@ const STATUS_LABEL: Record<SocietyStatus, string> = { planned: 'Planned', applie
 const BADGE: Record<SocietyStatus, string> = { planned: 'draft', applied: 'pending', registered: 'confirmed' }
 const rank = (s: SocietyStatus) => ({ registered: 0, applied: 1, planned: 2 })[s]
 const todayUtc = () => new Date().toISOString().slice(0, 10)
+// Links come from the user or from our own data; only plain web addresses are ever rendered as links.
+const safeHref = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : undefined)
 
 export interface NewSociety { body_name: string; country: string; status?: SocietyStatus }
 
@@ -26,7 +28,7 @@ export function useSocieties() {
     const r = await api<{ society: UserSociety }>('/users/me/societies', 'POST', input)
     setList((l) => sort([...(l ?? []), r.society]))
   }
-  async function update(id: string, input: { status: SocietyStatus; registered_on: string | null; member_ref: string | null }) {
+  async function update(id: string, input: { status: SocietyStatus; registered_on: string | null; member_ref: string | null; dashboard_url: string | null }) {
     const r = await api<{ society: UserSociety }>(`/users/me/societies/${id}`, 'PATCH', input)
     setList((l) => sort((l ?? []).map((s) => (s.id === id ? r.society : s))))
   }
@@ -41,8 +43,8 @@ export function useSocieties() {
 }
 export type Societies = ReturnType<typeof useSocieties>
 
-interface Draft { status: SocietyStatus; registered_on: string; member_ref: string }
-const draftOf = (s: UserSociety): Draft => ({ status: s.status, registered_on: s.registered_on ?? '', member_ref: s.member_ref ?? '' })
+interface Draft { status: SocietyStatus; registered_on: string; member_ref: string; dashboard_url: string }
+const draftOf = (s: UserSociety): Draft => ({ status: s.status, registered_on: s.registered_on ?? '', member_ref: s.member_ref ?? '', dashboard_url: s.dashboard_url ?? '' })
 
 function SocietyRow({ s, api: soc, editing, draft, setEditing, setDraft }: {
   s: UserSociety; api: Societies; editing: boolean; draft: Draft | null
@@ -51,7 +53,8 @@ function SocietyRow({ s, api: soc, editing, draft, setEditing, setDraft }: {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [confirmRemove, setConfirmRemove] = useState(false)
-  const site = websiteOf(s.body_name, s.country)
+  const site = safeHref(websiteOf(s.body_name, s.country))
+  const dashboard = safeHref(s.dashboard_url) ?? safeHref(dashboardOf(s.body_name, s.country))
 
   async function save() {
     if (!draft) return
@@ -61,6 +64,7 @@ function SocietyRow({ s, api: soc, editing, draft, setEditing, setDraft }: {
         status: draft.status,
         registered_on: draft.status === 'registered' && draft.registered_on ? draft.registered_on : null,
         member_ref: draft.member_ref.trim() || null,
+        dashboard_url: draft.dashboard_url.trim() || null,
       })
       setEditing(null); setDraft(null)
     } catch (e) { setErr((e as Error).message) } finally { setBusy(false) }
@@ -87,6 +91,7 @@ function SocietyRow({ s, api: soc, editing, draft, setEditing, setDraft }: {
             {s.member_ref ? <>Member number: <strong>{s.member_ref}</strong></> : 'No member number saved.'}
           </p>
           <div className="row actions">
+            {dashboard && <a className="btn" href={dashboard} target="_blank" rel="noopener noreferrer">Open dashboard</a>}
             <button type="button" className="secondary" onClick={() => { setEditing(s.id); setDraft(draftOf(s)) }}>Update</button>
             <button type="button" className="ghost danger" disabled={busy} onClick={() => setConfirmRemove(true)}>Remove</button>
           </div>
@@ -108,6 +113,11 @@ function SocietyRow({ s, api: soc, editing, draft, setEditing, setDraft }: {
           <label>Your member number (optional)
             <input value={draft.member_ref} maxLength={100} onChange={(e) => setDraft({ ...draft, member_ref: e.target.value })} />
             <Hint>Only you can see this.</Hint>
+          </label>
+          <label>Link to your dashboard (optional)
+            <input type="text" inputMode="url" autoComplete="off" spellCheck={false} value={draft.dashboard_url} maxLength={500}
+              placeholder="https://" onChange={(e) => setDraft({ ...draft, dashboard_url: e.target.value })} />
+            <Hint>The page where you log in or see your statements. Only you can see this. We never ask for your password to it.</Hint>
           </label>
           <div className="row actions">
             <button type="button" disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
@@ -196,7 +206,7 @@ function AddForm({ api: soc, onDirty }: { api: Societies; onDirty: (dirty: boole
   )
 }
 
-export default function SocietyTracker({ societies: soc }: { societies: Societies }) {
+export default function SocietyTracker({ societies: soc, onBrowse }: { societies: Societies; onBrowse?: () => void }) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [addDirty, setAddDirty] = useState(false)
@@ -212,7 +222,12 @@ export default function SocietyTracker({ societies: soc }: { societies: Societie
     <section className="card stack">
       <h3>My registrations</h3>
       <p className="muted">Keep track of the societies you plan to join, have applied to, or are registered with. This list is private to you, and it is not sent to any society.</p>
-      {soc.list.length === 0 && <p className="society-empty">You are not tracking any society yet. Add one below, or use “Track this body” in the guide.</p>}
+      {soc.list.length === 0 && (
+        <div className="society-empty stack">
+          <p>You are not tracking any society yet. Add one below{onBrowse ? ', or see which societies apply in your country.' : ', or use “Track this body” in the guide.'}</p>
+          {onBrowse && <p><button type="button" className="secondary" onClick={onBrowse}>Find my society</button></p>}
+        </div>
+      )}
       {soc.list.map((s) => (
         <SocietyRow key={s.id} s={s} api={soc} editing={editingId === s.id} draft={editingId === s.id ? draft : null}
           setEditing={setEditingId} setDraft={setDraft} />

@@ -1,116 +1,48 @@
-import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Term from '../components/Term'
 import SocietyTracker, { useSocieties } from '../components/SocietyTracker'
-import {
-  BODY_LABEL, CHECKED, COUNTRIES, INTERNATIONAL, MONEY_TYPES, STATUS_LABEL,
-} from '../data/societies'
+import TrackSocieties from '../components/TrackSocieties'
+import RoyaltyInfo from '../components/RoyaltyInfo'
+import { CHECKED } from '../data/societies'
 
-const KEY = 'rights-country'
-
-const read = () => { try { return localStorage.getItem(KEY) ?? '' } catch { return '' } }
-const write = (v: string) => { try { localStorage.setItem(KEY, v) } catch { /* storage unavailable */ } }
+const TABS = [['registrations', 'My registrations'], ['track', 'Track societies'], ['info', 'Info']] as const
+type Tab = typeof TABS[number][0]
+const isTab = (v: string | null): v is Tab => TABS.some(([k]) => k === v)
 
 export default function RegisterRights() {
-  const [code, setCode] = useState(read)
-  useEffect(() => { write(code) }, [code])
-  const country = COUNTRIES.find((c) => c.code === code)
   const societies = useSocieties()
-  const [trackErr, setTrackErr] = useState('')
-  const track = (name: string, cc: string) => { setTrackErr(''); societies.add({ body_name: name, country: cc }).catch((e: Error) => setTrackErr(e.message)) }
+  const [params, setParams] = useSearchParams()
+  const raw = params.get('tab')
+  const tab: Tab = isTab(raw) ? raw : 'registrations'
+  const setTab = (t: Tab) => setParams(t === 'registrations' ? {} : { tab: t }, { replace: true })
 
   return (
     <div className="stack">
       <h1>Register your rights</h1>
       <p className="muted">
         Streaming platforms pay the recording, but the <Term id="composition">composition</Term> is collected through a
-        <Term id="cmo"> collecting society (PRO / CMO)</Term> in your country. Tell us where you are from and we will show which body applies
+        <Term id="cmo"> collecting society (PRO / CMO)</Term> in your country. Pick your country under Track societies and we will show which body applies
         and how to register. Guidance last checked {CHECKED}. This changes quickly, so confirm with the body before paying or signing.
       </p>
 
-      <SocietyTracker societies={societies} />
-
-      <section className="card stack">
-        <h4>What gets collected, and by whom</h4>
-        {MONEY_TYPES.map((m) => (
-          <p key={m.name}><strong>{m.name}</strong> — <em>{m.who}.</em> {m.detail}</p>
+      <div className="tabs tabs-fill" role="tablist">
+        {TABS.map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={tab === key} className={`tab${tab === key ? ' on' : ''}`} onClick={() => setTab(key)}>{label}</button>
         ))}
-      </section>
+      </div>
 
-      <label>Where are you from?
-        <select value={code} onChange={(e) => setCode(e.target.value)}>
-          <option value="">Choose your country…</option>
-          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-          <option value="other">Another country</option>
-        </select>
-      </label>
+      {/* All three stay mounted, so an edit in progress survives a tab switch. */}
+      <div className="stack" hidden={tab !== 'registrations'}>
+        <SocietyTracker societies={societies} onBrowse={() => setTab('track')} />
+      </div>
 
-      {code === 'other' && (
-        <section className="card stack">
-          <p>We have not researched your country yet (Ethiopia, Somalia, Djibouti and Eritrea are not covered). Ask your country’s copyright office
-            which society is licensed, then use the international options below in the meantime.</p>
-        </section>
-      )}
+      <div className="stack" hidden={tab !== 'track'}>
+        <TrackSocieties societies={societies} onViewRegistrations={() => setTab('registrations')} />
+      </div>
 
-      {country && (
-        <>
-          <section className="card stack">
-            <div className="row between">
-              <h3>{country.name}</h3>
-              <span className={`badge ${country.status === 'working' ? 'confirmed' : country.status === 'none' ? 'disputed' : 'pending'}`}>
-                {STATUS_LABEL[country.status]}
-              </span>
-            </div>
-            <p><strong>{country.headline}</strong></p>
-            {trackErr && <p className="error" role="alert">{trackErr}</p>}
-          </section>
-
-          <section className="card stack">
-            <h4>Who to deal with</h4>
-            {country.bodies.map((b) => (
-              <div key={b.name}>
-                <div className="row between">
-                  <strong>{b.name}{b.abbr ? ` (${b.abbr})` : ''}</strong>
-                  <span className={`badge ${b.status === 'active' ? 'confirmed' : b.status === 'pending' || b.status === 'unclear' ? 'pending' : 'removed'}`}>{BODY_LABEL[b.status]}</span>
-                </div>
-                <p>{b.does}</p>
-                {b.note && <p className="muted">{b.note}</p>}
-                {b.website && <p><a href={b.website} target="_blank" rel="noreferrer">{b.website}</a></p>}
-                {societies.list && (societies.tracked(b.name, country.code)
-                  ? <p className="muted">On your list.</p>
-                  : <p><button type="button" className="secondary" onClick={() => track(b.name, country.code)}>Track this body</button></p>)}
-              </div>
-            ))}
-          </section>
-
-          <section className="card stack">
-            <h4>How to register, step by step</h4>
-            <ol>{country.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
-            <p className="muted">
-              Have these ready: each writer’s <Term id="legal-name">legal name</Term>, your confirmed <Term id="ownership-split">ownership splits</Term>,
-              the song titles, and the recording. The release pages in this app hold all of this.
-            </p>
-          </section>
-
-          <section className="card stack">
-            <h4>Watch out for</h4>
-            <ul>{country.watchOut.map((s, i) => <li key={i}>{s}</li>)}</ul>
-          </section>
-
-        </>
-      )}
-
-      {code && (
-        <section className="card stack">
-          <h4>International options</h4>
-          <p>{INTERNATIONAL.intro}</p>
-          <ul>
-            {INTERNATIONAL.options.map((o) => (
-              <li key={o.name}><a href={o.url} target="_blank" rel="noreferrer">{o.name}</a>: {o.note}</li>
-            ))}
-          </ul>
-          <p className="muted">{INTERNATIONAL.note}</p>
-        </section>
-      )}
+      <div className="stack" hidden={tab !== 'info'}>
+        <RoyaltyInfo onFindSociety={() => setTab('track')} />
+      </div>
     </div>
   )
 }

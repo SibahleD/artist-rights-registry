@@ -12,7 +12,7 @@ const TRACK_COLS = [
     'isrc', 'iswc', 'duration_seconds', 'explicit',
     'composition_copyright_year', 'composition_copyright',
     'recording_copyright_year', 'recording_copyright',
-    'origin', 'version_title', 'language', 'created_at',
+    'origin', 'version_title', 'language', 'has_lyrics', 'preview_start_seconds', 'created_at',
 ];
 const PLAIN = TRACK_COLS.join(', ');
 const ALIASED = TRACK_COLS.map((c) => `t.${c}`).join(', ');
@@ -82,6 +82,13 @@ function optionalExplicit(v) {
         : { error: `Explicit must be one of: ${EXPLICIT_VALUES.join(', ')}.` };
 }
 
+function optionalBool(label) {
+    return (v) => {
+        if (v === null || v === '') return { value: null };
+        return typeof v === 'boolean' ? { value: v } : { error: `${label} must be yes or no.` };
+    };
+}
+
 const FIELDS = {
     title:                    { column: 'title',                      validate: requiredText('Title', 200) },
     compositionTitle:         { column: 'composition_title',          validate: optionalText('Composition title', 200) },
@@ -98,6 +105,9 @@ const FIELDS = {
     origin:                   { column: 'origin',                      validate: requiredOrigin },
     versionTitle:             { column: 'version_title',               validate: optionalText('Version title', 200) },
     language:                 { column: 'language',                    validate: optionalLanguage('Language') },
+    // Distribution details (migration 017). Both optional.
+    hasLyrics:                { column: 'has_lyrics',                  validate: optionalBool('Lyrics') },
+    previewStartSeconds:      { column: 'preview_start_seconds',       validate: optionalInt('Preview start', 0, 3600) },
 };
 
 function parseBody(body) {

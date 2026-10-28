@@ -1,5 +1,6 @@
 const pool = require('../db/pool');
 const { noticeReadiness } = require('./notices');
+const { distributionChecks } = require('../lib/distribution');
 
 // Check levels: error blocks "mark ready", warn is worth a look but never blocks, info is only advice.
 const ORDER = { error: 0, warn: 1, info: 2 };
@@ -94,6 +95,19 @@ async function readinessChecks(release) {
         add('warn', 'artist-name-spelling',
             `The artist name is spelled more than one way: ${shown}. Stores can treat these as different artists, so pick one spelling.`, edit);
     }
+
+    // Details distributors ask for: warnings and advice only, because requirements differ between distributors.
+    const [artwork, audio, artists] = await Promise.all([
+        pool.query(`SELECT width, height, size_bytes FROM media WHERE release_id = $1 AND kind = 'artwork'`, [release.id]),
+        pool.query(`SELECT t.track_number, a.format, a.bitrate_kbps, a.sample_rate_hz
+                    FROM audio_specs a JOIN tracks t ON t.id = a.track_id WHERE t.release_id = $1 ORDER BY t.track_number`, [release.id]),
+        pool.query(`SELECT name FROM release_artists WHERE release_id = $1 ORDER BY position`, [release.id]),
+    ]);
+    const lyrics = await pool.query(`SELECT track_number, has_lyrics FROM tracks WHERE release_id = $1 ORDER BY track_number`, [release.id]);
+    for (const c of distributionChecks({
+        release, tracks: lyrics.rows, audio: audio.rows, artwork: artwork.rows[0] ?? null,
+        artists: artists.rows.map((r) => r.name), edit,
+    })) add(c.level, c.id, c.message, c.fix, c.track ? { track: c.track } : {});
 
     // Optional identifiers: advice only, never blocking.
     const noIsrc = tracks.filter((t) => !t.isrc).map((t) => t.track_number);

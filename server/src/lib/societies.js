@@ -5,6 +5,20 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const isoToday = (now) => now.toISOString().slice(0, 10);
 
+// A dashboard link must be a plain http(s) address. A missing scheme is added (people type "uprs.go.ug"), anything
+// else with a scheme (javascript:, data:, ftp:) is refused, and so are addresses with a username or password in them.
+// Returns the cleaned address, or null when it is not acceptable.
+function cleanDashboardUrl(raw) {
+    let v = raw.trim();
+    if (v.length === 0 || v.length > 500 || /[\s\u0000-\u001f\u007f]/.test(v)) return null;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(v)) v = `https://${v}`;
+    let u;
+    try { u = new URL(v); } catch { return null; }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (u.username || u.password || !u.hostname.includes('.')) return null;
+    return v.length <= 500 ? v : null;
+}
+
 function validDate(s) {
     if (!DATE_RE.test(s)) return false;
     const d = new Date(`${s}T00:00:00Z`);
@@ -13,7 +27,7 @@ function validDate(s) {
 
 // body: the request. existing: the stored row when updating. On update only the status, the date and the member
 // number can change; the body and country are what the row is about, so they stay as created.
-// Returns { error } or { society: { body_name, country, status, registered_on, member_ref } }.
+// Returns { error } or { society: { body_name, country, status, registered_on, member_ref, dashboard_url } }.
 function parseSocietyInput(body, existing, now = new Date()) {
     const b = body && typeof body === 'object' ? body : {};
     const has = (k) => Object.prototype.hasOwnProperty.call(b, k);
@@ -47,7 +61,15 @@ function parseSocietyInput(body, existing, now = new Date()) {
         if (memberRef === '') memberRef = null;
     }
 
-    return { society: { body_name: bodyName, country, status, registered_on: registeredOn, member_ref: memberRef } };
+    let dashboardUrl = has('dashboard_url') ? b.dashboard_url : existing?.dashboard_url ?? null;
+    if (dashboardUrl === '' || dashboardUrl === undefined) dashboardUrl = null;
+    if (dashboardUrl !== null) {
+        const cleaned = typeof dashboardUrl === 'string' ? cleanDashboardUrl(dashboardUrl) : null;
+        if (!cleaned) return { error: 'Enter the dashboard link as a web address, such as https://example.org/login (500 characters at most).' };
+        dashboardUrl = cleaned;
+    }
+
+    return { society: { body_name: bodyName, country, status, registered_on: registeredOn, member_ref: memberRef, dashboard_url: dashboardUrl } };
 }
 
-module.exports = { STATUSES, parseSocietyInput };
+module.exports = { STATUSES, parseSocietyInput, cleanDashboardUrl };

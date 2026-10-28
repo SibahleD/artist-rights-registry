@@ -1877,3 +1877,8 @@ a.store-btn .store-name { font-size: 0.875rem; white-space: nowrap; }
 .map-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin: 0.75rem 0; }
 .import-problems { margin: 0.5rem 0 0; padding-left: 1.2rem; font-size: 13px; }
 .check { display: flex; align-items: center; gap: 0.5rem; font-size: 14px; margin: 0.5rem 0; }
+
+/* Earnings page */
+.notice { padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--accent-border); background: var(--accent-bg); font-size: 14px; line-height: 1.45; }
+.stat b.stat-sm { font-size: 20px; line-height: 1.4; }
+.perf-gap { height: 1rem; }

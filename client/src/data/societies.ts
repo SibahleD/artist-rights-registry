@@ -13,6 +13,7 @@ export interface Body {
   does: string // what it covers, one line
   note?: string
   website?: string
+  dashboard?: string // the members' login or dashboard page, only where it has been checked
 }
 
 export interface CountryGuide {
@@ -238,18 +239,75 @@ export const INTERNATIONAL = {
   note: 'Fees and eligibility change, so compare current terms and read the agreement before signing. Keep ownership of your songs: an administration deal should not transfer your copyright.',
 }
 
-export const MONEY_TYPES = [
-  { name: 'Recording (master) royalties', who: 'Your distributor', detail: 'Streams and downloads of the recording. No society needed.' },
-  { name: 'Performance royalties', who: 'A collecting society (or an administrator abroad)', detail: 'Radio, TV, venues, bars and streaming performances of the composition.' },
-  { name: 'Mechanical royalties', who: 'A collecting society or mechanical agency', detail: 'Reproduction of the composition, including streaming. Some societies, such as UPRS and COSOTA, handle this as well as performance.' },
-  { name: 'Sync licensing', who: 'You, directly', detail: 'Use in a film, advert or game is negotiated with the rights holders. The society collects performance royalties when it is broadcast.' },
+// The kinds of money a song can earn. Drives the Info tab. `term` is the glossary entry for the same idea.
+export type MoneySide = 'recording' | 'composition' | 'either'
+export interface MoneyType {
+  name: string; term: string; side: MoneySide
+  who: string       // who collects it
+  paidTo: string    // who receives it
+  detail: string    // what it covers
+  example: string
+  action: string    // what the artist does about it
+}
+export const MONEY_TYPES: MoneyType[] = [
+  {
+    name: 'Recording (master) royalties', term: 'master-royalties', side: 'recording',
+    who: 'Your distributor', paidTo: 'Whoever owns the recording',
+    detail: 'Streams and downloads of the recording itself. No society is needed.',
+    example: 'A listener streams your song on a music app and the app pays your distributor, who pays you.',
+    action: 'Pick a distributor and keep your recording ownership splits right.',
+  },
+  {
+    name: 'Performance royalties', term: 'performance-royalties', side: 'composition',
+    who: 'A collecting society (or an administrator abroad)', paidTo: 'The writers and publishers of the song',
+    detail: 'Radio, TV, venues, bars and streaming performances of the composition.',
+    example: 'Your song is played on a radio station or in a bar.',
+    action: 'Register your songs with the society that applies to you.',
+  },
+  {
+    name: 'Mechanical royalties', term: 'mechanical-royalties', side: 'composition',
+    who: 'A collecting society or mechanical agency', paidTo: 'The writers and publishers of the song',
+    detail: 'Reproduction of the composition, including streaming. Some societies, such as UPRS and COSOTA, handle this as well as performance.',
+    example: 'Your song is downloaded, or someone records a cover of it.',
+    action: 'Check whether your society covers this too, and keep your writer splits accurate.',
+  },
+  {
+    name: 'Neighbouring rights', term: 'neighbouring-rights', side: 'recording',
+    who: 'Varies by country, sometimes a separate society', paidTo: 'Performers and owners of the recording',
+    detail: 'Payment when a recording is broadcast or played in public. It goes to the people who performed on and own the recording, not to the writers.',
+    example: 'A radio station plays your recording, and the performers and recording owner are paid for that play.',
+    action: 'Ask your society or distributor whether this is collected where you live.',
+  },
+  {
+    name: 'Sync licensing', term: 'sync-licensing', side: 'either',
+    who: 'You, directly', paidTo: 'The owners of both the song and the recording',
+    detail: 'Use in a film, advert or game is negotiated with the rights holders. The society collects performance royalties when it is broadcast.',
+    example: 'A company wants your song in an advert and agrees a fee with you.',
+    action: 'Keep clear records of who owns what, so a deal can be agreed quickly.',
+  },
 ]
 // Every body the artist can track: the bodies in the country guide, plus the international options.
-export interface TrackableBody { name: string; country: string; countryName: string; website?: string }
+export interface TrackableBody { name: string; country: string; countryName: string; website?: string; dashboard?: string }
 export const TRACKABLE: TrackableBody[] = [
-  ...COUNTRIES.flatMap((c) => c.bodies.map((b) => ({ name: b.name, country: c.code, countryName: c.name, website: b.website }))),
+  ...COUNTRIES.flatMap((c) => c.bodies.map((b) => ({ name: b.name, country: c.code, countryName: c.name, website: b.website, dashboard: b.dashboard }))),
   ...INTERNATIONAL.options.map((o) => ({ name: o.name, country: 'INT', countryName: 'International', website: o.url })),
 ]
 
 export const countryNameOf = (code: string) => (code === 'INT' ? 'International' : COUNTRIES.find((c) => c.code === code)?.name ?? code)
 export const websiteOf = (name: string, country: string) => TRACKABLE.find((t) => t.name === name && t.country === country)?.website
+export const dashboardOf = (name: string, country: string) => TRACKABLE.find((t) => t.name === name && t.country === country)?.dashboard
+
+// The one thing a new artist should do next, by country status. Kept short and free of jargon on purpose.
+export const NEXT_STEP: Record<CountryStatus, { title: string; text: string }> = {
+  working: { title: 'Your next step: join', text: 'A society is operating here. Join the one that covers music authors and composers, then register your songs with it.' },
+  in_flux: { title: 'Your next step: prepare, but do not pay yet', text: 'The setup here is changing. Get your records ready, confirm directly with the body which organisation is currently licensed, and hold off on paying any fee until you have.' },
+  none: { title: 'Your next step: use an administrator', text: 'There is no operating society to join here. Your distributor still pays your recording royalties, and a publishing administrator can collect composition royalties abroad for you.' },
+}
+
+// What an artist should have in hand before applying anywhere.
+export const READY_LIST = [
+  'The legal name of every writer on each song',
+  'Your confirmed ownership splits for each song',
+  'The song titles and the dates they were written or released',
+  'A recording of each song, which societies often accept as proof of authorship',
+]

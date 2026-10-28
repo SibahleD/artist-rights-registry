@@ -309,4 +309,5 @@ export interface UserSociety {
   status: SocietyStatus
   registered_on: string | null // YYYY-MM-DD, only once registered
   member_ref: string | null    // the artist's own member number; private to them
+  dashboard_url: string | null // the artist's own link to their member dashboard (http/https); private to them
 }
