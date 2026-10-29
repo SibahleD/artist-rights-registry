@@ -253,6 +253,12 @@ export default function ReleaseView() {
         <div><span className="muted">℗ line</span><br />{r.p_line || derivedLine('℗', tracks[0]?.recording_copyright_year, tracks[0]?.recording_copyright)}</div>
         <div><span className="muted">© line</span><br />{r.c_line || derivedLine('©', tracks[0]?.composition_copyright_year, tracks[0]?.composition_copyright)}</div>
         <div><span className="muted">Label</span><br />{r.label_name || '—'}</div>
+        {r.sales_start_date && <div><span className="muted">Sales start</span><br />{fmtDate(r.sales_start_date)}</div>}
+        {r.originally_released && <div><span className="muted">Originally released</span><br />{fmtDate(r.originally_released)}</div>}
+        {r.preorder_date && <div><span className="muted">Pre-order date</span><br />{fmtDate(r.preorder_date)}</div>}
+        {r.secondary_genre && <div><span className="muted">Second genre</span><br />{r.secondary_genre}</div>}
+        {r.album_version && <div><span className="muted">Album version</span><br />{r.album_version}</div>}
+        {r.is_compilation && <div><span className="muted">Compilation</span><br />Yes</div>}
         <div><span className="muted">Language</span><br />{languageName(r.language) || '—'}</div>
         <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
         <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>

@@ -10,8 +10,11 @@ import CopyrightInput from './CopyrightInput'
 import SelectOrOther from './SelectOrOther'
 import NameTags from './NameTags'
 import AudioPreview from './AudioPreview'
+import CreditsEditor from './CreditsEditor'
+import { Req } from './Required'
+import { parseStartTime } from '../lib/distribution'
 
-const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
+export const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
   explicit: 'Explicit', not_explicit: 'Not explicit', cleaned: 'Cleaned',
 }
 
@@ -28,7 +31,7 @@ const previewDuration = (f: File) => new Promise<number | null>((resolve) => {
   a.src = url
 })
 
-export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 5 * 1024 * 1024, releaseId }: {
+export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes = 100 * 1024 * 1024, releaseId }: {
   track: TrackForm; onChange: (t: TrackForm) => void; hideTitle?: boolean; maxAudioBytes?: number; releaseId?: string
 }) {
   const [audioErr, setAudioErr] = useState('')
@@ -38,6 +41,9 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
     ...track, title: v,
     compositionTitle: !track.compositionTitle || track.compositionTitle === track.title ? v : track.compositionTitle,
   })
+  const preview = parseStartTime(track.previewStart)
+  const previewOk = preview.ok
+  const previewSeconds = preview.ok ? preview.seconds : null
   const total = sumPercent(track.collaborators)
   const credits = track.collaborators.filter((c) => !c.removedByWriter).length
 
@@ -54,7 +60,7 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
       <Collapsible title={<>General info</>}>
         
         <div className="grid2">
-          {!hideTitle && <label>Song title<input value={track.title} onChange={(e) => setTitle(e.target.value)} /></label>}
+          {!hideTitle && <label>Song title<Req /><input value={track.title} onChange={(e) => setTitle(e.target.value)} /></label>}
           <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
           <NameTags label="Featuring (optional)" value={track.featuring} onChange={(v) => set('featuring', v)} placeholder="Type a name, press Enter" />
           <SelectOrOther label="Genre" options={GENRES} value={track.genre} onChange={(v) => set('genre', v)} otherPlaceholder="Type the genre" />
@@ -77,12 +83,25 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
               {EXPLICIT_VALUES.map((v) => <option key={v} value={v}>{EXPLICIT_LABELS[v]}</option>)}
             </select>
           </label>
+          <label>Does the song have lyrics?
+            <select value={track.hasLyrics} onChange={(e) => set('hasLyrics', e.target.value as TrackForm['hasLyrics'])}>
+              <option value="">Not answered</option><option value="yes">Yes</option><option value="no">No (instrumental)</option>
+            </select>
+          </label>
+          <label>Preview start (optional)
+            <input value={track.previewStart} inputMode="numeric" placeholder="0:45" onChange={(e) => set('previewStart', e.target.value)} />
+            <Hint>Where the short store preview should begin, as minutes and seconds (0:45) or seconds (45).</Hint>
+            {!previewOk && <small className="warn">Use a time like 0:45, or a number of seconds up to 3600.</small>}
+            {previewOk && previewSeconds !== null && track.durationSeconds && previewSeconds >= track.durationSeconds && (
+              <small className="warn">That is after the end of the song ({showDuration(track.durationSeconds)}).</small>
+            )}
+          </label>
         </div>
         {track.origin !== 'original' && <small className="warn">{ORIGIN_WARNING}</small>}
       </Collapsible>
 
-      <Collapsible title={<>Audio file</>}>
-        <Hint>This is a small reference copy (MP3, WAV, FLAC or AAC, up to {fmtBytes(maxAudioBytes)}). Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
+      <Collapsible title={<>Audio file<Req /></>}>
+        <Hint>MP3, WAV, FLAC or AAC, up to {fmtBytes(maxAudioBytes)}. Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
         <div className="row">
           <input type="file" accept=".mp3,.aac,.m4a,.wav,.flac,audio/*" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
           {(track.audio || track.audioFile) && (
@@ -124,7 +143,12 @@ export default function TrackEditor({ track, onChange, hideTitle, maxAudioBytes 
         </div>
       </Collapsible>
 
-      <Collapsible title="Royalty splits">
+      <Collapsible title="Credits">
+        <CreditsEditor legend="Producers, engineers and performers" value={track.credits} onChange={(v) => set('credits', v)}
+          hint="Anyone who worked on this song and should be credited, with what they did. Writers and their shares are on the Splits page, not here." />
+      </Collapsible>
+
+      <Collapsible title={<>Royalty splits<Req /></>}>
         <div className="row between">
           {releaseId && track.id
             ? <span>{credits} {credits === 1 ? 'credit' : 'credits'}, {total}%{total !== 100 && <span className="warn"> (must total 100%)</span>}</span>

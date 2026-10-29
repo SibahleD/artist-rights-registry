@@ -213,7 +213,7 @@ async function getUsage(req, res) {
             limits: {
                 maxTracksPerRelease: on ? limits.maxTracksPerRelease : null,
                 maxAudioBytes: on ? limits.maxAudioBytes : 100 * 1024 * 1024,
-                maxCoverBytes: on ? limits.maxCoverBytes : 10 * 1024 * 1024,
+                maxCoverBytes: on ? limits.maxCoverBytes : 25 * 1024 * 1024,
                 maxAvatarBytes: on ? limits.maxAvatarBytes : 2 * 1024 * 1024,
             },
         });

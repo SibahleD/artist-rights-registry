@@ -1,6 +1,6 @@
-// Contributor titles offered by RouteNote's Producer / contributor drop-down, in the order it shows them.
-// Producer is the default. The album-level and per-track dropdowns both use this list.
-// Keep extension/ in step when the extension starts filling this field (Phase 5).
+// Credit titles offered in the app (Producer, Mixing Engineer, Vocals...), in display order. Producer is the default.
+// The release-level and per-song credit lists both use this list. server/src/lib/distribution.js holds the same list and
+// server/tests/distribution.test.js fails if the two differ.
 
 export const DEFAULT_CONTRIBUTOR_TITLE = 'Producer'
 

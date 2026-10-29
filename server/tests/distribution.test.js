@@ -20,6 +20,13 @@ test('contributor titles match the client list exactly, in order', () => {
   assert.equal(rn.DEFAULT_CONTRIBUTOR_TITLE, 'Producer');
 });
 
+test('cover art rules match the client list exactly, in order', () => {
+  const file = path.join(__dirname, '..', '..', 'client', 'src', 'lib', 'distribution.ts');
+  if (!fs.existsSync(file)) return; // server tested on its own
+  const body = fs.readFileSync(file, 'utf8').match(/ART_NOT_ALLOWED: readonly string\[\] = \[([\s\S]*?)\]/)[1];
+  assert.deepEqual([...body.matchAll(/'([^']+)'/g)].map((m) => m[1]), rn.ART_NOT_ALLOWED);
+});
+
 // ---- dates ------------------------------------------------------------------------------------------------------
 
 test('originally released may equal or precede the sales start, but not follow it', () => {

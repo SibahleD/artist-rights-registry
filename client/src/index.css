@@ -1882,3 +1882,32 @@ a.store-btn .store-name { font-size: 0.875rem; white-space: nowrap; }
 .notice { padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--accent-border); background: var(--accent-bg); font-size: 14px; line-height: 1.45; }
 .stat b.stat-sm { font-size: 20px; line-height: 1.4; }
 .perf-gap { height: 1rem; }
+
+/* ---- Distribution details: required marker, cover art checklist, artist and credit lists ---- */
+
+.req { color: var(--warn); font-weight: 600; }
+.required-note { margin: 0; }
+.field-title { margin: 0; font-size: 0.875rem; color: var(--pri-font); }
+
+/* The cover art column keeps its place beside the fields, as the bare picker did. */
+.split > .art-side { position: sticky; top: 1rem; align-items: center; }
+.art-side .image-picker { width: 100%; }
+
+.art-guide { align-self: stretch; font-size: 12px; line-height: 1.4; color: var(--sec-font); text-align: left; }
+.art-guide p { margin: 0 0 0.3rem; }
+.art-guide .art-guide-title { font-size: 0.8125rem; color: var(--pri-font); }
+.art-guide ul { margin: 0 0 0.5rem; padding-left: 1.1rem; }
+.art-guide label.consent { padding: 0; font-size: 12px; }
+
+.link-btn { align-self: flex-start; padding: 0; border: 0; background: none; min-height: 0; font-size: 12px; text-decoration: underline; }
+
+.editor-list { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.editor-list legend { padding: 0; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--pri-font); }
+.editor-list .hint { margin: 0 0 0.25rem; }
+.editor-row > input { flex: 2 1 160px; }
+.editor-row > select { flex: 1 1 160px; }
+.editor-row > .ghost { flex: 0 0 auto; }
+
+@media (max-width: 760px) {
+  .split > .art-side { position: static; order: -1; }
+}

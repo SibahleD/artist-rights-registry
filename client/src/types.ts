@@ -58,6 +58,15 @@ export interface Release {
   c_line: string | null
   label_name?: string | null
   language?: string | null
+  // Distribution details (migration 017). All optional.
+  album_version?: string | null
+  is_compilation?: boolean
+  has_lyrics?: boolean | null
+  explicit?: ExplicitValue | null
+  secondary_genre?: string | null
+  originally_released?: string | null   // YYYY-MM-DD
+  preorder_date?: string | null         // YYYY-MM-DD
+  sales_start_date?: string | null      // YYYY-MM-DD
   status: ReleaseStatus
   created_at: string
   ready_at: string | null
@@ -119,6 +128,8 @@ export interface Track {
   origin?: TrackOrigin
   version_title?: string | null
   language?: string | null
+  has_lyrics?: boolean | null
+  preview_start_seconds?: number | null
   created_at?: string
   audio?: AudioSpec | null
 }
@@ -176,6 +187,14 @@ export interface ReleaseInput {
   cLine?: string | null
   labelName?: string | null
   language?: string | null
+  albumVersion?: string | null
+  isCompilation?: boolean
+  hasLyrics?: boolean | null
+  explicit?: ExplicitValue | null
+  secondaryGenre?: string | null
+  originallyReleased?: string | null
+  preorderDate?: string | null
+  salesStartDate?: string | null
 }
 
 export interface TrackInput {
@@ -193,6 +212,8 @@ export interface TrackInput {
   origin?: TrackOrigin
   versionTitle?: string | null
   language?: string | null
+  hasLyrics?: boolean | null
+  previewStartSeconds?: number | null
 }
 
 export interface AudioInput {
@@ -282,6 +303,9 @@ export interface TrackForm {
   origin: TrackOrigin
   versionTitle: string
   language: string
+  hasLyrics: YesNo             // does the song have lyrics? '' = not answered yet
+  previewStart: string         // where the store preview starts: "45" or "0:45"; '' = not set
+  credits: CreditRow[]         // producer-style credits for this song
   audio: AudioInput | null 
   audioHasFile?: boolean 
   audioFile?: File
@@ -299,7 +323,26 @@ export interface ReleaseForm {
   upc: string
   labelName: string
   language: string
+  albumVersion: string
+  isCompilation: boolean
+  hasLyrics: YesNo
+  explicit: ExplicitValue | ''
+  secondaryGenre: string
+  originallyReleased: string
+  preorderDate: string
+  salesStartDate: string
+  primaryArtists: string[]     // ordered; empty means the main artist name is used
+  credits: CreditRow[]         // producer-style credits for the whole release
   tracks: TrackForm[]
+}
+
+export type YesNo = '' | 'yes' | 'no'
+export interface CreditRow { name: string; title: string }
+
+// GET and PUT /releases/:id/contributors
+export interface ContributorsPayload {
+  primary_artists: string[]
+  credits: Array<{ track_number: number | null; name: string; title: string }>
 }
 export type SocietyStatus = 'planned' | 'applied' | 'registered'
 export interface UserSociety {
