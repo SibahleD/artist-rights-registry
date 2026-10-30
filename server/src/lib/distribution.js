@@ -38,6 +38,31 @@ function checkReleaseDates({ originally_released, sales_start_date }) {
     return null;
 }
 
+// RouteNote's schedule rules, relative to the day the release is uploaded (taken as today). Warnings only: other distributors differ.
+// Sales start: at least 2 weeks out, at most 365 days out. Pre-order: before the sales start, at most 365 days out.
+const MIN_LEAD_DAYS = 14;
+const MAX_AHEAD_DAYS = 365;
+const DAY_MS = 86400000;
+const toDay = (s) => Date.parse(`${s}T00:00:00Z`);
+const todayString = () => new Date().toISOString().slice(0, 10);
+
+// today: YYYY-MM-DD (injectable for tests). Returns [{ id, message }], empty when everything is fine or a date is missing.
+function scheduleWarnings({ sales_start_date, preorder_date }, today = todayString()) {
+    const out = [];
+    const t = toDay(today);
+    const daysFromToday = (d) => Math.round((toDay(d) - t) / DAY_MS);
+    if (sales_start_date) {
+        const n = daysFromToday(sales_start_date);
+        if (n < MIN_LEAD_DAYS) out.push({ id: 'dist-sales-start-soon', message: `Sales start is ${n < 0 ? 'in the past' : `only ${n} day${n === 1 ? '' : 's'} away`}. Some distributors, such as RouteNote, want it at least ${MIN_LEAD_DAYS} days after upload.` });
+        else if (n > MAX_AHEAD_DAYS) out.push({ id: 'dist-sales-start-far', message: `Sales start is more than ${MAX_AHEAD_DAYS} days away. Some distributors, such as RouteNote, do not accept dates that far ahead.` });
+    }
+    if (preorder_date) {
+        if (sales_start_date && preorder_date >= sales_start_date) out.push({ id: 'dist-preorder-order', message: 'The pre-order date should come before the sales start date.' });
+        if (daysFromToday(preorder_date) > MAX_AHEAD_DAYS) out.push({ id: 'dist-preorder-far', message: `The pre-order date is more than ${MAX_AHEAD_DAYS} days away. Some distributors, such as RouteNote, do not accept dates that far ahead.` });
+    }
+    return out;
+}
+
 // ---- Primary artists and credits --------------------------------------------------------------------------------
 
 const cleanName = (v) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '');
@@ -93,7 +118,7 @@ const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1);
 
 // release: release row; tracks: [{ track_number, has_lyrics }]; audio: [{ track_number, format, bitrate_kbps, sample_rate_hz }];
 // artwork: { width, height, size_bytes } | null; artists: string[]. `edit` is the release's edit route.
-function distributionChecks({ release, tracks = [], audio = [], artwork = null, artists = [], edit }) {
+function distributionChecks({ release, tracks = [], audio = [], artwork = null, artists = [], edit, today }) {
     const checks = [];
     const add = (level, id, message, extra = {}) => checks.push({ id, level, message, fix: edit, ...extra });
 
@@ -101,6 +126,7 @@ function distributionChecks({ release, tracks = [], audio = [], artwork = null, 
     if (!release.originally_released) add('warn', 'dist-originally-released', 'Add the date the music was first released. For new music, use the release date.');
     const dateProblem = checkReleaseDates(release);
     if (dateProblem) add('error', 'dist-date-order', dateProblem);
+    for (const w of scheduleWarnings(release, today)) add('warn', w.id, w.message);
 
     if (artists.length === 0) add('info', 'dist-primary-artists', release.album_artist ? `No primary artists listed, so the album artist ("${release.album_artist}") will be used.` : 'No primary artists listed, so the album artist will be used.');
 
@@ -144,5 +170,5 @@ const ART_NOT_ALLOWED = [
 module.exports = {
     DEFAULT_CONTRIBUTOR_TITLE, CREDIT_TITLES, INSTRUMENT_TITLES, CONTRIBUTOR_TITLES,
     ART, AUDIO, ART_NOT_ALLOWED, MAX_ARTISTS, MAX_CREDITS,
-    checkReleaseDates, parseContributors, distributionChecks,
+    checkReleaseDates, scheduleWarnings, parseContributors, distributionChecks,
 };

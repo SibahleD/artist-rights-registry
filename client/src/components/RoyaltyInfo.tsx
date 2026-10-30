@@ -15,7 +15,6 @@ const SIDE_LABEL: Record<MoneySide, string> = {
   either: 'Both sides',
 }
 
-const SIDES: MoneySide[] = ['recording', 'composition', 'either']
 type Filter = 'all' | MoneySide
 
 const FILTERS: [Filter, string][] = [

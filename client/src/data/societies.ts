@@ -110,7 +110,7 @@ export const COUNTRIES: CountryGuide[] = [
     bodies: [
       { name: 'Uganda Performing Right Society', abbr: 'UPRS', status: 'active',
         does: 'The national music CMO. Collects performance and mechanical royalties, for composers, authors, publishers, producers and performers, and is a CISAC member, so it also represents foreign repertoire in Uganda.',
-        note: 'Restructured after a regulator investigation in 2019–2020 and run by a board partly appointed by URSB.', website: 'https://www.uprs.go.ug' },
+        note: 'Restructured after a regulator investigation in 2019–2020 and run by a board partly appointed by URSB.', website: 'https://www.uprs.go.ug', dashboard: 'https://membership.uprs.go.ug/login' },
       { name: 'Uganda Registration Services Bureau', abbr: 'URSB', status: 'active',
         does: 'Registers copyright and regulates collecting societies.', website: 'https://ursb.go.ug' },
     ],

@@ -1,3 +1,5 @@
+// These tests use no database. The pool is created lazily, so a placeholder lets the modules load without one.
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -81,7 +83,7 @@ const good = () => ({
   tracks: [{ track_number: 1, has_lyrics: true }],
   audio: [{ track_number: 1, format: 'flac', bitrate_kbps: null, sample_rate_hz: 44100 }],
   artwork: { width: 3000, height: 3000, size_bytes: 5_000_000 },
-  artists: ['Kenny TL'], edit: '/releases/r/edit',
+  artists: ['Kenny TL'], edit: '/releases/r/edit', today: '2026-10-29',
 });
 const ids = (input) => rn.distributionChecks(input).map((c) => c.id);
 
@@ -172,4 +174,36 @@ test('export puts release-level and per-track credits in the right place, number
 test('the export still contains no id keys with the new data in it', () => {
   const out = shapeExport({ ...exportRows(), artists: ['A'], contributors: [{ track_number: 1, name: 'J', title: 'DJ' }] });
   assert.deepEqual(findIdKeys(out), []);
+});
+
+// ---- schedule rules (relative to upload day) ---------------------------------------------------------------------
+
+const TODAY = '2026-10-29';
+const sw = (r) => rn.scheduleWarnings(r, TODAY).map((w) => w.id);
+
+test('sales start: 14 days out is fine, 13 is too soon, past is too soon, 365 is fine, 366 is too far', () => {
+  assert.deepEqual(sw({ sales_start_date: '2026-11-12' }), []);
+  assert.deepEqual(sw({ sales_start_date: '2026-11-11' }), ['dist-sales-start-soon']);
+  assert.deepEqual(sw({ sales_start_date: '2026-10-01' }), ['dist-sales-start-soon']);
+  assert.deepEqual(sw({ sales_start_date: '2027-10-29' }), []);
+  assert.deepEqual(sw({ sales_start_date: '2027-10-30' }), ['dist-sales-start-far']);
+});
+
+test('pre-order must come before sales start and within 365 days', () => {
+  assert.deepEqual(sw({ sales_start_date: '2026-12-01', preorder_date: '2026-11-20' }), []);
+  assert.deepEqual(sw({ sales_start_date: '2026-12-01', preorder_date: '2026-12-01' }), ['dist-preorder-order']);
+  assert.deepEqual(sw({ sales_start_date: '2026-12-01', preorder_date: '2026-12-05' }), ['dist-preorder-order']);
+  assert.deepEqual(sw({ preorder_date: '2027-10-30' }), ['dist-preorder-far']);
+  assert.deepEqual(sw({ preorder_date: '2027-10-29' }), []);
+});
+
+test('missing dates produce no schedule warnings', () => {
+  assert.deepEqual(sw({}), []);
+});
+
+test('schedule problems show on the readiness screen as warnings, never blockers', () => {
+  const g = good(); g.release.sales_start_date = '2026-11-01'; g.release.originally_released = '2026-11-01'; g.release.preorder_date = '2026-11-05';
+  const c = rn.distributionChecks(g);
+  assert.deepEqual(c.map((x) => x.id), ['dist-sales-start-soon', 'dist-preorder-order']);
+  assert.ok(c.every((x) => x.level === 'warn' && x.fix === '/releases/r/edit'));
 });

@@ -159,5 +159,5 @@ test('export marks credits confirmed / unconfirmed / removed and leaks nothing',
   out = await exp.buildExport(rel);
   assert.equal(out.tracks[1].credits[1].confirmation, 'removed');
   const checks = await svc.readinessChecks({ ...rel, release_date: '2026-12-01' });
-  assert.ok(checks.some((c) => c.id === 'cowriter-removed' && c.level === 'error' && c.fix.endsWith('?track=2')));
+  assert.ok(checks.some((c) => c.id === 'cowriter-removed' && c.level === 'error' && c.fix === `/releases/${rel.id}/splits` && c.track === 2));
 });

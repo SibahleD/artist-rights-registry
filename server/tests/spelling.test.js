@@ -1,3 +1,5 @@
+// These tests use no database. The pool is created lazily, so a placeholder lets the modules load without one.
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { spellingConflicts } = require('../src/services/readiness');

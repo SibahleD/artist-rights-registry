@@ -2,7 +2,7 @@ const express = require('express');
 const { authToken } = require('../middleware/auth');
 const {
     createRelease, listReleases, getRelease, updateRelease,
-    markReady, revertToDraft, deleteRelease, getReadiness, exportRelease,
+    markReady, revertToDraft, deleteRelease, getReadiness, exportRelease, setUpc,
     markReleased, unmarkReleased,
 } = require('../controllers/releaseController');
 const { 
@@ -35,6 +35,7 @@ router.delete('/:id', deleteRelease);
 router.post('/:id/ready', markReady);
 router.get('/:id/readiness', getReadiness);
 router.get('/:id/export', exportRelease);
+router.put('/:id/upc', setUpc);
 router.post('/:id/revert', revertToDraft);
 router.put('/:id/released', markReleased);
 router.delete('/:id/released', unmarkReleased);

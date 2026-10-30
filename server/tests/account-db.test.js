@@ -20,6 +20,7 @@ async function call(handler, user, body) {
 before(async () => {
   if (skip) return;
   process.env.DATABASE_URL = url;
+  process.env.MAIL_TRANSPORT = 'console';   // never send real mail from tests, whatever .env says
   process.env.JWT_SECRET ||= 'test-secret';
   process.env.EMAIL_HASH_KEY ||= 'test-key';
   pool = require('../src/db/pool');

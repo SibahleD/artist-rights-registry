@@ -5,12 +5,12 @@ const {
 } = require('../src/lib/account');
 
 test('preferences: accepts known keys with valid values', () => {
-    assert.deepEqual(validatePreferences({ theme: 'dark', notify_disputes: false }).value, { theme: 'dark', notify_disputes: false });
+    assert.deepEqual(validatePreferences({ analytics_opt_in: true, notify_disputes: false }).value, { analytics_opt_in: true, notify_disputes: false });
 });
 
 test('preferences: rejects unknown keys, bad values, empty and non-object bodies', () => {
     assert.match(validatePreferences({ colour: 'red' }).error, /Unknown preference/);
-    assert.ok(validatePreferences({ theme: 'neon' }).error);
+    assert.match(validatePreferences({ theme: 'dark' }).error, /Unknown preference/);   // there is no theme setting
     assert.ok(validatePreferences({ analytics_opt_in: 'yes' }).error);
     assert.ok(validatePreferences({}).error);
     assert.ok(validatePreferences(null).error);
@@ -18,12 +18,12 @@ test('preferences: rejects unknown keys, bad values, empty and non-object bodies
 });
 
 test('preferences: defaults fill gaps and ignore corrupt stored values', () => {
-    const p = withDefaults({ theme: 'light', notify_approvals: 'nope', junk: 1 });
-    assert.equal(p.theme, 'light');
+    const p = withDefaults({ play_counts_opt_in: true, notify_approvals: 'nope', junk: 1 });
+    assert.equal(p.play_counts_opt_in, true);      // a valid stored value is kept
     assert.equal(p.notify_approvals, true);       // corrupt value falls back to the default
     assert.equal(p.analytics_opt_in, false);
     assert.equal('junk' in p, false);
-    assert.equal(withDefaults(undefined).theme, 'system');
+    assert.deepEqual(withDefaults(undefined), { analytics_opt_in: false, play_counts_opt_in: false, notify_disputes: true, notify_approvals: true });
 });
 
 test('password: length and byte limits match registration', () => {

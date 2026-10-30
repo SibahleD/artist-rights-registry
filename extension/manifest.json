@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Track Record: Distributor Helper",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Copies a ready release from Track Record into the form of a distributor you have enabled. Fills fields only. You review and submit.",
   "action": { "default_popup": "popup.html", "default_title": "Track Record helper" },
   "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },

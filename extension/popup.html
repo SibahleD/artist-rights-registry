@@ -32,6 +32,15 @@
       <table id="relTable"></table>
       <button id="fillRelease">Fill release details on this page</button>
 
+      <h3>UPC</h3>
+      <p class="note">Your distributor generates the UPC. After it appears on their page, capture it here. Nothing is saved until you confirm.</p>
+      <div class="row2"><button id="captureUpc">Capture UPC from this page</button><button id="manualUpc" class="ghost">Enter it myself</button></div>
+      <div id="upcBox" hidden>
+        <label>UPC to save<input id="upcIn" inputmode="numeric" autocomplete="off" /></label>
+        <p class="note" id="upcMsg"></p>
+        <div class="row2"><button id="upcSave">Save to this release</button><button id="upcCancel" class="ghost">Cancel</button></div>
+      </div>
+
       <h3>Songs</h3>
       <label>Song<select id="track"></select></label>
       <table id="trackTable"></table>
@@ -44,10 +53,11 @@
       <div id="dists"></div>
       <p class="note">Switch one on only after you have read its terms on automated tools.</p>
     </details>
-    <p class="note">Fills text boxes and drop-downs only. It never submits, accepts terms, uploads files or enters payment details. Check every field, then submit yourself.</p>
+    <p class="note">Fills text boxes and drop-downs, picks yes/no answers, and presses “Add artist” style buttons to make room for names. It never submits, accepts terms, uploads files or enters payment details. Check every field, then submit yourself.</p>
   </section>
 
   <script src="languages.js"></script>
+  <script src="routenote.js"></script>
   <script src="distributors.js"></script>
   <script src="popup.js"></script>
 </body>

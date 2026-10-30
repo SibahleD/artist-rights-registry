@@ -1,26 +1,47 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Mock distributor</title>
-<style>body{font:15px system-ui;max-width:560px;margin:2rem auto;padding:0 1rem}label{display:block;margin:.6rem 0}input,select{display:block;width:100%;padding:6px}</style></head>
+<style>body{font:15px system-ui;max-width:600px;margin:2rem auto;padding:0 1rem}label{display:block;margin:.6rem 0}input,select{display:block;width:100%;padding:6px}fieldset{margin:.8rem 0}fieldset label{display:inline-block;margin-right:1rem}fieldset input{display:inline;width:auto}.row{display:flex;gap:8px}</style></head>
 <body>
 <h1>Mock distributor: new release</h1>
-<p>A stand-in form for testing the helper. Serve it with <code>python3 -m http.server 8000</code> from this folder and open <code>http://localhost:8000/mock-distributor.html</code>.</p>
-<form onsubmit="event.preventDefault();alert('Submitted (mock). The helper never does this for you.')">
+<p>A stand-in form for testing the helper, laid out the way the RouteNote profile expects (yes/no radios, add-row buttons, credit title drop-downs). Serve it with <code>python3 -m http.server 8000</code> from this folder and open <code>http://localhost:8000/mock-distributor.html</code>.</p>
+<form id="f" onsubmit="event.preventDefault();alert('Submitted (mock). The helper never does this for you.')">
   <h2>Release</h2>
   <label>Release title<input name="release_title"></label>
-  <label>Primary artist<input name="primary_artist"></label>
+  <div id="artists"><label>Primary artist<input name="primary_artist"></label></div>
+  <button type="button" id="addArtist">+ Add another artist</button>
   <label>Label name<input name="label"></label>
-  <label>Genre<select name="genre"><option value="">Select…</option><option>Afrobeats</option><option>Amapiano</option><option>Gospel</option><option>Hip-Hop/Rap</option><option>R&amp;B/Soul</option><option>Pop</option><option>Other</option></select></label>
-  <label>Original release date<input type="date" name="release_date"></label>
+  <label>Primary genre<select name="genre"><option value="">Select…</option><option>Afrobeats</option><option>Amapiano</option><option>Gospel</option><option>Hip-Hop/Rap</option><option>R&amp;B/Soul</option><option>Pop</option><option>Other</option></select></label>
+  <label>Secondary genre<select name="genre2"><option value="">Select…</option><option>Afrobeats</option><option>Amapiano</option><option>Gospel</option><option>Hip-Hop/Rap</option><option>R&amp;B/Soul</option><option>Pop</option><option>Other</option></select></label>
+  <label>Album version<input name="album_version"></label>
+  <fieldset><legend>Is this a compilation?</legend><label><input type="radio" name="comp" value="y"> Yes</label><label><input type="radio" name="comp" value="n"> No</label></fieldset>
+  <fieldset><legend>Does the release contain lyrics?</legend><label><input type="radio" name="rl" value="y"> Yes</label><label><input type="radio" name="rl" value="n"> No (instrumental)</label></fieldset>
+  <fieldset><legend>Explicit content</legend><label><input type="radio" name="rx" value="e"> Explicit</label><label><input type="radio" name="rx" value="n"> Not explicit</label><label><input type="radio" name="rx" value="c"> Cleaned</label></fieldset>
+  <label>Release date<input type="date" name="release_date"></label>
+  <label>Originally released<input type="date" name="orig"></label>
+  <label>Pre-order date<input type="date" name="preorder"></label>
+  <label>Sales start date<input type="date" name="sales"></label>
   <label>UPC / barcode<input name="upc"></label>
+  <p id="generated">Barcode (UPC): <strong id="gen">—</strong> <button type="button" onclick="document.getElementById('gen').textContent='036000291452'">Generate (mock)</button></p>
   <label>℗ line<input name="p_line"></label>
   <label>© line<input name="c_line"></label>
+  <fieldset><legend>Terms</legend><label><input type="radio" name="terms" value="y"> Yes, I agree to the terms</label><label><input type="radio" name="terms" value="n"> No</label></fieldset>
+
   <h2>Song</h2>
   <label>Track title<input name="track_title"></label>
   <label>Track version<input name="version"></label>
   <label>ISRC<input name="isrc"></label>
-  <label>Songwriters<input name="songwriters"></label>
-  <label>Producers<input name="producers"></label>
+  <label>Preview start time<input name="preview" placeholder="0:30"></label>
+  <fieldset><legend>Does this track contain lyrics?</legend><label><input type="radio" name="tl" value="y"> Yes</label><label><input type="radio" name="tl" value="n"> No</label></fieldset>
+  <fieldset><legend>Is this track explicit?</legend><label><input type="radio" name="tx" value="e"> Explicit</label><label><input type="radio" name="tx" value="n"> Not explicit</label><label><input type="radio" name="tx" value="c"> Cleaned</label></fieldset>
+  <div id="composers"><label>Composer name<input name="composer"></label></div>
+  <button type="button" id="addComposer">+ Add composer</button>
+  <div id="contribs"><div class="row"><label>Contributor name<input name="cname"></label><label>Contributor title<select name="ctitle"><option value="">Select…</option><option>Producer</option><option>DJ</option><option>Remixer</option><option>Mixing Engineer</option><option>Mastering Engineer</option><option>Vocals</option><option>Guitar</option></select></label></div></div>
+  <button type="button" id="addContrib">+ Add contributor</button>
   <label>Account password (never touched)<input type="password" name="pw"></label>
   <button>Submit release</button>
 </form>
+<script>
+const clone = (box, btn) => document.getElementById(btn).onclick = () => { const n = document.getElementById(box).lastElementChild.cloneNode(true); n.querySelectorAll('input').forEach((i) => (i.value = '')); n.querySelectorAll('select').forEach((s) => (s.value = '')); document.getElementById(box).appendChild(n) }
+clone('artists', 'addArtist'); clone('composers', 'addComposer'); clone('contribs', 'addContrib')
+</script>
 </body></html>

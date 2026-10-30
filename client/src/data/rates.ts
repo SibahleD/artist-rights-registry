@@ -17,7 +17,7 @@ export interface PlatformRate {
 }
 
 export const RATE_CURRENCY = 'USD'
-export const REVIEWED_ON = '2026-10-27'
+export const REVIEWED_ON = '2026-10-29'
 
 export const RATES: readonly PlatformRate[] = [
   { id: 'spotify',       low: 0.003,  typical: 0.004,  high: 0.005, source: 'Royalty Exchange, OnesToWatch, 2026' },
@@ -27,6 +27,8 @@ export const RATES: readonly PlatformRate[] = [
   { id: 'tidal',         low: 0.012,  typical: 0.0135, high: 0.015, source: 'Royalty Exchange, 2026' },
   { id: 'youtube_music', low: 0.0007, typical: 0.001,  high: 0.002, source: 'Royalty Exchange, 2026 (estimates vary widely)' },
   { id: 'youtube',       low: 0.0005, typical: 0.0007, high: 0.001, source: 'Industry estimate via ads and Content ID' },
+  { id: 'boomplay',       low: 0.001,  typical: 0.003,  high: 0.005, source: 'Widely repeated $0.003-$0.005 range (SoundCloud, Adom Online, 2026); Nigerian rates near $0.001 (Interspace). Boomplay does not publish its rate' },
+  { id: 'audiomack',     low: 0.0005, typical: 0.001,  high: 0.003, source: 'Audiomack AMP page (variable rate, 50% share); third-party estimates vary widely' },
 ]
 
 const BY_ID = new Map(RATES.map((r) => [r.id, r]))

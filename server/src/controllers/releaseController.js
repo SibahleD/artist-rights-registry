@@ -255,6 +255,25 @@ async function updateRelease(req, res) {
     }
 }
 
+// The distributor generates the UPC after the release has been sent, so this works on a ready release too
+// (updateRelease refuses those). It changes nothing but the UPC. Used by the browser extension's "Capture UPC".
+async function setUpc(req, res) {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const parsed = optionalUpc(body.upc);
+    if (parsed.error) return res.status(400).json({ error: parsed.error });
+    try {
+        const { rows } = await pool.query(
+            `UPDATE releases SET upc = $1 WHERE id = $2 AND owner_id = $3 RETURNING id, upc`,
+            [parsed.value, req.params.id, req.user.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'Release not found.' });
+        return res.json({ release: rows[0] });
+    } catch (err) {
+        console.error('setUpc error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 async function markReady(req, res) {
     try {
         const release = await findOwned(req.params.id, req.user.id);
@@ -369,6 +388,6 @@ async function deleteRelease(req, res) {
 
 module.exports = {
     createRelease, listReleases, getRelease, updateRelease,
-    markReady, revertToDraft, deleteRelease, readinessProblems, getReadiness, exportRelease,
+    markReady, revertToDraft, deleteRelease, readinessProblems, getReadiness, exportRelease, setUpc,
     markReleased, unmarkReleased,
 };

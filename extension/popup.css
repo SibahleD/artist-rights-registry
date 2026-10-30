@@ -29,3 +29,6 @@ details { margin-top: 12px; } summary { cursor: pointer; color: #cacaca; }
 .pw-toggle:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
 .pw-icon { width: 18px; height: 18px; background-color: currentColor; -webkit-mask: url(icons/eye.svg) center / contain no-repeat; mask: url(icons/eye.svg) center / contain no-repeat; }
 .pw-icon.on { -webkit-mask-image: url(icons/eye-off.svg); mask-image: url(icons/eye-off.svg); }
+
+.row2 { display: flex; gap: 8px; margin-top: 8px; } .row2 button { flex: 1; }
+#upcBox { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(91,141,239,.5); border-radius: 7px; }
