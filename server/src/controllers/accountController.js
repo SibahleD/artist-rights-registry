@@ -9,7 +9,7 @@ const { confirmEmailChangeMessage } = require('../services/emailChange');
 const { signToken } = require('./authController');
 const { validatePreferences, withDefaults, validateNewPassword, normaliseEmail } = require('../lib/account');
 
-const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
+const APP_URL = require('../appUrl');
 const SALT_ROUNDS = 10;
 const fail = (res, e, label) => { console.error(`${label} error:`, e); return res.status(500).json({ error: 'Internal server error' }); };
 

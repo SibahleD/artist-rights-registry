@@ -216,7 +216,7 @@ async function getUsage(req, res) {
             bytes: { audio, images, used: audio + images, max: on ? limits.maxUserBytes : null },
             limits: {
                 maxTracksPerRelease: on && limits.maxTracksPerRelease > 0 ? limits.maxTracksPerRelease : null,
-                maxAudioBytes: on ? limits.maxAudioBytes : 100 * 1024 * 1024,
+                maxAudioBytes: on ? limits.maxAudioBytes : 200 * 1024 * 1024,
                 maxCoverBytes: on ? limits.maxCoverBytes : 25 * 1024 * 1024,
                 maxAvatarBytes: on ? limits.maxAvatarBytes : 2 * 1024 * 1024,
             },

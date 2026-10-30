@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api'
 
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 
 import homeIco from '../assets/ico/home.svg'
@@ -14,15 +14,10 @@ import logoDark from '../assets/logo-dark.png'
 import moneyIco from '../assets/ico/money.svg'
 import chartIco from '../assets/ico/chart.svg'
 import walletIco from '../assets/ico/wallet.svg'
-import logoutIco from '../assets/ico/logout.svg'
-import moreIco from '../assets/ico/more.svg'
 
 const links = [
   ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/performance', 'Performance', chartIco], ['/earnings', 'Earnings', walletIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
-
-// On phones the first four pages sit in a bottom bar; the rest open from "More"
-const MAIN = 4
 
 function VerifyBanner() {
   const { user, refresh } = useAuth()
@@ -49,11 +44,6 @@ function VerifyBanner() {
 export default function Layout() {
   const { user, logout } = useAuth()
   const nav = useNavigate()
-  const { pathname } = useLocation()
-  const [more, setMore] = useState(false)
-  const secondary = links.slice(MAIN)
-  const inMore = secondary.some(([to]) => pathname === to || pathname.startsWith(to + '/'))
-  const signOut = () => { setMore(false); logout(); nav('/login') }
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -62,20 +52,10 @@ export default function Layout() {
           <button className="expand" onClick={() => document.body.classList.toggle('sidebar-collapsed')}><img className='nav-icon' src={expandIco} /></button>
         </div>
         <nav>
-          {links.map(([to, label, icon], i) => <NavLink key={to} to={to} end={to === '/'} className={i >= MAIN ? 'nav-secondary' : undefined} onClick={() => setMore(false)}><img className="nav-icon" src={icon} />{label}</NavLink>)}
-          <button type="button" className={`more-btn${inMore || more ? ' active' : ''}`} aria-expanded={more} aria-label="More pages" onClick={() => setMore((v) => !v)}><img className="nav-icon" src={moreIco} />More</button>
-          <button className="linklike" onClick={signOut}><img className="nav-icon" src={logoutIco} />Log Off</button>
+          {links.map(([to, label, icon]) => <NavLink key={to} to={to} end={to === '/'}><img className="nav-icon" src={icon} />{label}</NavLink>)}
+          <button className="linklike" onClick={() => { logout(); nav('/login') }}>Log Off</button>
         </nav>
       </aside>
-      {more && (
-        <>
-          <div className="more-scrim" onClick={() => setMore(false)} />
-          <div className="more-sheet" role="menu">
-            {secondary.map(([to, label, icon]) => <NavLink key={to} to={to} onClick={() => setMore(false)}><img className="nav-icon" src={icon} />{label}</NavLink>)}
-            <button className="linklike" onClick={signOut}><img className="nav-icon" src={logoutIco} />Log Off</button>
-          </div>
-        </>
-      )}
       <main className="content"><VerifyBanner /><Outlet /></main>
     </div>
   )

@@ -34,7 +34,7 @@ const previewDuration = (f: File) => new Promise<number | null>((resolve) => {
 export type SongSection = 'general' | 'audio' | 'publishing' | 'credits' | 'splits'
 
 // One section of one song at a time: the release form puts them under tabs. All the song's values live in `track`, so switching tabs loses nothing.
-export default function TrackEditor({ track, onChange, section, hideTitle, hideGenre, maxAudioBytes = 100 * 1024 * 1024, releaseId }: {
+export default function TrackEditor({ track, onChange, section, hideTitle, hideGenre, maxAudioBytes = 200 * 1024 * 1024, releaseId }: {
   track: TrackForm; onChange: (t: TrackForm) => void; section: SongSection; hideTitle?: boolean; hideGenre?: boolean; maxAudioBytes?: number; releaseId?: string
 }) {
   const [audioErr, setAudioErr] = useState('')

@@ -1,11 +1,25 @@
+# Netlify configuration for Track Record.
+#
+# Netlify hosts:
+#   - the built React app and landing page (client/dist → publish)
+#   - the Express server, wrapped as a Netlify Function (netlify/functions/api.js)
+#   - the hourly notice sweep, as a Scheduled Function (netlify/functions/sweep-notices.js)
+#
+# Supabase holds the database and file storage. See DEPLOY.md for the full picture.
+
 [build]
+  base = "client"
   command = "npm run build"
-  publish = "client/dist"
+  publish = "dist/app" 
 
 [functions]
   directory = "netlify/functions"
   external_node_modules = ["express", "pg", "bcrypt"]
   node_bundler = "esbuild"
+
+[functions.api]
+  # A media response can take longer than the default 10s while reading from Supabase Storage.
+  included_files = []
 
 [[redirects]]
   force = true
@@ -23,8 +37,9 @@
   to = "/.netlify/functions/api/health/db"
   status = 200
 
-# SPA fallback for the React app only (landing page stays at /)
+# SPA fallback for the React app under /app/ and any other client routes.
+# This must come after the /api/* and /health redirects.
 [[redirects]]
-  from = "/app/*"
-  to = "/app/index.html"
+  from = "/*"
+  to = "/index.html"
   status = 200

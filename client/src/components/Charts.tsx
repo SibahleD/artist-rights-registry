@@ -2,7 +2,7 @@ import { fmtCompact } from '../lib/format'
 
 // Small inline-SVG charts, so there is no chart library to ship. They scale to the width of their container.
 
-const PALETTE = ['var(--accent)', '#4fc3ff', '#ff8c42', '#8bd17c', '#94a3b8', '#f2c94c']
+const PALETTE = ['var(--accent)', '#4fc3ff', '#ff8c42', '#8bd17c', '#c792ea', '#f2c94c']
 
 export interface Series { name: string; values: number[] }
 

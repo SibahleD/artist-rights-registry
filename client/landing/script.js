@@ -2,18 +2,11 @@ const APP_URL = '/app'
 
 document.documentElement.classList.add('lp-js')
 
-// Signed-in visitors get "Open the app" instead of the sign-up buttons
 let signedIn = false
 try { signedIn = !!localStorage.getItem('token') } catch { /* storage unavailable */ }
 document.querySelectorAll('[data-app]').forEach((a) => {
-  // Signed in: the header's "Log in" link goes away, leaving a single "Open the app" button
-  if (signedIn && a.classList.contains('lp-link')) { a.remove(); return }
   a.setAttribute('href', APP_URL + (signedIn ? '/' : a.getAttribute('data-app')))
-  if (signedIn) {
-    const arrow = a.querySelector('span[aria-hidden]')
-    a.textContent = 'Open the app'
-    if (arrow && a.classList.contains('lp-btn')) a.append(' ', arrow)
-  }
+  if (signedIn) a.textContent = 'Open the app'
 })
 
 const btn = document.querySelector('.lp-menu-btn')

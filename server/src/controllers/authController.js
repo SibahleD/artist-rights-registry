@@ -10,7 +10,7 @@ const verifyEmailMessage = require('../services/verifyEmail');
 const { emailChangedMessage } = require('../services/emailChange');
 const { passwordResetMessage, passwordChangedMessage } = require('../services/passwordReset');
 
-const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
+const APP_URL = require('../appUrl');
 
 // Bump when the Terms page changes in a way users must re-accept; stored with each acceptance.
 const TERMS_VERSION = '2026-10-22';

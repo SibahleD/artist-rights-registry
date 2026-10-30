@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const NOTICE_VERSION = '2026-10-v1'; 
 const EXPIRY_DAYS = Number(process.env.NOTICE_EXPIRY_DAYS) || 14;
-const APP_URL = process.env.APP_URL || 'http://localhost:5173/app';
+const APP_URL = require('../appUrl');
 
 function emailHash(email) {
     const key = process.env.EMAIL_HASH_KEY;
