@@ -14,10 +14,11 @@ const streamRoutes = require('./routes/streams');
 
 const { apiLimiter } = require('./middleware/rateLimits');
 const { mailConfigProblems } = require('./services/mailer');
+const { isProduction } = require('./env');
 
 {
     const problems = mailConfigProblems();
-    if (problems.length && process.env.NODE_ENV === 'production') throw new Error('Mail settings: ' + problems.join(' '));
+    if (problems.length && isProduction) throw new Error('Mail settings: ' + problems.join(' '));
     for (const m of problems) console.warn('Mail settings:', m);
 }
 
@@ -48,7 +49,7 @@ app.use('/api/media', mediaRoutes);
 app.use('/api/glossary', glossaryRoutes);
 
 if (process.env.DEV_OUTBOX === 'true') {
-    if (process.env.NODE_ENV === 'production') throw new Error('DEV_OUTBOX must never be enabled in production.');
+    if (isProduction) throw new Error('DEV_OUTBOX must never be enabled in production.');
     app.use('/api/dev', require('./routes/dev'));
 }
 
