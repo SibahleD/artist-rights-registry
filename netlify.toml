@@ -8,8 +8,9 @@
 # Supabase holds the database and file storage. See DEPLOY.md for the full picture.
 
 [build]
+  base = "client"
   command = "npm run build"
-  publish = "client/dist"
+  publish = "dist/app" 
 
 [functions]
   directory = "netlify/functions"
