@@ -1,5 +1,5 @@
 const express = require('express');
-const { makeLimiter } = require('../rateLimits');
+const { makeLimiter } = require('../middleware/rateLimits');
 const { authToken } = require('../middleware/auth');
 const { getMe, updateMe, getUsage, listLinks, createLink, updateLink, deleteLink } = require('../controllers/userController');
 const {

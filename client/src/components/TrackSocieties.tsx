@@ -5,11 +5,11 @@ import type { Societies } from './SocietyTracker'
 import {
   BODY_LABEL, CHECKED, COUNTRIES, INTERNATIONAL, NEXT_STEP, READY_LIST, STATUS_LABEL,
 } from '../data/societies'
+import { safeHref } from '../lib/format'
 
 const KEY = 'rights-country'
 const read = () => { try { return localStorage.getItem(KEY) ?? '' } catch { return '' } }
 const write = (v: string) => { try { localStorage.setItem(KEY, v) } catch { /* storage unavailable */ } }
-const safeHref = (u?: string) => (u && /^https?:\/\//i.test(u) ? u : undefined)
 
 // A guide for someone who has never registered with a society: pick a country, see where things stand,
 // know what to prepare, then follow the steps. Everything here comes from the country guide in data/societies.ts.

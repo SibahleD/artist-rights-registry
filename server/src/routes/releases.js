@@ -1,6 +1,6 @@
 const express = require('express');
 const { authToken } = require('../middleware/auth');
-const { apiLimiter } = require('../middleware/rateLimits');
+const { userApiLimiter } = require('../middleware/rateLimits');
 const {
     createRelease, listReleases, getRelease, updateRelease,
     markReady, revertToDraft, deleteRelease, getReadiness, exportRelease, setUpc,
@@ -16,7 +16,7 @@ const router = express.Router();
 const trackRoutes = require('./tracks');
 
 router.use(authToken);
-router.use(apiLimiter());
+router.use(userApiLimiter());
 router.use('/:releaseId/tracks', trackRoutes);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

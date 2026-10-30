@@ -21,8 +21,5 @@ export function fmtMonth(period: string, short = false): string {
   return `${short ? name.slice(0, 3) : name} ${y}`
 }
 
-/** First day of the month for a date or "YYYY-MM-DD" string, as "YYYY-MM-01". */
-export function monthStart(d: string | Date): string {
-  if (typeof d === 'string') return `${d.slice(0, 7)}-01`
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-}
+/** Only plain web addresses are ever rendered as links; anything else (javascript:, data:, empty) becomes undefined. */
+export const safeHref = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : undefined)

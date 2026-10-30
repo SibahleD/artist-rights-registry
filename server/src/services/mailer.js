@@ -1,3 +1,4 @@
+const { wantsOptionalEmail } = require('../lib/account');
 const outbox = [];
 
 // Problems with the mail settings, as plain sentences. Empty list means the settings are usable.
@@ -65,4 +66,12 @@ async function sendMail({ to, subject, text }) {
 
 const getOutbox = () => outbox;
 
-module.exports = { sendMail, getOutbox, mailConfigProblems, createSmtpSender };
+// For optional notifications to an artist. Sends only if the artist has opted in (see wantsOptionalEmail).
+// Returns true if the mail was handed to the transport, false if skipped. Never use for security emails.
+async function sendOptionalMail({ preferences, kind, to, subject, text }) {
+    if (!wantsOptionalEmail(preferences, kind)) return false;
+    await sendMail({ to, subject, text });
+    return true;
+}
+
+module.exports = { sendMail, sendOptionalMail, getOutbox, mailConfigProblems, createSmtpSender };

@@ -1,5 +1,5 @@
 const express = require('express');
-const { makeLimiter } = require('../rateLimits');
+const { makeLimiter } = require('../middleware/rateLimits');
 const { getNotice, respond } = require('../controllers/publicNoticeController');
 
 const router = express.Router();

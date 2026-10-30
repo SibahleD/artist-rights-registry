@@ -19,4 +19,3 @@ export const INSTRUMENT_TITLES = [
 ] as const
 
 export const CONTRIBUTOR_TITLES: readonly string[] = [...CREDIT_TITLES, ...INSTRUMENT_TITLES]
-export const isContributorTitle = (t: string) => CONTRIBUTOR_TITLES.includes(t)

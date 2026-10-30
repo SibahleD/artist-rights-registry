@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const express = require('express');
 
 const VARS = ['AUTH_RATE_LIMIT', 'ACCOUNT_RATE_LIMIT', 'NOTICE_RATE_LIMIT', 'API_RATE_LIMIT'];
-const { limitFor, makeLimiter, apiLimiter } = require('../src/rateLimits');
+const { limitFor, makeLimiter, apiLimiter } = require('../src/middleware/rateLimits');
 
 // Run a test with chosen values for the four variables, then put the environment back as it was.
 async function withEnv(values, fn) {

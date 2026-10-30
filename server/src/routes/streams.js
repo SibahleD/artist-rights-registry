@@ -1,12 +1,12 @@
 const express = require('express');
 const { authToken } = require('../middleware/auth');
-const { apiLimiter } = require('../middleware/rateLimits');
+const { userApiLimiter } = require('../middleware/rateLimits');
 const { listProjections } = require('../controllers/audioFeatureController');
 const { importStreams, getStreams, exportStreams, listImports, deleteImport } = require('../controllers/streamController');
 
 const router = express.Router();
 router.use(authToken);
-router.use(apiLimiter());
+router.use(userApiLimiter());
 
 router.get('/', getStreams);
 router.get('/export', exportStreams);

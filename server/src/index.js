@@ -12,7 +12,7 @@ const mediaRoutes = require('./routes/media');
 const glossaryRoutes = require('./routes/glossary');
 const streamRoutes = require('./routes/streams');
 
-const { apiLimiter } = require('./rateLimits');
+const { apiLimiter } = require('./middleware/rateLimits');
 const { mailConfigProblems } = require('./services/mailer');
 
 {

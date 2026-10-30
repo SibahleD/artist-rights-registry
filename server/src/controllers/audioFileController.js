@@ -5,8 +5,7 @@ const storage = require('../services/storage');
 const { inspectAudio } = require('../services/mediaInspect');
 const { assertRoom, humanMB } = require('../services/usage');
 
-const HARD_CAP = 200 * 1024 * 1024;   // safety net when PILOT_LIMITS=off
-const maxBytes = () => (limits.enabled ? limits.maxAudioBytes : HARD_CAP);
+const maxBytes = () => limits.effective.audioBytes;
 
 const receive = (req, res) => new Promise((resolve) => {
     multer({ storage: multer.memoryStorage(), limits: { fileSize: maxBytes(), files: 1 } })

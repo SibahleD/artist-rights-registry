@@ -4,14 +4,12 @@ import { COUNTRIES, TRACKABLE, countryNameOf, dashboardOf, websiteOf } from '../
 import type { SocietyStatus, UserSociety } from '../types'
 import { useUnsavedChanges } from './UnsavedGuard'
 import { Badge, ConfirmModal, ErrorBox, Hint, Loading, fmtDate } from './ui'
+import { safeHref } from '../lib/format'
 
 const STATUS_LABEL: Record<SocietyStatus, string> = { planned: 'Planned', applied: 'Applied', registered: 'Registered' }
 const BADGE: Record<SocietyStatus, string> = { planned: 'draft', applied: 'pending', registered: 'confirmed' }
 const rank = (s: SocietyStatus) => ({ registered: 0, applied: 1, planned: 2 })[s]
 const todayUtc = () => new Date().toISOString().slice(0, 10)
-// Links come from the user or from our own data; only plain web addresses are ever rendered as links.
-const safeHref = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : undefined)
-
 export interface NewSociety { body_name: string; country: string; status?: SocietyStatus }
 
 export function useSocieties() {

@@ -8,9 +8,10 @@
 # Supabase holds the database and file storage. See DEPLOY.md for the full picture.
 
 [build]
-  base = "client"
+  # Root package.json "build" installs server + client deps and builds the client.
   command = "npm run build"
-  publish = "dist/app" 
+  # Vite writes the app to client/dist/app and copies the landing page to client/dist.
+  publish = "client/dist"
 
 [functions]
   directory = "netlify/functions"
@@ -37,9 +38,8 @@
   to = "/.netlify/functions/api/health/db"
   status = 200
 
-# SPA fallback for the React app under /app/ and any other client routes.
-# This must come after the /api/* and /health redirects.
+# SPA fallback for the React app (it lives under /app/). Must come after /api/* and /health.
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
+  from = "/app/*"
+  to = "/app/index.html"
   status = 200

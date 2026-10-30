@@ -43,18 +43,6 @@ export function estimate(platformId: string, streams: number): Estimate | null {
   return { low: streams * r.low, typical: streams * r.typical, high: streams * r.high }
 }
 
-/** Adds up estimates across platforms; platforms without a rate are listed in `unrated`. */
-export function estimateTotal(byPlatform: Record<string, number>): { total: Estimate; unrated: string[] } {
-  const total = { low: 0, typical: 0, high: 0 }
-  const unrated: string[] = []
-  for (const [id, streams] of Object.entries(byPlatform)) {
-    const e = estimate(id, streams)
-    if (!e) { if (streams > 0) unrated.push(id); continue }
-    total.low += e.low; total.typical += e.typical; total.high += e.high
-  }
-  return { total, unrated }
-}
-
 // Shown on the Earnings page and repeated on every export.
 export const EARNINGS_DISCLAIMER =
   'These figures are estimates. They multiply your streams by an industry average revenue per stream and do not ' +

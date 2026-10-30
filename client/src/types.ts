@@ -271,14 +271,6 @@ export interface PublicNotice {
 }
 
 export interface Credit { id?: string; userId?: string | null; email?: string | null; personName: string; role: string }
-export interface DisputeSplit { collaboratorId: string; legalName: string; role: string; currentPercent: number; beforePercent: number; proposedPercent: number }
-export interface Dispute {
-  id: string; status: 'open' | 'contested' | 'resolved'; reason: string; createdAt: string; resolvedAt: string | null
-  raisedBy: string; raisedByName: string; trackId: string; trackTitle: string; releaseId: string; releaseTitle: string
-  splits: DisputeSplit[]; approvals: { legalName: string; hasAccount: boolean; accepted: boolean }[]
-  responses: { id: string; responderId: string; responderName: string; action: string; message: string | null; createdAt: string }[]
-}
-
 export interface Usage {
   enabled: boolean
   releases: { used: number; max: number | null }

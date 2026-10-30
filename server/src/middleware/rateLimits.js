@@ -1,54 +1,45 @@
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 
-// One place for every rate limit. Each value can be overridden from the environment:
-// keep the production numbers below, and raise them only in the local .env.
-// Limits that run after authToken count per signed-in user; the rest count per IP address.
-// Behind Render or Vercel set TRUST_PROXY=1 (see index.js) so "per IP" means per visitor.
+// One place for every request limit. Each is counted over 15 minutes.
+// Production defaults apply when the variable is unset. Raise them in .env for local testing only.
+// Behind a proxy (Netlify, Render) set TRUST_PROXY=1 (see index.js) so "per IP" means per visitor.
+const WINDOW_MS = 15 * 60 * 1000;
 
-const MINUTE = 60 * 1000;
-const num = (name, fallback) => {
-    const n = Number(process.env[name]);
-    return Number.isFinite(n) && n > 0 ? n : fallback;
+const KINDS = {
+    auth:    { env: 'AUTH_RATE_LIMIT',    fallback: 10,  message: 'Too many attempts, please try again later.' },   // register, login, verify, reset (per IP)
+    account: { env: 'ACCOUNT_RATE_LIMIT', fallback: 10,  message: 'Too many attempts, please try again later.' },   // password, email change, export, delete (per IP)
+    notice:  { env: 'NOTICE_RATE_LIMIT',  fallback: 30,  message: 'Too many requests, please try again later.' },   // public co-writer links (per IP)
+    api:     { env: 'API_RATE_LIMIT',     fallback: 600, message: 'Too many requests, please try again later.' },   // everything under /api (per IP)
+    userApi: { env: 'API_RATE_LIMIT',     fallback: 300, message: 'Too many requests, please slow down and try again shortly.', perUser: true },   // signed-in routes (per user)
 };
 
-const make = ({ windowMs, limit, message, perUser }) => rateLimit({
-    windowMs,
-    limit,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: message },
-    // Counts per signed-in user; falls back to the visitor's IP address when there is none.
-    ...(perUser ? { keyGenerator: (req) => (req.user ? `u:${req.user.id}` : ipKeyGenerator(req.ip)) } : {}),
-});
+// A missing, empty, zero or non-numeric value falls back to the default, so a typo never switches a limit off.
+function limitFor(kind) {
+    const n = Number(process.env[KINDS[kind].env]);
+    return Number.isFinite(n) && n > 0 ? n : KINDS[kind].fallback;
+}
 
-// Login, register, forgot and reset password: 10 per 15 minutes per IP.
-const authLimiter = () => make({
-    windowMs: 15 * MINUTE,
-    limit: num('AUTH_RATE_LIMIT', 10),
-    message: 'Too many attempts, please try again in a few minutes.',
-});
+// Per-user limits run after authToken and count by user id; with no user they fall back to the visitor's IP address.
+const userKey = (req) => (req.user ? `u:${req.user.id}` : ipKeyGenerator(req.ip));
 
-// Password, email, export and delete: 10 per hour per user.
-const accountLimiter = () => make({
-    windowMs: 60 * MINUTE,
-    limit: num('ACCOUNT_RATE_LIMIT', 10),
-    message: 'Too many attempts, please try again later.',
-    perUser: true,
-});
+function makeLimiter(kind, options = {}) {
+    const { perUser, message } = KINDS[kind];
+    return rateLimit({
+        windowMs: WINDOW_MS,
+        limit: limitFor(kind),
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: message },
+        ...(perUser ? { keyGenerator: userKey } : {}),
+        ...options,
+    });
+}
 
-// Public notice links: 30 per 15 minutes per IP.
-const noticeLimiter = () => make({
-    windowMs: 15 * MINUTE,
-    limit: num('NOTICE_RATE_LIMIT', 30),
-    message: 'Too many requests, please try again later.',
-});
+// The ceiling for everything under /api. Images load through /api/media and a discography page can ask for dozens at once,
+// so media is left out of the count. Mount this at '/api'.
+const apiLimiter = () => makeLimiter('api', { skip: (req) => req.path.startsWith('/media') });
 
-// Everything else behind login: 300 per 15 minutes per user.
-const apiLimiter = () => make({
-    windowMs: 15 * MINUTE,
-    limit: num('API_RATE_LIMIT', 300),
-    message: 'Too many requests, please slow down and try again shortly.',
-    perUser: true,
-});
+// For routers that sit behind authToken: counts per signed-in user.
+const userApiLimiter = () => makeLimiter('userApi');
 
-module.exports = { authLimiter, accountLimiter, noticeLimiter, apiLimiter };
+module.exports = { makeLimiter, apiLimiter, userApiLimiter, limitFor, KINDS };

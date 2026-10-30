@@ -4,10 +4,7 @@ const limits = require('../limits');
 const { inspectImage } = require('../services/mediaInspect');
 const { assertRoom, humanMB } = require('../services/usage');
 
-const HARD_CAP = 25 * 1024 * 1024;   // safety net when PILOT_LIMITS=off (schema allows 2 MB avatar, 25 MB artwork)
-const cap = (kind) => (limits.enabled
-    ? (kind === 'avatar' ? limits.maxAvatarBytes : limits.maxCoverBytes)
-    : Math.min(HARD_CAP, kind === 'avatar' ? 2 * 1024 * 1024 : 25 * 1024 * 1024));
+const cap = (kind) => (kind === 'avatar' ? limits.effective.avatarBytes : limits.effective.coverBytes);
 
 const receive = (req, res, max) => new Promise((resolve) => {
     multer({ storage: multer.memoryStorage(), limits: { fileSize: max, files: 1 } })

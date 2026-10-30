@@ -9,4 +9,3 @@ export function groupOf(r: Release): Group {
   return 'yet'
 }
 
-export const GROUP_ORDER: Group[] = ['released', 'awaiting', 'draft', 'yet']
