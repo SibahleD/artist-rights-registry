@@ -11,6 +11,8 @@ import infoIco from '../assets/ico/info.svg'
 import settingsIco from '../assets/ico/settings.svg'
 import expandIco from '../assets/ico/reduce.svg'
 import logoDark from '../assets/logo-dark.png'
+import logoLight from '../assets/logo.png'
+import { toggleTheme, useTheme } from '../theme'
 import moneyIco from '../assets/ico/money.svg'
 import chartIco from '../assets/ico/chart.svg'
 import walletIco from '../assets/ico/wallet.svg'
@@ -44,15 +46,17 @@ function VerifyBanner() {
 export default function Layout() {
   const { user, logout } = useAuth()
   const nav = useNavigate()
+  const theme = useTheme()
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="sidebar-header" >
-          <div className="brand"><img className="brand-logo" src={logoDark} alt="Track Record" /><small>{user?.artist_name}</small></div>
+          <div className="brand"><img className="brand-logo" src={theme === 'dark' ? logoDark : logoLight} alt="Track Record" /><small>{user?.artist_name}</small></div>
           <button className="expand" onClick={() => document.body.classList.toggle('sidebar-collapsed')}><img className='nav-icon' src={expandIco} /></button>
         </div>
         <nav>
           {links.map(([to, label, icon]) => <NavLink key={to} to={to} end={to === '/'}><img className="nav-icon" src={icon} />{label}</NavLink>)}
+          <button className="linklike" onClick={toggleTheme} aria-label="Switch light or dark theme">&#9680; {theme === 'dark' ? 'Light mode' : 'Dark mode'}</button>
           <button className="linklike" onClick={() => { logout(); nav('/login') }}>Log Off</button>
         </nav>
       </aside>

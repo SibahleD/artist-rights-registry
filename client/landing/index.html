@@ -2,11 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Track Record: understand your music metadata and get paid</title>
   <meta name="description" content="A guided release tool for independent artists in Rwanda and East Africa. Learn what metadata, splits and royalties mean while you prepare a release, and find the right society to register with." />
-  <meta name="theme-color" content="#16171d" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a4d80'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='white' font-family='sans-serif'%3ER%3C/text%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#f1f5fc" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d5fe0'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='white' font-family='sans-serif'%3ER%3C/text%3E%3C/svg%3E" />
+  <script>
+    /* Set the theme before first paint (shared with the app through localStorage) */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -17,93 +26,133 @@
 
   <header class="lp-nav">
     <div class="lp-wrap lp-nav-in">
-      <a class="lp-logo" href="#top">Track Record</a>
-      <button class="lp-menu-btn" aria-label="Toggle menu" aria-expanded="false" aria-controls="menu">Menu</button>
+      <a class="lp-logo" href="#top">track record<i aria-hidden="true">.</i></a>
       <nav id="menu" class="lp-menu" aria-label="Main">
         <a href="#how">How it works</a>
         <a href="#features">Features</a>
         <a href="#difference">Who does what</a>
         <a href="#countries">Countries</a>
         <a href="#faq">FAQ</a>
-        <a class="lp-btn lp-ghost" data-app="/login">Log in</a>
-        <a class="lp-btn" data-app="/register">Get started</a>
       </nav>
+      <div class="lp-nav-end">
+        <button class="lp-theme" type="button" aria-label="Switch light or dark theme" title="Switch theme">&#9680;</button>
+        <a class="lp-link" data-app="/login">Log in</a>
+        <a class="lp-btn" data-app="/register">Get started <span aria-hidden="true">&#8599;</span></a>
+        <button class="lp-menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" aria-controls="menu">Menu</button>
+      </div>
     </div>
   </header>
 
   <main id="main">
+    <!-- Hero -->
     <section class="lp-hero" id="top">
       <div class="lp-wrap lp-hero-in">
         <div class="lp-hero-copy">
           <p class="lp-eyebrow-row" aria-label="Highlights"><span>Free to start</span><span>Unlimited releases</span><span>East Africa first</span></p>
-          <h1>Your music deserves <span class="lp-grad">to be on record.</span></h1>
+          <h1>Your music deserves <em>to be on record.</em></h1>
           <p class="lp-lead">Prepare your release, agree the splits, and register your rights. Every step is explained in plain language, from first draft to first royalty.</p>
           <div class="lp-cta">
-            <a class="lp-btn lp-big" data-app="/register">Start your catalogue</a>
-            <a class="lp-btn lp-big lp-ghost" href="#how">See how it works</a>
+            <a class="lp-btn lp-big" data-app="/register">Start your catalogue <span aria-hidden="true">&#8599;</span></a>
+            <a class="lp-btn lp-big lp-outline" href="#how">See how it works</a>
           </div>
           <ul class="lp-ticks" aria-label="What you get">
             <li>Guided release forms</li><li>Split confirmation</li><li>Society guides</li>
           </ul>
         </div>
-        <aside class="lp-hero-card" aria-label="Release path">
-          <p class="lp-hc-tag">Release-ready</p>
-          <h2 class="lp-hc-title">From your studio to the societies.</h2>
-          <ol class="lp-hc-path">
-            <li><b>Prepare</b><span>Metadata and credits</span></li>
-            <li><b>Split</b><span>Shares add up to 100%</span></li>
-            <li><b>Ready</b><span>Locked for your distributor</span></li>
-            <li><b>Register</b><span>Right society, right steps</span></li>
-          </ol>
-          <p class="lp-hc-note">Example only. Your catalogue stays yours.</p>
-        </aside>
-      </div>
-    </section>
-
-    <section class="lp-band" aria-labelledby="problem">
-      <div class="lp-wrap">
-        <p class="lp-kicker">Why Track Record</p>
-        <h2 id="problem">A release tool that keeps the details clear.</h2>
-        <div class="lp-grid3 lp-why">
-          <article class="lp-card lp-reveal">
-            <span class="lp-num" aria-hidden="true">01</span>
-            <h3>All-in-one hub</h3>
-            <p>One place for your artist profiles across streaming services, so nothing lives in scattered notes.</p>
-          </article>
-          <article class="lp-card lp-reveal">
-            <span class="lp-num" aria-hidden="true">02</span>
-            <h3>Track your royalties</h3>
-            <p>See which societies hold your royalties, in your local market or worldwide.</p>
-          </article>
-          <article class="lp-card lp-reveal">
-            <span class="lp-num" aria-hidden="true">03</span>
-            <h3>Compensate your work</h3>
-            <p>Manage splits with collaborators, producers and songwriters inside each release.</p>
-          </article>
+        <div class="lp-hero-art">
+          <div class="lp-photo" role="img" aria-label="Soft blue light on a dark background"></div>
+          <aside class="lp-float" aria-label="Release path">
+            <p class="lp-tag">Release-ready</p>
+            <h2>From your studio to the societies.</h2>
+            <ol class="lp-path">
+              <li><b>Prepare</b><span>Metadata and credits</span></li>
+              <li><b>Split</b><span>Shares add up to 100%</span></li>
+              <li><b>Ready</b><span>Locked for your distributor</span></li>
+              <li><b>Register</b><span>Right society, right steps</span></li>
+            </ol>
+            <p class="lp-fine">Example only. Your catalogue stays yours.</p>
+          </aside>
         </div>
       </div>
     </section>
 
+    <!-- Registration network strip -->
+    <section class="lp-strip" aria-label="Countries covered">
+      <div class="lp-wrap lp-strip-in">
+        <p class="lp-strip-title"><b>Find your society.</b> One guide per country.</p>
+        <ul class="lp-strip-list">
+          <li>Rwanda</li><li>Kenya</li><li>Uganda</li><li>Tanzania</li><li>Burundi</li><li>DR Congo</li><li>South Sudan</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- How it works -->
     <section id="how" class="lp-section">
       <div class="lp-wrap">
-        <h2>How it works</h2>
-        <p class="lp-sub">Learn by doing. Every release you prepare teaches you something you will use on the next one.</p>
+        <p class="lp-kicker">How it works</p>
+        <h2>From finished track to first registration.</h2>
+        <p class="lp-sub">You make the record. We keep the details clear. Every release you prepare teaches you something you will use on the next one.</p>
+        <p class="lp-pathline" aria-label="Release path"><b>Prepare</b><i>&rarr;</i><b>Split</b><i>&rarr;</i><b>Ready</b><i>&rarr;</i><b>Register</b></p>
         <ol class="lp-steps">
-          <li class="lp-reveal"><span class="lp-n">1</span><div><h3>Prepare your release</h3><p>Enter your single, EP or album. Each field has a short explanation of what it is and why it matters, with a link to the glossary when you want more.</p></div></li>
-          <li class="lp-reveal"><span class="lp-n">2</span><div><h3>Agree the splits</h3><p>Add your co-writers and their shares. We check the total is 100% and email each person a link to confirm their share, no account needed.</p></div></li>
-          <li class="lp-reveal"><span class="lp-n">3</span><div><h3>Mark it ready</h3><p>Once the details check out, the release is locked and ready to hand to your distributor. You are told plainly if anyone has not confirmed.</p></div></li>
-          <li class="lp-reveal"><span class="lp-n">4</span><div><h3>Register your rights</h3><p>Choose your country and see which society applies, what its status is today, and the steps to register your songs with it.</p></div></li>
+          <li class="lp-reveal"><span class="lp-n">1</span><h3>Prepare your release</h3><p>Enter your single, EP or album. Each field has a short explanation of what it is and why it matters, with a link to the glossary when you want more.</p></li>
+          <li class="lp-reveal"><span class="lp-n">2</span><h3>Agree the splits</h3><p>Add your co-writers and their shares. We check the total is 100% and email each person a link to confirm their share, no account needed.</p></li>
+          <li class="lp-reveal"><span class="lp-n">3</span><h3>Mark it ready</h3><p>Once the details check out, the release is locked and ready to hand to your distributor. You are told plainly if anyone has not confirmed.</p></li>
+          <li class="lp-reveal"><span class="lp-n">4</span><h3>Register your rights</h3><p>Choose your country and see which society applies, what its status is today, and the steps to register your songs with it.</p></li>
         </ol>
       </div>
     </section>
 
-    <section id="features" class="lp-section lp-alt">
+    <!-- Why -->
+    <section class="lp-section lp-alt" aria-labelledby="why">
       <div class="lp-wrap">
-        <h2>What is inside</h2>
+        <p class="lp-kicker">Why Track Record</p>
+        <h2 id="why">A release tool that keeps the details clear.</h2>
+        <div class="lp-grid3">
+          <article class="lp-card lp-reveal"><span class="lp-num" aria-hidden="true">01</span><h3>All-in-one hub</h3><p>One place for your artist profiles across streaming services, so nothing lives in scattered notes.</p></article>
+          <article class="lp-card lp-reveal"><span class="lp-num" aria-hidden="true">02</span><h3>Track your royalties</h3><p>See which societies hold your royalties, in your local market or worldwide.</p></article>
+          <article class="lp-card lp-reveal"><span class="lp-num" aria-hidden="true">03</span><h3>Compensate your work</h3><p>Manage splits with collaborators, producers and songwriters inside each release.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Split feature: splits example -->
+    <section id="features" class="lp-section">
+      <div class="lp-wrap lp-split">
+        <div>
+          <p class="lp-kicker">Clear ownership</p>
+          <h2>Know who owns what, and who has agreed.</h2>
+          <p class="lp-sub">Composition and recording shares per song, validated to 100%, with legal names recorded for registration. Co-writers confirm by email, so you see each answer in one place.</p>
+          <ul class="lp-checks">
+            <li>Singles, EPs and albums, with the fields distributors and societies ask for</li>
+            <li>Co-writers confirm, dispute or remove themselves, and you can send reminders</li>
+            <li>Plain-language glossary linked from the form fields</li>
+          </ul>
+          <a class="lp-btn lp-outline" data-app="/register">Try it on a release <span aria-hidden="true">&#8599;</span></a>
+        </div>
+        <div class="lp-example" aria-label="Example splits card">
+          <p class="lp-tag">Example only, not real data</p>
+          <h3>Night Bus</h3>
+          <p class="lp-ex-sub">Composition split</p>
+          <ul class="lp-ex-rows">
+            <li><span>Amina K. <small>Writer</small></span><b>50%</b><em class="lp-ok">Confirmed</em></li>
+            <li><span>Jean P. <small>Producer</small></span><b>30%</b><em class="lp-ok">Confirmed</em></li>
+            <li><span>Eric N. <small>Writer</small></span><b>20%</b><em class="lp-wait">Pending</em></li>
+          </ul>
+          <div class="lp-ex-total"><span>Total</span><b>100%</b></div>
+          <p class="lp-fine">Marked ready once everyone has confirmed.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature cards -->
+    <section class="lp-section lp-alt">
+      <div class="lp-wrap">
+        <p class="lp-kicker">What is inside</p>
+        <h2>Everything for a clean release.</h2>
         <div class="lp-grid3">
           <article class="lp-card lp-reveal"><h3>Guided release forms</h3><p>Singles, EPs and albums, with the fields distributors and collecting societies actually ask for.</p></article>
           <article class="lp-card lp-reveal"><h3>Ownership splits</h3><p>Composition and recording shares per song, validated to 100%, with legal names recorded for registration.</p></article>
-          <article class="lp-card lp-reveal"><h3>Co-writer confirmation</h3><p>Co-writers get an emailed link to confirm, dispute or remove themselves. You see each answer in one place and can send reminders.</p></article>
+          <article class="lp-card lp-reveal"><h3>Co-writer confirmation</h3><p>Co-writers get an emailed link to confirm, dispute or remove themselves. You see each answer in one place.</p></article>
           <article class="lp-card lp-reveal"><h3>Built-in glossary</h3><p>Plain-language meanings of royalties, rights and identifiers, linked from the form fields where you meet them.</p></article>
           <article class="lp-card lp-reveal"><h3>Registration guides</h3><p>Which society to join, in which country, who is licensed right now, and what to bring. Dated and sourced.</p></article>
           <article class="lp-card lp-reveal"><h3>Codes that arrive later</h3><p>Distributors issue some codes after upload. Leave them blank now and add them when they arrive.</p></article>
@@ -111,32 +160,34 @@
       </div>
     </section>
 
-    <section id="difference" class="lp-section lp-alt">
+    <!-- Who does what -->
+    <section id="difference" class="lp-section">
       <div class="lp-wrap">
-        <p class="lp-kicker">A clearer picture</p>
+        <p class="lp-kicker">A clearer model</p>
         <h2>Know who does what.</h2>
         <p class="lp-sub">Track Record sits alongside your distributor and your society. It does not replace them.</p>
         <div class="lp-vs-list">
-        <article class="lp-vs lp-reveal">
-          <h3>Delivering your music to streaming services</h3>
-          <div class="lp-vs-col lp-us"><span class="lp-vs-tag">Track Record</span><p>Does not distribute. You keep your distributor of choice.</p></div>
-          <div class="lp-vs-col"><span class="lp-vs-tag">A distributor</span><p>Delivers your recording and pays recording (master) royalties.</p></div>
-        </article>
-        <article class="lp-vs lp-reveal">
-          <h3>Collecting composition royalties</h3>
-          <div class="lp-vs-col lp-us"><span class="lp-vs-tag">Track Record</span><p>Shows which society applies and the steps to register.</p></div>
-          <div class="lp-vs-col"><span class="lp-vs-tag">A collecting society</span><p>Collects royalties on the composition, such as radio, venues and streaming performances.</p></div>
-        </article>
-        <article class="lp-vs lp-reveal">
-          <h3>Preparing accurate details</h3>
-          <div class="lp-vs-col lp-us"><span class="lp-vs-tag">Track Record</span><p>Guided metadata, splits to 100%, and co-writer confirmation.</p></div>
-          <div class="lp-vs-col"><span class="lp-vs-tag">A distributor</span><p>Expects you to arrive with metadata and splits already settled.</p></div>
-        </article>
+          <article class="lp-vs lp-reveal">
+            <h3>Delivering your music to streaming services</h3>
+            <div class="lp-vs-col lp-us"><span class="lp-vs-tag">Track Record</span><p>Does not distribute. You keep your distributor of choice.</p></div>
+            <div class="lp-vs-col"><span class="lp-vs-tag">A distributor</span><p>Delivers your recording and pays recording (master) royalties.</p></div>
+          </article>
+          <article class="lp-vs lp-reveal">
+            <h3>Collecting composition royalties</h3>
+            <div class="lp-vs-col lp-us"><span class="lp-vs-tag">Track Record</span><p>Shows which society applies and the steps to register.</p></div>
+            <div class="lp-vs-col"><span class="lp-vs-tag">A collecting society</span><p>Collects royalties on the composition, such as radio, venues and streaming performances.</p></div>
+          </article>
+          <article class="lp-vs lp-reveal">
+            <h3>Preparing accurate details</h3>
+            <div class="lp-vs-col lp-us"><span class="lp-vs-tag">Track Record</span><p>Guided metadata, splits to 100%, and co-writer confirmation.</p></div>
+            <div class="lp-vs-col"><span class="lp-vs-tag">A distributor</span><p>Expects you to arrive with metadata and splits already settled.</p></div>
+          </article>
         </div>
       </div>
     </section>
 
-    <section id="countries" class="lp-section">
+    <!-- Countries -->
+    <section id="countries" class="lp-section lp-alt">
       <div class="lp-wrap">
         <p class="lp-kicker">Registration network</p>
         <h2>Find the right society, wherever you are.</h2>
@@ -154,7 +205,8 @@
       </div>
     </section>
 
-    <section id="faq" class="lp-section lp-alt">
+    <!-- FAQ -->
+    <section id="faq" class="lp-section">
       <div class="lp-wrap lp-narrow">
         <p class="lp-kicker">FAQ</p>
         <h2>Clear answers before you start.</h2>
@@ -167,28 +219,34 @@
       </div>
     </section>
 
+    <!-- Final CTA -->
     <section class="lp-final">
       <div class="lp-wrap">
         <div class="lp-final-card">
           <h2>Start your first release</h2>
           <p>Learn the metadata while you prepare it, and leave knowing where to register.</p>
-          <div class="lp-cta"><a class="lp-btn lp-big" data-app="/register">Create a free account</a><a class="lp-btn lp-big lp-ghost" href="#how">See how it works</a></div>
+          <div class="lp-cta"><a class="lp-btn lp-big lp-on-blue" data-app="/register">Create a free account <span aria-hidden="true">&#8599;</span></a><a class="lp-btn lp-big lp-ghost-light" href="#how">See how it works</a></div>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="lp-foot">
-    <div class="lp-wrap lp-foot-in">
-      <span>Track Record</span>
-      <span class="lp-muted">General guidance, not legal or financial advice. Confirm requirements with your distributor and society.</span>
-      <ul class="lp-foot-links">
-        <li><a href="#top">Home</a></li>
-        <li><a href="#how">How it works</a></li>
-        <li><a href="#faq">FAQ</a></li>
-        <li><a href="/app/privacy">Your Privacy</a></li>
-        <li><a href="/app/terms">Terms</a></li>
-      </ul>
+    <div class="lp-wrap">
+      <div class="lp-foot-top">
+        <div>
+          <a class="lp-logo" href="#top">track record<i aria-hidden="true">.</i></a>
+          <p class="lp-muted">Release prep. Clear splits. Right society.</p>
+        </div>
+        <ul class="lp-foot-links">
+          <li><a href="#top">Home</a></li>
+          <li><a href="#how">How it works</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="/app/privacy">Your Privacy</a></li>
+          <li><a href="/app/terms">Terms</a></li>
+        </ul>
+      </div>
+      <p class="lp-muted lp-disclaimer">General guidance, not legal or financial advice. Confirm requirements with your distributor and society.</p>
     </div>
   </footer>
 
