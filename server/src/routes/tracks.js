@@ -5,6 +5,7 @@ const {
 } = require('../controllers/trackController');
 
 const { uploadAudio, downloadAudio } = require('../controllers/audioFileController');
+const { analyseTrack, deleteFeatures, analyseLimiter } = require('../controllers/audioFeatureController');
 const collaboratorRoutes = require('./collaborators');
 
 const router = express.Router({ mergeParams: true });
@@ -31,5 +32,7 @@ router.delete('/:trackId', deleteTrack);
 router.put('/:trackId/audio/file', uploadAudio);
 router.get('/:trackId/audio/file', downloadAudio);
 router.delete('/:trackId/audio', deleteAudio);
+router.post('/:trackId/audio-features', analyseLimiter, analyseTrack);
+router.delete('/:trackId/audio-features', deleteFeatures);
 
 module.exports = router;

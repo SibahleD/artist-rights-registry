@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { BarList, LineChart, type Series } from '../components/Charts'
+import PlaylistProjections from '../components/PlaylistProjections'
 import StreamImport from '../components/StreamImport'
 import { AuthImage, vinylFallback } from '../components/files'
 import { Collapsible, ConfirmModal, ErrorBox, fmtDateTime, Hint, Loading, Modal } from '../components/ui'
@@ -343,6 +344,7 @@ export default function Performance() {
           ) : (
             <ReleasePicker lines={view.lines} q={q} setQ={setQ} sel={sel} setSel={setSel} />
           )}
+          {view.lines.length > 0 && <PlaylistProjections lines={view.lines} sel={sel} />}
           {noIsrc.length > 0 && <Hint>{noIsrc.length} song{noIsrc.length === 1 ? ' has' : 's have'} no ISRC, so streams cannot be matched to {noIsrc.length === 1 ? 'it' : 'them'}. Add the ISRC on the song's page. Release totals add up their songs.</Hint>}
 
           {view.unmatched.length > 0 && (

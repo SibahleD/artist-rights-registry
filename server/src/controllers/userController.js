@@ -114,6 +114,10 @@ async function updateMe(req, res) {
         if (err.code === '23505' && err.constraint === 'uq_users_username') {
             return res.status(409).json({ error: 'Username already taken.' });
         }
+        // Same rule and wording as register (migration 018). The unique index ignores case and surrounding spaces.
+        if (err.code === '23505' && err.constraint === 'uq_users_artist_name') {
+            return res.status(409).json({ error: 'That artist name is already taken. Add something to tell it apart, such as your city or a number.' });
+        }
         console.error('updateMe error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }

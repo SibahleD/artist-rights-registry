@@ -5,7 +5,7 @@ export interface StatRow { isrc: string; platform: string; period: string; strea
 export interface CatalogTrack {
   id: string; title: string; isrc: string | null; track_number: number
   release_id: string; release_title: string; release_type: 'single' | 'ep' | 'album'
-  artwork_id?: string | null
+  artwork_id?: string | null; has_audio?: boolean
 }
 export interface PerfData { stats: StatRow[]; tracks: CatalogTrack[]; first_period: string | null; last_period: string | null }
 
@@ -59,7 +59,7 @@ export function sumBy(rows: StatRow[], key: (r: StatRow) => string): Map<string,
 
 export const ranked = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 
-export interface TrackLine { id: string; title: string; isrc: string | null; streams: number; trackNumber: number }
+export interface TrackLine { id: string; title: string; isrc: string | null; streams: number; trackNumber: number; hasAudio: boolean }
 export interface ReleaseLine { id: string; title: string; type: string; artworkId: string | null; streams: number; tracks: TrackLine[] }
 
 /** One line per release, with each song's streams and the release total made by adding its songs. */
@@ -70,7 +70,7 @@ export function releaseLines(tracks: CatalogTrack[], rows: StatRow[]): ReleaseLi
     let rel = map.get(t.release_id)
     if (!rel) { rel = { id: t.release_id, title: t.release_title, type: t.release_type, artworkId: t.artwork_id ?? null, streams: 0, tracks: [] }; map.set(t.release_id, rel) }
     const streams = t.isrc ? byIsrc.get(t.isrc) ?? 0 : 0
-    rel.tracks.push({ id: t.id, title: t.title, isrc: t.isrc, streams, trackNumber: t.track_number })
+    rel.tracks.push({ id: t.id, title: t.title, isrc: t.isrc, streams, trackNumber: t.track_number, hasAudio: !!t.has_audio })
     rel.streams += streams
   }
   return [...map.values()]

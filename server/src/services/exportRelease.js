@@ -6,7 +6,7 @@ const { copyrightLine } = require('../lib/copyright');
 // so internal ids, owner ids and co-writer emails can never leak by accident when a column is added.
 const RELEASE_KEYS = ['title', 'release_type', 'album_artist', 'genre', 'release_date', 'upc', 'p_line', 'c_line',
     'label_name', 'language', 'status', 'created_at', 'ready_at',
-    'album_version', 'is_compilation', 'has_lyrics', 'explicit', 'secondary_genre',
+    'album_version', 'is_compilation', 'has_lyrics', 'has_cover_versions', 'explicit', 'secondary_genre',
     'originally_released', 'preorder_date', 'sales_start_date'];
 const TRACK_KEYS = ['track_number', 'title', 'composition_title', 'artist_name', 'genre', 'isrc', 'iswc',
     'duration_seconds', 'explicit', 'composition_copyright_year', 'composition_copyright',

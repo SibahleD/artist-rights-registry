@@ -1,8 +1,25 @@
-node_modules/
+ Secrets: never commit. Commit the .env.example files instead.
 .env
-.env.local
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
 dist/
+dist-ssr/
+
+# Uploaded audio (keep the folder, not the files)
 server/uploads/*
 !server/uploads/.gitkeep
+
+# Archives and logs
+*.zip
 *.log
+npm-debug.log*
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
 .DS_Store
+*.local

@@ -260,6 +260,9 @@ export default function ReleaseView() {
         {r.secondary_genre && <div><span className="muted">Second genre</span><br />{r.secondary_genre}</div>}
         {r.album_version && <div><span className="muted">Album version</span><br />{r.album_version}</div>}
         {r.is_compilation && <div><span className="muted">Compilation</span><br />Yes</div>}
+        <div><span className="muted">Cover versions</span><br />
+          {r.has_cover_versions == null ? <span className="muted">Not answered</span> : (r.has_cover_versions ? 'Yes' : 'No')}
+        </div>
         <div><span className="muted">Language</span><br />{languageName(r.language) || '—'}</div>
         <div><span className="muted">Created</span><br />{fmtDateTime(r.created_at)}</div>
         <div><span className="muted">Marked ready</span><br />{r.ready_at ? fmtDateTime(r.ready_at) : '—'}</div>

@@ -5,7 +5,7 @@ const storage = require('../services/storage');
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
     upc, p_line, c_line, label_name, language, status, created_at, ready_at, released_at, unconfirmed_acknowledged_at,
-    album_version, is_compilation, has_lyrics, explicit, secondary_genre,
+    album_version, is_compilation, has_lyrics, has_cover_versions, explicit, secondary_genre,
     originally_released::text AS originally_released, preorder_date::text AS preorder_date, sales_start_date::text AS sales_start_date,
     (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
 const { readinessChecks, readinessProblems, errorsOf } = require('../services/readiness');
@@ -85,10 +85,11 @@ const FIELDS = {
     cLine:       { column: 'c_line',       validate: optionalText('C line', 200) },
     labelName:   { column: 'label_name',   validate: optionalText('Label name', 200) },
     language:    { column: 'language',     validate: optionalLanguage('Language') },
-    // Distribution details (migration 017). All optional.
+
     albumVersion:       { column: 'album_version',       validate: optionalText('Album version', 200) },
     isCompilation:      { column: 'is_compilation',      validate: requiredBool('Compilation') },
     hasLyrics:          { column: 'has_lyrics',          validate: optionalBool('Lyrics') },
+    hasCoverVersions:   { column: 'has_cover_versions',  validate: optionalBool('Cover versions') },
     explicit:           { column: 'explicit',            validate: optionalExplicit },
     secondaryGenre:     { column: 'secondary_genre',     validate: optionalText('Secondary genre', 100) },
     originallyReleased: { column: 'originally_released', validate: optionalDate('Originally released') },
@@ -115,7 +116,6 @@ async function findOwned(id, ownerId) {
     return rows[0];
 }
 
-// The same checks markReady runs, without trying to mark anything ready.
 async function getReadiness(req, res) {
     try {
         const release = await findOwned(req.params.id, req.user.id);
@@ -129,7 +129,6 @@ async function getReadiness(req, res) {
     }
 }
 
-// One whitelisted document with the whole release. No internal ids and no co-writer emails.
 async function exportRelease(req, res) {
     try {
         const release = await findOwned(req.params.id, req.user.id);
@@ -234,7 +233,7 @@ async function updateRelease(req, res) {
         if (existing.status !== 'draft') {
             return res.status(409).json({ error: 'Ready releases are locked. Revert to draft to edit.' });
         }
-        // Check the dates as they will be after this change, so a partial update is compared with what is already saved.
+        
         const dateProblem = checkReleaseDates({ ...existing, ...data });
         if (dateProblem) return res.status(400).json({ error: dateProblem });
 
@@ -255,8 +254,6 @@ async function updateRelease(req, res) {
     }
 }
 
-// The distributor generates the UPC after the release has been sent, so this works on a ready release too
-// (updateRelease refuses those). It changes nothing but the UPC. Used by the browser extension's "Capture UPC".
 async function setUpc(req, res) {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const parsed = optionalUpc(body.upc);
@@ -300,7 +297,6 @@ async function markReady(req, res) {
     }
 }
 
-// Owner marks a ready release as live on the stores, with at least one link.
 async function markReleased(req, res) {
     try {
         const release = await findOwned(req.params.id, req.user.id);
@@ -368,7 +364,6 @@ async function deleteRelease(req, res) {
             return res.status(409).json({ error: 'Only draft releases can be deleted. Revert to draft first.' });
         }
 
-        // Remember the stored audio files, so they can be removed once the rows are gone.
         const keys = (await pool.query(
             `SELECT f.storage_key FROM audio_files f JOIN tracks t ON t.id = f.track_id WHERE t.release_id = $1`,
             [release.id]

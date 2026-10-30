@@ -24,9 +24,12 @@ function landing(): Plugin {
   }
   // The app builds into dist/app; the landing page goes in dist/, so dist/ is the folder to deploy.
   let site = ''
+  let building = false
   return {
     name: 'landing-at-root',
-    configResolved(c) { site = path.resolve(c.root, 'dist') },
+    configResolved(c) { site = path.resolve(c.root, 'dist'); building = c.command === 'build' },
+    // Start every build from an empty dist/, so old files (style.css, src/ copies, old hashes) cannot linger.
+    buildStart() { if (building) fs.rmSync(site, { recursive: true, force: true }) },
     configureServer(server) { server.middlewares.use(serve(src)) },
     configurePreviewServer(server) { server.middlewares.use(serve(site)) },
     closeBundle() { if (fs.existsSync(src)) fs.cpSync(src, site, { recursive: true }) },

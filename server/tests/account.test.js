@@ -23,7 +23,16 @@ test('preferences: defaults fill gaps and ignore corrupt stored values', () => {
     assert.equal(p.notify_approvals, true);       // corrupt value falls back to the default
     assert.equal(p.analytics_opt_in, false);
     assert.equal('junk' in p, false);
-    assert.deepEqual(withDefaults(undefined), { analytics_opt_in: false, play_counts_opt_in: false, notify_disputes: true, notify_approvals: true });
+    assert.deepEqual(withDefaults(undefined), { analytics_opt_in: false, play_counts_opt_in: false, notify_emails: false, notify_disputes: true, notify_approvals: true });
+});
+
+test('preferences: notify_emails is off by default and must be a boolean', () => {
+    assert.equal(withDefaults(undefined).notify_emails, false);
+    assert.equal(withDefaults({}).notify_emails, false);
+    assert.equal(withDefaults({ notify_emails: true }).notify_emails, true);
+    assert.equal(withDefaults({ notify_emails: 'yes' }).notify_emails, false);   // corrupt value falls back to off
+    assert.deepEqual(validatePreferences({ notify_emails: true }).value, { notify_emails: true });
+    assert.ok(validatePreferences({ notify_emails: 'on' }).error);
 });
 
 test('password: length and byte limits match registration', () => {
@@ -58,4 +67,16 @@ test('legal name: split on the last space, blanks and single words handled', () 
     assert.deepEqual(splitLegalName(''), { first: null, last: null });
     assert.deepEqual(splitLegalName(undefined), { first: null, last: null });
     assert.deepEqual(splitLegalName(42), { first: null, last: null });
+});
+
+test('optional email: nothing is sent for a new account until notify_emails is switched on', () => {
+    const { wantsOptionalEmail } = require('../src/lib/account');
+    assert.equal(wantsOptionalEmail(undefined, 'disputes'), false);
+    assert.equal(wantsOptionalEmail({}, 'approvals'), false);
+    assert.equal(wantsOptionalEmail({ notify_disputes: true, notify_approvals: true }, 'disputes'), false); // kind on, master off
+    assert.equal(wantsOptionalEmail({ notify_emails: true }, 'disputes'), true);
+    assert.equal(wantsOptionalEmail({ notify_emails: true, notify_disputes: false }, 'disputes'), false);
+    assert.equal(wantsOptionalEmail({ notify_emails: true, notify_approvals: false }, 'approvals'), false);
+    assert.equal(wantsOptionalEmail({ notify_emails: 'yes' }, 'disputes'), false);   // corrupt value
+    assert.equal(wantsOptionalEmail({ notify_emails: true }, 'marketing'), false);   // unknown kind
 });

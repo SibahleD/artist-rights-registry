@@ -1,14 +1,9 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
+const { makeLimiter } = require('../rateLimits');
 const { getNotice, respond } = require('../controllers/publicNoticeController');
 
 const router = express.Router();
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
-    limit: Number(process.env.NOTICE_RATE_LIMIT) || 30,
-    standardHeaders: true,
-    message: { error: 'Too many requests, please try again later.' },
-});
+const limiter = makeLimiter('notice');
 
 router.get('/:token', limiter, getNotice);
 router.post('/:token/respond', limiter, respond);

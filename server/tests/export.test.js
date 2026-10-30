@@ -1,11 +1,9 @@
-// These tests use no database. The pool is created lazily, so a placeholder lets the modules load without one.
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { shapeExport, findIdKeys } = require('../src/services/exportRelease');
 const { copyrightLine } = require('../src/lib/copyright');
 
-// Rows as they come from the database, deliberately full of ids and an email.
 const rows = () => ({
   release: { id: 'r1', owner_id: 'u1', artwork_id: 'm1', title: 'Air It Out', release_type: 'single', album_artist: 'Kenny TL',
     genre: 'Hip-hop', release_date: '2026-12-01', upc: null, p_line: null, c_line: null, label_name: null, language: 'en',
@@ -106,4 +104,14 @@ test('a song with no featured artists has an empty list and a plain display titl
   const { tracks } = shapeExport(rows());
   assert.deepEqual(tracks[0].featured_artists, []);
   assert.equal(tracks[0].display_title, 'Air It Out');
+});
+
+test('has_cover_versions is exported as a boolean and defaults to null when unanswered', () => {
+  const r = rows();
+  r.release.has_cover_versions = true;
+  const yes = shapeExport(r).release.has_cover_versions;
+  assert.equal(yes, true);
+
+  const r2 = rows();
+  assert.equal(shapeExport(r2).release.has_cover_versions, null);
 });

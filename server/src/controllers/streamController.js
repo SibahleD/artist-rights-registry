@@ -1,5 +1,6 @@
 const pool = require('../db/pool');
 const { parseImport, normalizePeriod } = require('../lib/streams');
+const { parseFormat, toCsv, shapeRows, exportFileName } = require('../lib/streamExport');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_STAT_ROWS = 50000;
@@ -60,7 +61,8 @@ async function getStreams(req, res) {
                  ORDER BY period, isrc, platform LIMIT ${MAX_STAT_ROWS + 1}`, [uid, from, to]),
             pool.query(
                 `SELECT t.id, t.title, t.isrc, t.track_number, r.id AS release_id, r.title AS release_title, r.release_type,
-                        (SELECT m.id FROM media m WHERE m.release_id = r.id AND m.kind = 'artwork') AS artwork_id
+                        (SELECT m.id FROM media m WHERE m.release_id = r.id AND m.kind = 'artwork') AS artwork_id,
+                        EXISTS (SELECT 1 FROM audio_files a WHERE a.track_id = t.id) AS has_audio
                  FROM tracks t JOIN releases r ON r.id = t.release_id
                  WHERE r.owner_id = $1 ORDER BY r.title, t.track_number`, [uid]),
             pool.query(
@@ -70,6 +72,38 @@ async function getStreams(req, res) {
         if (stats.rows.length > MAX_STAT_ROWS) return res.status(413).json({ error: 'That range has too many figures. Choose a shorter date range.' });
         return res.json({ stats: stats.rows, tracks: tracks.rows, first_period: span.rows[0].first, last_period: span.rows[0].last });
     } catch (err) { return fail(res, err, 'getStreams'); }
+}
+
+// GET /api/streams/export?format=json|csv&from=YYYY-MM&to=YYYY-MM
+// The artist's own play counts, one row per track, platform and month, sent as a file download.
+// Not tied to the sharing toggles: those control what the platform collects, not what an artist can take out.
+async function exportStreams(req, res) {
+    const f = parseFormat(req.query.format);
+    if (f.error) return res.status(400).json({ error: f.error });
+    const from = req.query.from ? normalizePeriod(String(req.query.from), new Date(8.64e15)) : null;
+    const to = req.query.to ? normalizePeriod(String(req.query.to), new Date(8.64e15)) : null;
+    if ((req.query.from && !from) || (req.query.to && !to)) return res.status(400).json({ error: 'Dates must look like 2026-09.' });
+    try {
+        const { rows } = await pool.query(
+            `SELECT to_char(s.period, 'YYYY-MM-DD') AS period, s.platform, s.isrc, t.title AS track_title,
+                    r.title AS release_title, s.streams::float8 AS streams
+             FROM stream_stats s
+             LEFT JOIN LATERAL (
+                 SELECT t2.title, t2.release_id FROM tracks t2 JOIN releases r2 ON r2.id = t2.release_id
+                 WHERE t2.isrc = s.isrc AND r2.owner_id = s.user_id ORDER BY t2.created_at LIMIT 1
+             ) t ON true
+             LEFT JOIN releases r ON r.id = t.release_id
+             WHERE s.user_id = $1 AND ($2::date IS NULL OR s.period >= $2) AND ($3::date IS NULL OR s.period <= $3)
+             ORDER BY s.period, s.isrc, s.platform LIMIT ${MAX_STAT_ROWS + 1}`, [req.user.id, from, to]);
+        if (rows.length > MAX_STAT_ROWS) return res.status(413).json({ error: 'That range has too many figures. Choose a shorter date range.' });
+        const data = shapeRows(rows);
+        res.setHeader('Content-Disposition', `attachment; filename="${exportFileName(f.format)}"`);
+        if (f.format === 'csv') {
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            return res.send(toCsv(data));
+        }
+        return res.json({ exported_at: new Date().toISOString(), from, to, rows: data });
+    } catch (err) { return fail(res, err, 'exportStreams'); }
 }
 
 async function listImports(req, res) {
@@ -100,4 +134,4 @@ async function deleteImport(req, res) {
     } finally { client.release(); }
 }
 
-module.exports = { importStreams, getStreams, listImports, deleteImport };
+module.exports = { importStreams, getStreams, exportStreams, listImports, deleteImport };

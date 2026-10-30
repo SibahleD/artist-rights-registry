@@ -1,16 +1,11 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
+const { makeLimiter } = require('../rateLimits');
 const { register, login, logout, verifyEmail, resendVerification, forgotPassword, resetPassword } = require('../controllers/authController');
 const { authToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: Number(process.env.AUTH_RATE_LIMIT) || 20,
-    standardHeaders: true,
-    message: 'Too many requests, please try again later.',
-})
+const authLimiter = makeLimiter('auth');
 
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);

@@ -24,12 +24,11 @@ import SelectOrOther from '../components/SelectOrOther'
 import { featuredCredit, featuredNames, toCollaboratorInput } from '../lib/collab'
 import { useGlowField } from '../components/useGlowField'
 
-// The form is split into two parts, each with its own tabs: the release itself, and one song at a time.
 type Part = 'release' | 'songs'
 type ReleaseSection = 'info' | 'cover' | 'dates' | 'artists'
 const RELEASE_TABS: [ReleaseSection, string][] = [['info', 'General info'], ['cover', 'Cover art'], ['dates', 'Dates and distribution'], ['artists', 'Artists and credits']]
 const SONG_TABS: [SongSection, string][] = [['general', 'General info'], ['audio', 'Audio file'], ['publishing', 'Publishing info'], ['credits', 'Credits'], ['splits', 'Royalty splits']]
-// Which tab each ?focus= field from the readiness checklist lives on, so its link opens the right one.
+
 const FIELD_HOME: Record<string, [Part, ReleaseSection | SongSection]> = {
   'release-date': ['release', 'info'], upc: ['release', 'info'],
   'cover-art': ['release', 'cover'],
@@ -41,7 +40,6 @@ const FIELD_HOME: Record<string, [Part, ReleaseSection | SongSection]> = {
   'track-splits': ['songs', 'splits'],
 }
 
-// A new song starts with this year and the owner's legal name in both copyright lines, e.g. "© 2026 Jane Doe". Saved songs are never touched.
 const emptyTrack = (owner: CollaboratorInput): TrackForm => ({
   title: '', compositionTitle: '', artistName: '', genre: '', isrc: '', iswc: '',
   durationSeconds: null, explicit: '',
@@ -68,6 +66,7 @@ const toTrackInput = (t: TrackForm): TrackInput => ({
   versionTitle: t.versionTitle || null,
   language: t.language || null,
   hasLyrics: yesNoToBool(t.hasLyrics),
+
   previewStartSeconds: (() => { const p = parseStartTime(t.previewStart); return p.ok ? p.seconds : null })(),
 })
 
@@ -105,15 +104,14 @@ const fromServerTrack = (t: Track, collabs: Collaborator[], owner: CollaboratorI
     : [{ ...owner }],
 })
 
-// Unless the music came out earlier, "originally released" is the release date. It can't be later than the sales start date.
 const defaultOriginal = (releaseDate: string, salesStart: string) =>
   releaseDate && salesStart && salesStart < releaseDate ? salesStart : releaseDate
 
 export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const { id } = useParams()
   const [params] = useSearchParams()
-  const wantedTrack = Number(params.get('track')) || 0   // from the readiness checklist's "Open" links
-  const focusField = params.get('focus')   // which field the checklist link points at; it glows until touched
+  const wantedTrack = Number(params.get('track')) || 0
+  const focusField = params.get('focus') 
   const { user } = useAuth()
   const nav = useNavigate()
 
@@ -128,7 +126,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const [form, setForm] = useState<ReleaseForm | null>(id ? null : {
     releaseType: mode === 'song' ? 'single' : 'album', title: '', albumArtist: user?.artist_name ?? '',
     releaseDate: '', genre: '', upc: '', labelName: '', language: '',
-    albumVersion: '', isCompilation: false, hasLyrics: '', explicit: '', secondaryGenre: '',
+    albumVersion: '', isCompilation: false, hasLyrics: '', hasCoverVersions: null, explicit: '', secondaryGenre: '',
     originallyReleased: '', preorderDate: '', salesStartDate: '', primaryArtists: [], credits: [],
     tracks: [emptyTrack(owner)],
   })
@@ -138,31 +136,30 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const [part, setPart] = useState<Part>(home?.[0] ?? 'release')
   const [relTab, setRelTab] = useState<ReleaseSection>(home?.[0] === 'release' ? (home[1] as ReleaseSection) : 'info')
   const [songTab, setSongTab] = useState<SongSection>(home?.[0] === 'songs' ? (home[1] as SongSection) : 'general')
-  // The checklist glow stops once the person moves around by hand.
+  
   const [glow, setGlow] = useState(focusField)
   useGlowField(glow, form !== null, [active, part, relTab, songTab])
   const [removed, setRemoved] = useState<string[]>([])
-  // Off for new music: "originally released" is then filled in from the release date when saving. A checklist link to that field turns it on.
+  
   const [rereleased, setRereleased] = useState(focusField === 'originally-released')
   const [err, setErr] = useState<{ error: string; details?: string[] } | null>(null)
   const [busy, setBusy] = useState(false)
   const [artworkFile, setArtworkFile] = useState<File | undefined>()
-  const [artworkId, setArtworkId] = useState<string | null>(null)   // cover already stored on the server
+  const [artworkId, setArtworkId] = useState<string | null>(null)
   const [artworkCleared, setArtworkCleared] = useState(false)
-  const [artChecked, setArtChecked] = useState(false)   // "I have checked my cover art": a reminder for this visit, not saved
+  const [artChecked, setArtChecked] = useState(false) 
   const [usageKey, setUsageKey] = useState(0)
   const usage = useUsage(usageKey)
 
-  // Unsaved-changes tracking: compare against a snapshot taken once the form has loaded.
   const snapshot = form ? JSON.stringify([form, removed, !!artworkFile, artworkCleared]) : null
   const [baseline, setBaseline] = useState<string | null>(null)
   useEffect(() => { if (snapshot && baseline === null) setBaseline(snapshot) }, [snapshot, baseline])
   const dirty = snapshot !== null && baseline !== null && snapshot !== baseline
-  // Saving from the unsaved-changes modal must not navigate on its own: the guard then carries on to wherever the person was going.
+
   const { goBack, modal: backModal, backButton, allowLeave } = useBackGuard({
     dirty, onSave: () => submit({ navigate: false }), saveLabel: 'Save',
   })
-  const [deleting, setDeleting] = useState<number | null>(null)   // index of the song waiting for a delete confirmation
+  const [deleting, setDeleting] = useState<number | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -188,6 +185,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         albumVersion: release.album_version ?? '',
         isCompilation: !!release.is_compilation,
         hasLyrics: boolToYesNo(release.has_lyrics),
+        hasCoverVersions: release.has_cover_versions ?? null,
         explicit: release.explicit ?? '',
         secondaryGenre: release.secondary_genre ?? '',
         originallyReleased: release.originally_released ?? '',
@@ -209,17 +207,15 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   const showRelease = (t: ReleaseSection) => part === 'release' && relTab === t
   const pickPart = (p: Part) => { setGlow(null); setPart(p) }
   const setTrack = (i: number, t: TrackForm) => setForm({ ...form, tracks: form.tracks.map((x, j) => (j === i ? t : x)) })
-  // On a single the song title sits at the top with the release details. The composition title follows it until it is edited.
+  
   const setSongTitle = (v: string) => {
     const t = form.tracks[0]
     setTrack(0, { ...t, title: v, compositionTitle: !t.compositionTitle || t.compositionTitle === t.title ? v : t.compositionTitle })
   }
-  // What is checked and saved: the typed date for a re-release, otherwise the release date.
+ 
   const originallyReleased = rereleased ? form.originallyReleased : defaultOriginal(form.releaseDate, form.salesStartDate)
   const checkForm = { ...form, originallyReleased }
 
-  // Brings the saved featured credits in line with the Featuring tags, without touching anyone else's splits.
-  // A featured artist who already has a share, or who has confirmed it, is kept: only the Splits page can take them off.
   async function syncFeatured(rid: string, t: TrackForm): Promise<string> {
     const lc = (x: string) => x.toLowerCase()
     const { collaborators } = await api<{ collaborators: Collaborator[] }>(`/releases/${rid}/tracks/${t.id}/collaborators`)
@@ -270,6 +266,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         albumVersion: isSong ? null : form.albumVersion.trim() || null,
         isCompilation: isSong ? false : form.isCompilation,
         hasLyrics: yesNoToBool(isSong ? tracks[0]?.hasLyrics ?? '' : form.hasLyrics),
+        hasCoverVersions: isSong ? null : form.hasCoverVersions,
         explicit: (isSong ? tracks[0]?.explicit : form.explicit) || null,
         secondaryGenre: form.secondaryGenre.trim() || null,
         originallyReleased: originallyReleased || null,
@@ -487,6 +484,13 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
             <select value={form.isCompilation ? 'yes' : 'no'} onChange={(e) => setForm({ ...form, isCompilation: e.target.value === 'yes' })}>
               <option value="no">No</option><option value="yes">Yes, songs by different artists</option>
             </select>
+          </label>}
+          {!isSong && <label>Does the release contain cover versions?
+            <select value={form.hasCoverVersions === null ? '' : form.hasCoverVersions ? 'yes' : 'no'}
+              onChange={(e) => setForm({ ...form, hasCoverVersions: e.target.value === '' ? null : e.target.value === 'yes' })}>
+              <option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option>
+            </select>
+            <small className="hint">Cover versions are songs written by someone else. If any song is a cover, answer Yes.</small>
           </label>}
           {!isSong && <label>Does the release have lyrics?
             <select value={form.hasLyrics} onChange={(e) => setForm({ ...form, hasLyrics: e.target.value as ReleaseForm['hasLyrics'] })}>

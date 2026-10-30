@@ -220,10 +220,10 @@ function DeleteCard() {
   )
 }
 
-function Toggle({ label, hint, checked, onChange }: { label: string; hint?: ReactNode; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ label, hint, checked, onChange, disabled }: { label: string; hint?: ReactNode; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <label className="pref">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <div className="pref-text">
         <p className="pref-title">{label}</p>
         {hint && <p className="pref-hint">{hint}</p>}
@@ -247,21 +247,41 @@ function PreferencesTab() {
     })
   }
 
+  const downloadCounts = (format: 'csv' | 'json') => void s.run(async () => {
+    const blob = await fetchBlob(`/streams/export?format=${format}`)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `play-counts-${new Date().toISOString().slice(0, 10)}.${format}`; a.click()
+    URL.revokeObjectURL(url)
+    return 'Downloaded.'
+  })
+
   return (
     <div className="stack">
       <section className="card stack tight">
         <h4>Sharing</h4>
         <Toggle label="Include me in play counts" checked={prefs.play_counts_opt_in} onChange={(v) => set({ play_counts_opt_in: v })}
-          hint="Off by default. Takes effect when play counts are added." />
+          hint="Off by default. When on, the number of plays your tracks get is counted and kept with your account. You can download these figures below." />
         <Toggle label="Include my activity in platform analytics" checked={prefs.analytics_opt_in} onChange={(v) => set({ analytics_opt_in: v })}
-          hint="Off by default. Takes effect when analytics are added." />
+          hint="Off by default. When on, your activity in this app (for example which pages you use) is included in platform-wide usage statistics. Nothing is shared outside Track Record." />
       </section>
 
       <section className="card stack tight">
         <h4>Email notifications</h4>
-        <Toggle label="Split disputes" checked={prefs.notify_disputes} onChange={(v) => set({ notify_disputes: v })} />
-        <Toggle label="Approvals from co-writers" checked={prefs.notify_approvals} onChange={(v) => set({ notify_approvals: v })} />
-        <Hint>Your choice is saved now and applies once these emails are switched on. Browser notifications are not available yet.</Hint>
+        <Toggle label="Send me notification emails" checked={prefs.notify_emails} onChange={(v) => set({ notify_emails: v })}
+          hint="Off by default. Nothing optional is emailed to you until you switch this on. Emails about your account and security (verification, password reset, email or password changes) are always sent." />
+        <Toggle label="Split disputes" disabled={!prefs.notify_emails} checked={prefs.notify_disputes} onChange={(v) => set({ notify_disputes: v })} />
+        <Toggle label="Approvals from co-writers" disabled={!prefs.notify_emails} checked={prefs.notify_approvals} onChange={(v) => set({ notify_approvals: v })} />
+        <Hint>Browser notifications are not available yet.</Hint>
+      </section>
+
+      <section className="card stack tight">
+        <h4>Download your play counts</h4>
+        <Hint>Your own figures, one row per track, platform and month. Choose CSV for a spreadsheet or JSON for other tools.</Hint>
+        <div className="row actions">
+          <button type="button" className="ghost" disabled={s.busy} onClick={() => downloadCounts('csv')}>Download CSV</button>
+          <button type="button" className="ghost" disabled={s.busy} onClick={() => downloadCounts('json')}>Download JSON</button>
+        </div>
       </section>
       <div className="row actions"><Msg n={s.note} /></div>
     </div>

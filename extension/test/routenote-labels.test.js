@@ -1,5 +1,3 @@
-// Checks routenote.js against the field wording RouteNote publishes in its Upload Guide (support.routenote.com).
-// No dependencies:  node extension/test/routenote-labels.test.js
 const fs = require('fs'), path = require('path'), assert = require('assert')
 const profile = new Function(fs.readFileSync(path.join(__dirname, '..', 'routenote.js'), 'utf8') + '; return ROUTENOTE_PROFILE')()
 const hits = (spec, label) => new RegExp(spec.re, 'i').test(label) && !(spec.not && new RegExp(spec.not, 'i').test(label))
@@ -25,4 +23,12 @@ test('explicit options cover explicit, non-explicit and cleaned', () => {
 test('"Add Artist" button is recognised', () => {
   assert.ok(opt(profile.lists.artists.add, 'Add Artist'))
 })
+test('cover versions radio matches the question and both answers', () => {
+  const c = profile.choices.hasCoverVersions;
+  assert.ok(c, 'hasCoverVersions is missing from the profile');
+  assert.match('Does this release contain cover versions?', c.group.re);
+  assert.match('yes', c.options.yes);
+  assert.match('No', c.options.no);
+  assert.doesNotMatch('yes', c.options.no);
+});
 console.log(`\n${n} tests passed`)

@@ -4,6 +4,9 @@
 const PREFERENCE_KEYS = {
     analytics_opt_in: { check: (v) => typeof v === 'boolean', def: false, msg: 'Analytics must be on or off.' },
     play_counts_opt_in: { check: (v) => typeof v === 'boolean', def: false, msg: 'Play counts must be on or off.' },
+    // Master switch for every optional email. Off by default. Account-security emails
+    // (verification, password reset, email change) are never gated by it.
+    notify_emails: { check: (v) => typeof v === 'boolean', def: false, msg: 'Notification emails must be on or off.' },
     notify_disputes: { check: (v) => typeof v === 'boolean', def: true, msg: 'Dispute emails must be on or off.' },
     notify_approvals: { check: (v) => typeof v === 'boolean', def: true, msg: 'Approval emails must be on or off.' },
 };
@@ -28,6 +31,18 @@ function withDefaults(stored) {
         out[k] = stored && rule.check(stored[k]) ? stored[k] : rule.def;
     }
     return out;
+}
+
+// Optional emails to an artist (dispute and approval notices) go out only when the master switch
+// notify_emails is on AND the specific kind is on. Stored preferences are read through withDefaults,
+// so a missing or corrupt value counts as off for notify_emails. Account-security emails
+// (verification, password reset, email change, password changed) never call this.
+const OPTIONAL_EMAIL_KINDS = { disputes: 'notify_disputes', approvals: 'notify_approvals' };
+function wantsOptionalEmail(stored, kind) {
+    const key = OPTIONAL_EMAIL_KINDS[kind];
+    if (!key) return false;                       // unknown kind: never send
+    const prefs = withDefaults(stored);
+    return prefs.notify_emails === true && prefs[key] === true;
 }
 
 // Same rules as registration (bcrypt only reads the first 72 bytes).
@@ -59,4 +74,4 @@ function splitLegalName(v) {
     return i < 0 ? { first: t, last: null } : { first: t.slice(0, i), last: t.slice(i + 1) };
 }
 
-module.exports = { splitLegalName, PREFERENCE_KEYS, validatePreferences, withDefaults, validateNewPassword, normaliseEmail, tokenPredatesPasswordChange, nowSeconds };
+module.exports = { splitLegalName, PREFERENCE_KEYS, wantsOptionalEmail, validatePreferences, withDefaults, validateNewPassword, normaliseEmail, tokenPredatesPasswordChange, nowSeconds };

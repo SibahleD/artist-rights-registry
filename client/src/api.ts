@@ -9,8 +9,9 @@ export class ApiError extends Error {
 export const getToken = () => localStorage.getItem('token')
 export const setToken = (t: string | null) => (t ? localStorage.setItem('token', t) : localStorage.removeItem('token'))
 
-export async function upload<T = any>(path: string, file: File, method = 'PUT'): Promise<T> {
+export async function upload<T = any>(path: string, file: File, method = 'PUT', fields: Record<string, string> = {}): Promise<T> {
   const body = new FormData()
+  for (const [k, v] of Object.entries(fields)) body.append(k, v)
   body.append('file', file)
   let res: Response
   try {

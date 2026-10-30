@@ -1,5 +1,5 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
+const { makeLimiter } = require('../rateLimits');
 const { authToken } = require('../middleware/auth');
 const { getMe, updateMe, getUsage, listLinks, createLink, updateLink, deleteLink } = require('../controllers/userController');
 const {
@@ -13,12 +13,7 @@ const router = express.Router();
 router.use(authToken);
 
 // Password checks are the target here, so these routes get their own, tighter limit.
-const sensitiveLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: Number(process.env.AUTH_RATE_LIMIT) || 20,
-    standardHeaders: true,
-    message: { error: 'Too many attempts, please try again later.' },
-});
+const sensitiveLimiter = makeLimiter('account');
 
 router.get('/me', getMe);
 router.patch('/me', updateMe);

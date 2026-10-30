@@ -14,11 +14,12 @@ export type AudioFormat = (typeof AUDIO_FORMATS)[number]
 export interface Preferences {
   analytics_opt_in: boolean
   play_counts_opt_in: boolean
+  notify_emails: boolean
   notify_disputes: boolean
   notify_approvals: boolean
 }
 export const DEFAULT_PREFERENCES: Preferences = {
-  analytics_opt_in: false, play_counts_opt_in: false, notify_disputes: true, notify_approvals: true,
+  analytics_opt_in: false, play_counts_opt_in: false, notify_emails: false, notify_disputes: true, notify_approvals: true,
 }
 
 export interface User {
@@ -58,10 +59,10 @@ export interface Release {
   c_line: string | null
   label_name?: string | null
   language?: string | null
-  // Distribution details (migration 017). All optional.
   album_version?: string | null
   is_compilation?: boolean
   has_lyrics?: boolean | null
+  has_cover_versions: boolean | null
   explicit?: ExplicitValue | null
   secondary_genre?: string | null
   originally_released?: string | null   // YYYY-MM-DD
@@ -69,13 +70,13 @@ export interface Release {
   sales_start_date?: string | null      // YYYY-MM-DD
   status: ReleaseStatus
   created_at: string
-  ready_at: string | null
-  released_at?: string | null          // set once the release is live on the stores
+  ready_at: string | null 
+  released_at?: string | null 
   unconfirmed_acknowledged_at?: string | null
   artwork_id?: string | null
   track_count?: number
-  pending_notices?: number              // co-writer notices still pending or disputed (list endpoint only)
-  link_count?: number                  // store links saved on the release (list endpoint only)
+  pending_notices?: number 
+  link_count?: number 
 }
 
 export interface ReleaseLink { store: string; url: string }
@@ -84,13 +85,12 @@ export interface ReadinessCheck {
   id: string
   level: 'error' | 'warn' | 'info'
   message: string
-  fix: string            // client route to fix it, e.g. /releases/:id/edit?track=2
+  fix: string 
   track?: number
 }
 
 export interface ReadinessReport { status: ReleaseStatus; canMarkReady: boolean; checks: ReadinessCheck[] }
 
-// GET /releases/:id/export. Whitelisted metadata only: no internal ids, no co-writer emails.
 export interface ReleaseExport {
   export_version: number
   exported_at: string
@@ -190,6 +190,7 @@ export interface ReleaseInput {
   albumVersion?: string | null
   isCompilation?: boolean
   hasLyrics?: boolean | null
+  hasCoverVersions?: boolean | null
   explicit?: ExplicitValue | null
   secondaryGenre?: string | null
   originallyReleased?: string | null
@@ -303,14 +304,14 @@ export interface TrackForm {
   origin: TrackOrigin
   versionTitle: string
   language: string
-  hasLyrics: YesNo             // does the song have lyrics? '' = not answered yet
-  previewStart: string         // where the store preview starts: "45" or "0:45"; '' = not set
-  credits: CreditRow[]         // producer-style credits for this song
+  hasLyrics: YesNo
+  previewStart: string
+  credits: CreditRow[]
   audio: AudioInput | null 
   audioHasFile?: boolean 
   audioFile?: File
-  featuring: string[]          // featured artists, kept as 0% performer credits
-  savedFeaturing: string[]     // what the server had when the song was loaded or last saved
+  featuring: string[]
+  savedFeaturing: string[]
   collaborators: CollaboratorInput[]
 }
 
@@ -326,13 +327,14 @@ export interface ReleaseForm {
   albumVersion: string
   isCompilation: boolean
   hasLyrics: YesNo
+  hasCoverVersions?: boolean | null
   explicit: ExplicitValue | ''
   secondaryGenre: string
   originallyReleased: string
   preorderDate: string
   salesStartDate: string
-  primaryArtists: string[]     // ordered; empty means the main artist name is used
-  credits: CreditRow[]         // producer-style credits for the whole release
+  primaryArtists: string[]
+  credits: CreditRow[]
   tracks: TrackForm[]
 }
 
@@ -348,9 +350,9 @@ export type SocietyStatus = 'planned' | 'applied' | 'registered'
 export interface UserSociety {
   id: string
   body_name: string
-  country: string              // ISO code, or INT for international options
+  country: string 
   status: SocietyStatus
-  registered_on: string | null // YYYY-MM-DD, only once registered
-  member_ref: string | null    // the artist's own member number; private to them
-  dashboard_url: string | null // the artist's own link to their member dashboard (http/https); private to them
+  registered_on: string | null 
+  member_ref: string | null
+  dashboard_url: string | null
 }

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@netlify/functions": "^6.0.3",
+    "serverless-http": "^4.0.0"
+  }
+}
