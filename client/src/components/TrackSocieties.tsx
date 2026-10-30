@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Term from './Term'
+import Flag from './Flag'
 import type { Societies } from './SocietyTracker'
 import {
   BODY_LABEL, CHECKED, COUNTRIES, INTERNATIONAL, NEXT_STEP, READY_LIST, STATUS_LABEL,
@@ -31,13 +32,14 @@ export default function TrackSocieties({ societies, onViewRegistrations }: { soc
       <section className="card stack">
         <h3>Step 1: where are you based?</h3>
         <p className="muted">Pick the country you live in or where your songs are mostly registered. We will show which body applies. Guidance last checked {CHECKED}.</p>
-        <label>Country
-          <select value={code} onChange={(e) => pick(e.target.value)}>
-            <option value="">Choose your country…</option>
-            {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-            <option value="other">Another country</option>
-          </select>
-        </label>
+        <div className="tabs" role="group" aria-label="Country">
+          {COUNTRIES.map((c) => (
+            <button key={c.code} type="button" className={`tab${code === c.code ? ' on' : ''}`} aria-pressed={code === c.code} onClick={() => pick(c.code)}>
+              <Flag code={c.code} />{c.name}
+            </button>
+          ))}
+          <button type="button" className={`tab${code === 'other' ? ' on' : ''}`} aria-pressed={code === 'other'} onClick={() => pick('other')}>Another country</button>
+        </div>
       </section>
 
       {code === 'other' && (
@@ -51,7 +53,7 @@ export default function TrackSocieties({ societies, onViewRegistrations }: { soc
         <>
           <section className="card stack">
             <div className="row between">
-              <h3>Step 2: where things stand in {country.name}</h3>
+              <h3><Flag code={country.code} /> Step 2: where things stand in {country.name}</h3>
               <span className={`badge ${country.status === 'working' ? 'confirmed' : country.status === 'none' ? 'disputed' : 'pending'}`}>
                 {STATUS_LABEL[country.status]}
               </span>

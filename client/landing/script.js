@@ -16,16 +16,6 @@ document.querySelectorAll('[data-app]').forEach((a) => {
   }
 })
 
-// Light / dark theme, shared with the app (same localStorage key)
-const root = document.documentElement
-const themeBtn = document.querySelector('.lp-theme')
-themeBtn?.addEventListener('click', () => {
-  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
-  root.setAttribute('data-theme', next)
-  try { localStorage.setItem('theme', next) } catch { /* storage unavailable */ }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0a1020' : '#f1f5fc')
-})
-
 const btn = document.querySelector('.lp-menu-btn')
 const menu = document.getElementById('menu')
 btn.addEventListener('click', () => {
