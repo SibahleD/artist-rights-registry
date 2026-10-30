@@ -32,7 +32,7 @@ export default function SongView() {
   }, [releaseId, trackId])
 
   if (err) return <ErrorBox error={err} />
-  if (!d) return <Loading />
+  if (!d) return <Loading variant="detail" />
   const { release: r, track: t, collaborators } = d
   const backTo = r.release_type === 'single' ? '/discography' : `/releases/${r.id}`
 

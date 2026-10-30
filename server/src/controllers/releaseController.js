@@ -159,7 +159,7 @@ async function createRelease(req, res) {
              SELECT ${placeholders.join(', ')}
              WHERE (SELECT count(*) FROM releases WHERE owner_id = $1) < $${values.length + 1}
              RETURNING ${RELEASE_COLUMNS}`,
-            [...values, limits.enabled ? limits.maxReleasesPerUser : 1e9]
+            [...values, limits.enabled && limits.maxReleasesPerUser > 0 ? limits.maxReleasesPerUser : 1e9]
         );
         if (rows.length === 0) {
             return res.status(409).json({ error: `You've reached the test limit of ${limits.maxReleasesPerUser} releases. Delete a draft you no longer need to add another.` });

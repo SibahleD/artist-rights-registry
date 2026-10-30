@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id)
 const DEFAULT_API = 'http://localhost:4000/api'
-let API = DEFAULT_API, TOKEN = null, DOC = null, ENABLED = {}
+let API = DEFAULT_API, TOKEN = null, DOC = null, ENABLED = {}, RELEASES = [], CURRENT = null, TRACK_IX = 0
 
 const say = (text, kind = '') => { const s = $('status'); s.textContent = text; s.className = kind }
 const store = {
@@ -26,7 +26,8 @@ function show(loggedIn) {
 }
 
 async function signOut() {
-  TOKEN = null; DOC = null
+  TOKEN = null; DOC = null; RELEASES = []; CURRENT = null; TRACK_IX = 0; ART.clear()
+  $('hello').textContent = 'Track Record helper'
   await chrome.storage.session.remove('token')
   show(false)
 }
@@ -38,21 +39,52 @@ async function signIn() {
     const r = await call('/auth/login', { method: 'POST', body: JSON.stringify({ email: $('email').value, password: $('pw').value }) })
     TOKEN = r.token; $('pw').value = ''
     await store.setLocal({ api: API }); await store.setSession({ token: TOKEN })
-    show(true); await loadReleases()
+    show(true); await greet(); await loadReleases()
   } catch (e) { alert(e.message) }
 }
 
+// Cover art needs the sign-in token, so it is fetched here and shown from a local blob address.
+const ART = new Map()
+async function artUrl(id) {
+  if (!id) return null
+  if (ART.has(id)) return ART.get(id)
+  let url = null
+  try {
+    const res = await fetch(`${API}/media/${id}`, { headers: { Authorization: `Bearer ${TOKEN}` } })
+    if (res.ok) url = URL.createObjectURL(await res.blob())
+  } catch { /* the grey disc stays */ }
+  ART.set(id, url)
+  return url
+}
+const artBox = (id) => `<span class="art">${id ? `<img data-art="${esc(id)}" alt="" />` : ''}</span>`
+function paintArt(root) {
+  root.querySelectorAll('img[data-art]').forEach(async (img) => {
+    const u = await artUrl(img.dataset.art)
+    if (u) img.src = u; else img.remove()
+  })
+}
+
+async function greet() {
+  try {
+    const { user } = await call('/users/me')
+    const name = user.first_name || user.artist_name
+    $('hello').textContent = name ? `Hello, ${name}` : 'Hello'
+  } catch { $('hello').textContent = 'Hello' }
+}
+
 async function loadReleases() {
-  const sel = $('release')
+  const list = $('releaseList')
   try {
     const { releases } = await call('/releases')
-    const ready = releases.filter((r) => r.status === 'ready')
-    sel.innerHTML = ready.length
-      ? '<option value="">Choose a ready release…</option>' + ready.map((r) => `<option value="${r.id}">${esc(r.title)} (${esc(r.release_type)})</option>`).join('')
-      : '<option value="">No ready releases yet</option>'
-    $('preview').hidden = true
+    RELEASES = releases.filter((r) => r.status === 'ready')
+    list.innerHTML = RELEASES.length
+      ? RELEASES.map((r) => `<li><button type="button" data-id="${esc(r.id)}" aria-pressed="false">${artBox(r.artwork_id)}<span class="meta"><b>${esc(r.title)}</b><span>${esc(TYPE_NAMES[r.release_type] || r.release_type)}</span></span></button></li>`).join('')
+      : '<li class="note">No ready releases yet. Mark a release ready in Track Record first.</li>'
+    paintArt(list)
+    $('preview').hidden = true; $('relBox').hidden = true
   } catch (e) { say(e.message, 'err') }
 }
+const TYPE_NAMES = { single: 'Single', ep: 'EP', album: 'Album' }
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
@@ -122,14 +154,17 @@ function table(el, values) {
     || '<tr><td colspan="3">Nothing entered yet.</td></tr>'
 }
 
-const trackAt = () => DOC.tracks[Number($('track').value) || 0]
+const trackAt = () => DOC.tracks[TRACK_IX] || DOC.tracks[0]
 
 function renderPreview() {
-  $('preview').hidden = !DOC
+  $('preview').hidden = !DOC; $('relBox').hidden = !DOC
   closeUpc()
   if (!DOC) return
   table($('relTable'), display(releaseValues(DOC), releaseChoices(DOC), releaseLists(DOC)))
-  $('track').innerHTML = DOC.tracks.map((t, i) => `<option value="${i}">${t.track_number ?? i + 1}. ${esc(t.title)}</option>`).join('')
+  const art = (RELEASES.find((r) => r.id === CURRENT) || {}).artwork_id
+  TRACK_IX = 0
+  $('trackList').innerHTML = DOC.tracks.map((t, i) => `<li><button type="button" data-i="${i}" aria-pressed="${i === 0}">${artBox(art)}<span class="meta"><b>${t.track_number ?? i + 1}. ${esc(t.title)}</b><span>${t.isrc ? `ISRC ${esc(t.isrc)}` : 'No ISRC yet'}</span></span></button></li>`).join('')
+  paintArt($('trackList'))
   renderTrack()
 }
 function renderTrack() {
@@ -137,9 +172,9 @@ function renderTrack() {
   table($('trackTable'), display(trackValues(t), trackChoices(t), trackLists(DOC, t)))
 }
 
-async function onPick() {
-  say(''); DOC = null
-  const id = $('release').value
+async function onPick(id) {
+  say(''); DOC = null; CURRENT = id || null
+  document.querySelectorAll('#releaseList button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.id === id)))
   if (!id) return renderPreview()
   try { DOC = await call(`/releases/${id}/export`) } catch (e) { say(e.message, 'err') }
   renderPreview()
@@ -225,7 +260,7 @@ async function saveUpc() {
   if (!/^\d{12,13}$/.test(upc)) return ($('upcMsg').textContent = 'A UPC is 12 or 13 digits.')
   if (!upcOk(upc) && !confirm('This number fails the barcode check-digit test, so it may have a typo. Save it anyway?')) return
   try {
-    const id = $('release').value
+    const id = CURRENT
     await call(`/releases/${id}/upc`, { method: 'PUT', body: JSON.stringify({ upc }) })
     DOC.release.upc = upc
     renderPreview(); say(`Saved UPC ${upc} to this release.`, 'ok')
@@ -247,8 +282,14 @@ $('dists').addEventListener('change', async (e) => {
 })
 $('signin').onclick = signIn
 $('signout').onclick = signOut
-$('release').onchange = onPick
-$('track').onchange = renderTrack
+$('releaseList').addEventListener('click', (e) => { const b = e.target.closest('button[data-id]'); if (b) onPick(b.dataset.id === CURRENT ? null : b.dataset.id) })
+$('trackList').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-i]')
+  if (!b || !DOC) return
+  TRACK_IX = Number(b.dataset.i) || 0
+  document.querySelectorAll('#trackList button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+  renderTrack()
+})
 $('fillRelease').onclick = () => DOC && fill({ values: releaseValues(DOC), choices: releaseChoices(DOC), lists: releaseLists(DOC) })
 $('fillTrack').onclick = async () => {
   if (!DOC) return
@@ -267,7 +308,7 @@ $('upcCancel').onclick = closeUpc
   TOKEN = (await store.session('token')) || null
   renderDists(); await where()
   show(!!TOKEN)
-  if (TOKEN) await loadReleases()
+  if (TOKEN) { await greet(); await loadReleases() }
 })()
 
 // Show / hide the password

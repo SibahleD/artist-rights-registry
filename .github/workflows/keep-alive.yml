@@ -1,0 +1,13 @@
+# Pings the API every 3 days so the free Supabase database is not paused for inactivity.
+# Set the repository variable API_URL to your Render address, e.g. https://track-record-api.onrender.com
+name: keep-alive
+on:
+  schedule:
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the database through the API
+        run: curl --fail --silent --show-error --max-time 90 --retry 3 --retry-delay 20 "${{ vars.API_URL }}/health/db"

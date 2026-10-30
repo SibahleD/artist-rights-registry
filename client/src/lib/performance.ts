@@ -5,6 +5,7 @@ export interface StatRow { isrc: string; platform: string; period: string; strea
 export interface CatalogTrack {
   id: string; title: string; isrc: string | null; track_number: number
   release_id: string; release_title: string; release_type: 'single' | 'ep' | 'album'
+  artwork_id?: string | null
 }
 export interface PerfData { stats: StatRow[]; tracks: CatalogTrack[]; first_period: string | null; last_period: string | null }
 
@@ -58,8 +59,8 @@ export function sumBy(rows: StatRow[], key: (r: StatRow) => string): Map<string,
 
 export const ranked = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
 
-export interface TrackLine { id: string; title: string; isrc: string | null; streams: number }
-export interface ReleaseLine { id: string; title: string; type: string; streams: number; tracks: TrackLine[] }
+export interface TrackLine { id: string; title: string; isrc: string | null; streams: number; trackNumber: number }
+export interface ReleaseLine { id: string; title: string; type: string; artworkId: string | null; streams: number; tracks: TrackLine[] }
 
 /** One line per release, with each song's streams and the release total made by adding its songs. */
 export function releaseLines(tracks: CatalogTrack[], rows: StatRow[]): ReleaseLine[] {
@@ -67,9 +68,9 @@ export function releaseLines(tracks: CatalogTrack[], rows: StatRow[]): ReleaseLi
   const map = new Map<string, ReleaseLine>()
   for (const t of tracks) {
     let rel = map.get(t.release_id)
-    if (!rel) { rel = { id: t.release_id, title: t.release_title, type: t.release_type, streams: 0, tracks: [] }; map.set(t.release_id, rel) }
+    if (!rel) { rel = { id: t.release_id, title: t.release_title, type: t.release_type, artworkId: t.artwork_id ?? null, streams: 0, tracks: [] }; map.set(t.release_id, rel) }
     const streams = t.isrc ? byIsrc.get(t.isrc) ?? 0 : 0
-    rel.tracks.push({ id: t.id, title: t.title, isrc: t.isrc, streams })
+    rel.tracks.push({ id: t.id, title: t.title, isrc: t.isrc, streams, trackNumber: t.track_number })
     rel.streams += streams
   }
   return [...map.values()]
@@ -89,3 +90,6 @@ export function matchesSearch(rel: ReleaseLine, q: string): { release: boolean; 
   const tracks = new Set(rel.tracks.filter((t) => release || t.title.toLowerCase().includes(s)).map((t) => t.id))
   return { release: release || tracks.size > 0, tracks }
 }
+
+export const RELEASE_TYPE_LABELS: Record<string, string> = { single: 'Single', ep: 'EP', album: 'Album' }
+export const releaseTypeLabel = (t: string) => RELEASE_TYPE_LABELS[t] ?? t

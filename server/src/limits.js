@@ -1,8 +1,8 @@
 const n = (k, d) => (process.env[k] !== undefined ? Number(process.env[k]) : d);
 module.exports = {
   enabled: process.env.PILOT_LIMITS !== 'off',
-  maxReleasesPerUser: n('MAX_RELEASES_PER_USER', 5),  
-  maxTracksPerRelease: n('MAX_TRACKS_PER_RELEASE', 10),
+  maxReleasesPerUser: n('MAX_RELEASES_PER_USER', 0),   // 0 = no limit on how many releases an artist can make  
+  maxTracksPerRelease: n('MAX_TRACKS_PER_RELEASE', 0),   // 0 = no limit on songs per release
   maxAudioBytes: n('MAX_AUDIO_BYTES', 100 * 1024 * 1024),   // a 5-minute FLAC is about 30 MB, a WAV about 50 MB
   maxCoverBytes: n('MAX_COVER_BYTES', 25 * 1024 * 1024),   // the most the database accepts for artwork (migration 001); distributors ask for under 25 MB
   maxAvatarBytes: n('MAX_AVATAR_BYTES', 500 * 1024),

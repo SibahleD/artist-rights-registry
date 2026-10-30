@@ -208,10 +208,10 @@ async function getUsage(req, res) {
         const on = limits.enabled;
         return res.json({
             enabled: on,
-            releases: { used: releases, max: on ? limits.maxReleasesPerUser : null },
+            releases: { used: releases, max: on && limits.maxReleasesPerUser > 0 ? limits.maxReleasesPerUser : null },
             bytes: { audio, images, used: audio + images, max: on ? limits.maxUserBytes : null },
             limits: {
-                maxTracksPerRelease: on ? limits.maxTracksPerRelease : null,
+                maxTracksPerRelease: on && limits.maxTracksPerRelease > 0 ? limits.maxTracksPerRelease : null,
                 maxAudioBytes: on ? limits.maxAudioBytes : 100 * 1024 * 1024,
                 maxCoverBytes: on ? limits.maxCoverBytes : 25 * 1024 * 1024,
                 maxAvatarBytes: on ? limits.maxAvatarBytes : 2 * 1024 * 1024,

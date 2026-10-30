@@ -105,7 +105,7 @@ export function UsageLine({ usage }: { usage: Usage | null }) {
   const { releases, bytes } = usage
   return (
     <p className="muted usage">
-      Test limits: {releases.used} of {releases.max} releases · {fmtBytes(bytes.used)} of {fmtBytes(bytes.max ?? 0)} used.
+      Storage: {fmtBytes(bytes.used)}{bytes.max ? ` of ${fmtBytes(bytes.max)}` : ''} used{releases.max ? ` · ${releases.used} of ${releases.max} releases` : ''}.
     </p>
   )
 }

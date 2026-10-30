@@ -74,7 +74,10 @@ async function register(req, res) {
 
         return res.status(201).json({ user, token });
     } catch (err) {
-        if (err.code === '23505') { 
+        if (err.code === '23505') {
+            if (err.constraint === 'uq_users_artist_name') {
+                return res.status(409).json({ error: 'That artist name is already taken. Add something to tell it apart, such as your city or a number.' });
+            }
             return res.status(400).json({ error: 'Email already in use.' });
         }
         console.error('register error:', err);

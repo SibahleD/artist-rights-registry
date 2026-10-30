@@ -59,7 +59,8 @@ async function getStreams(req, res) {
                  WHERE user_id = $1 AND ($2::date IS NULL OR period >= $2) AND ($3::date IS NULL OR period <= $3)
                  ORDER BY period, isrc, platform LIMIT ${MAX_STAT_ROWS + 1}`, [uid, from, to]),
             pool.query(
-                `SELECT t.id, t.title, t.isrc, t.track_number, r.id AS release_id, r.title AS release_title, r.release_type
+                `SELECT t.id, t.title, t.isrc, t.track_number, r.id AS release_id, r.title AS release_title, r.release_type,
+                        (SELECT m.id FROM media m WHERE m.release_id = r.id AND m.kind = 'artwork') AS artwork_id
                  FROM tracks t JOIN releases r ON r.id = t.release_id
                  WHERE r.owner_id = $1 ORDER BY r.title, t.track_number`, [uid]),
             pool.query(

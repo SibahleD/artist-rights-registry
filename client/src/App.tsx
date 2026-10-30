@@ -26,7 +26,7 @@ import Terms from './pages/Terms'
 
 function Protected() {
   const { user, loading } = useAuth()
-  if (loading) return <Loading what="Signing you in" />
+  if (loading) return <Loading what="Signing you in" variant="spinner" />
   return user ? <Layout /> : <Navigate to="/login" replace />
 }
 

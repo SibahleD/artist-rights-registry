@@ -4,11 +4,12 @@ import { api } from '../api'
 import { useAuth } from '../auth'
 import { BarList, LineChart, type Series } from '../components/Charts'
 import StreamImport from '../components/StreamImport'
+import { AuthImage, vinylFallback } from '../components/files'
 import { Collapsible, ConfirmModal, ErrorBox, fmtDateTime, Hint, Loading, Modal } from '../components/ui'
 import { fmtCompact, fmtInt, fmtMonth } from '../lib/format'
 import {
-  currentMonth, filterStats, isrcsFor, matchesSearch, monthsBetween, ranked, releaseLines, shiftMonth, sumBy, total, unmatchedLines,
-  type PerfData, type Range, type Selection,
+  currentMonth, filterStats, isrcsFor, matchesSearch, monthsBetween, ranked, releaseLines, releaseTypeLabel, shiftMonth, sumBy, total, unmatchedLines,
+  type PerfData, type Range, type ReleaseLine, type Selection, type TrackLine,
 } from '../lib/performance'
 import { buildPerformanceReport, reportTitle, type ReportKind } from '../lib/performanceReport'
 import { platformLabel } from '../lib/streamImport'
@@ -134,6 +135,70 @@ function ImportHistory({ reloadKey, onChanged }: { reloadKey: number; onChanged:
   )
 }
 
+// ---- Release and song picker ----------------------------------------------------------------------------
+
+// One row of the picker: cover on the left, then title, type and streams. The same layout serves releases and songs.
+function PickItem({ artworkId, title, type, streams, note, on, disabled, onPick, className = '' }: {
+  artworkId: string | null; title: string; type: string; streams: string; note?: string; on: boolean; disabled?: boolean; onPick: () => void; className?: string
+}) {
+  return (
+    <button type="button" className={`perf-item${on ? ' on' : ''} ${className}`} aria-pressed={on} disabled={disabled} onClick={onPick}>
+      <span className="perf-art"><AuthImage mediaId={artworkId} alt="" fallback={vinylFallback} /></span>
+      <span className="perf-item-text">
+        <b className="perf-item-title">{title}</b>
+        <span className="perf-item-type">{type}{note && <> · {note}</>}</span>
+        <span className="perf-item-streams">{streams}</span>
+      </span>
+    </button>
+  )
+}
+
+function ReleasePicker({ lines, q, setQ, sel, setSel }: { lines: ReleaseLine[]; q: string; setQ: (v: string) => void; sel: Selection; setSel: (s: Selection) => void }) {
+  const [open, setOpen] = useState<Record<string, boolean>>({})
+  const searching = q.trim() !== ''
+  return (
+    <section className="card perf-picker">
+      <div className="row perf-search">
+        <h4>Your releases and songs</h4>
+        <input type="search" placeholder="Search by release or song" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search releases and songs" />
+      </div>
+      <p className="muted">Pick a release to see its streams, or open it to pick one of its songs. {lines.length} release{lines.length === 1 ? '' : 's'} in the app.</p>
+      <div className="perf-list">
+        {lines.map((rel) => {
+          const hit = matchesSearch(rel, q)
+          if (!hit.release) return null
+          const relOn = sel?.kind === 'release' && sel.id === rel.id
+          const songs = rel.tracks.filter((t) => hit.tracks.has(t.id))
+          const expanded = searching || open[rel.id] || (sel?.kind === 'track' && rel.tracks.some((t) => t.id === sel.id))
+          return (
+            <div className="perf-group" key={rel.id}>
+              <div className="perf-release-row">
+                <PickItem artworkId={rel.artworkId} title={rel.title} type={releaseTypeLabel(rel.type)} note={`${rel.tracks.length} song${rel.tracks.length === 1 ? '' : 's'}`}
+                  streams={`${fmtInt(rel.streams)} streams`} on={relOn} onPick={() => setSel(relOn ? null : { kind: 'release', id: rel.id })} />
+                <button type="button" className="ghost perf-expand" aria-expanded={expanded} aria-label={`${expanded ? 'Hide' : 'Show'} the songs on ${rel.title}`} disabled={searching}
+                  onClick={() => setOpen({ ...open, [rel.id]: !open[rel.id] })}>{expanded ? 'Hide songs' : 'Songs'}</button>
+              </div>
+              {expanded && (
+                <div className="perf-songs">
+                  {songs.map((t: TrackLine) => {
+                    const on = sel?.kind === 'track' && sel.id === t.id
+                    return (
+                      <PickItem key={t.id} className="perf-song" artworkId={rel.artworkId} title={t.title}
+                        type={rel.type === 'single' ? 'Single' : `${releaseTypeLabel(rel.type)} · track ${t.trackNumber}`}
+                        note={t.isrc ? undefined : 'no ISRC'} streams={t.isrc ? `${fmtInt(t.streams)} streams` : 'No streams: add an ISRC'}
+                        on={on} disabled={!t.isrc} onPick={() => setSel(on ? null : { kind: 'track', id: t.id })} />
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 // ---- Page -----------------------------------------------------------------------------------------------
 
 export default function Performance() {
@@ -188,7 +253,7 @@ export default function Performance() {
   }, [data, range, sel])
 
   if (error) return <ErrorBox error={error} />
-  if (!data || !range || !view) return <Loading what="Loading your streams" />
+  if (!data || !range || !view) return <Loading what="Loading your streams" variant="dashboard" />
 
   const noData = data.stats.length === 0
   const noIsrc = data.tracks.filter((t) => !t.isrc)
@@ -224,25 +289,36 @@ export default function Performance() {
         </section>
       ) : (
         <>
-          <section className="card perf-controls">
-            <div className="tabs">
-              {presets.map(([label, r]) => (
-                <button key={label} type="button" className={`tab${range.from === r.from && range.to === r.to ? ' on' : ''}`} onClick={() => setRange(r)}>{label}</button>
-              ))}
-            </div>
-            <div className="row perf-range">
-              <label><span>From</span><input type="month" value={range.from} max={range.to} onChange={(e) => e.target.value && setRange({ ...range, from: e.target.value })} /></label>
-              <label><span>To</span><input type="month" value={range.to} min={range.from} max={currentMonth()} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })} /></label>
-            </div>
-            {!rangeOk && <Hint>Choose a start month that is before the end month.</Hint>}
-          </section>
+          <p className="perf-scope" role="status">
+            Showing <strong>streams</strong> (plays reported by your distributor) for <strong>{sel ? selectedTitle : 'all releases and songs'}</strong>,{' '}
+            <strong>{monthLabel(range.from)} to {monthLabel(range.to)}</strong>, across <strong>{view.byPlatform.length} platform{view.byPlatform.length === 1 ? '' : 's'}</strong>.
+          </p>
 
-          {sel && (
-            <div className="perf-selected">
-              Showing <strong>{selectedTitle}</strong>
-              <button type="button" className="ghost" onClick={() => setSel(null)}>Show everything</button>
+          <section className="card perf-controls" aria-label="Filters">
+            <h4>Filters</h4>
+            <div className="perf-filter">
+              <span className="perf-filter-label" id="perf-period">Time period</span>
+              <div className="tabs" role="group" aria-labelledby="perf-period">
+                {presets.map(([label, r]) => (
+                  <button key={label} type="button" className={`tab${range.from === r.from && range.to === r.to ? ' on' : ''}`} onClick={() => setRange(r)}>{label}</button>
+                ))}
+              </div>
             </div>
-          )}
+            <div className="perf-filter">
+              <span className="perf-filter-label">Custom range</span>
+              <div className="row perf-range">
+                <label><span>From month</span><input type="month" value={range.from} max={range.to} onChange={(e) => e.target.value && setRange({ ...range, from: e.target.value })} /></label>
+                <label><span>To month</span><input type="month" value={range.to} min={range.from} max={currentMonth()} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })} /></label>
+              </div>
+              {!rangeOk && <Hint>Choose a start month that is before the end month.</Hint>}
+            </div>
+            <div className="perf-filter">
+              <span className="perf-filter-label">Release or song</span>
+              {sel
+                ? <div className="perf-selected"><span><strong>{selectedTitle}</strong> <span className="muted">({sel.kind === 'release' ? 'release' : 'song'})</span></span><button type="button" className="ghost" onClick={() => setSel(null)}>Show everything</button></div>
+                : <span className="muted">Everything. Pick one in the list at the bottom of the page.</span>}
+            </div>
+          </section>
 
           <div className="stats">
             <div className="option stat"><span>Total streams</span><b>{fmtCompact(sum)}</b></div>
@@ -251,62 +327,23 @@ export default function Performance() {
           </div>
 
           <section className="card">
-            <h4>Streams over time</h4>
+            <h4>Streams per month, by platform</h4>
             {sum === 0 ? <p className="muted">No streams in this period.</p> : (
               <LineChart labels={view.months.map((m) => monthLabel(m))} series={view.series} label="Streams per month by platform" />
             )}
           </section>
 
           <section className="card">
-            <h4>Streams by platform</h4>
+            <h4>Total streams by platform</h4>
             <BarList items={view.byPlatform.map(([id, v]) => ({ label: platformLabel(id), value: v }))} format={fmtInt} />
           </section>
 
-          <section className="card">
-            <div className="row perf-search">
-              <h4>Songs and releases</h4>
-              <input type="search" placeholder="Search by release or song" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search releases and songs" />
-            </div>
-            {view.lines.length === 0 ? (
-              <p className="muted">You have no songs yet. <Link to="/new/song">Add a song</Link> and put its ISRC on it to see its streams here.</p>
-            ) : (
-              <div className="table-scroll">
-                <table className="perf-table">
-                  <thead><tr><th>Release / song</th><th className="num">Streams</th></tr></thead>
-                  <tbody>
-                    {view.lines.map((rel) => {
-                      const hit = matchesSearch(rel, q)
-                      if (!hit.release) return null
-                      const relOn = sel?.kind === 'release' && sel.id === rel.id
-                      return [
-                        <tr key={rel.id} className={`perf-release${relOn ? ' on' : ''}`}>
-                          <td>
-                            <button type="button" className="linklike" aria-pressed={relOn} onClick={() => setSel(relOn ? null : { kind: 'release', id: rel.id })}>{rel.title}</button>
-                            <span className="muted"> · {rel.type.toUpperCase()}</span>
-                          </td>
-                          <td className="num">{fmtInt(rel.streams)}</td>
-                        </tr>,
-                        ...rel.tracks.filter((t) => hit.tracks.has(t.id)).map((t) => {
-                          const on = sel?.kind === 'track' && sel.id === t.id
-                          return (
-                            <tr key={t.id} className={`perf-track${on ? ' on' : ''}`}>
-                              <td>
-                                <button type="button" className="linklike" aria-pressed={on} disabled={!t.isrc} onClick={() => setSel(on ? null : { kind: 'track', id: t.id })}>{t.title}</button>
-                                {!t.isrc && <span className="muted"> · no ISRC</span>}
-                              </td>
-                              <td className="num">{t.isrc ? fmtInt(t.streams) : '—'}</td>
-                            </tr>
-                          )
-                        }),
-                      ]
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {noIsrc.length > 0 && <Hint>{noIsrc.length} song{noIsrc.length === 1 ? ' has' : 's have'} no ISRC, so streams cannot be matched to {noIsrc.length === 1 ? 'it' : 'them'}. Add the ISRC on the song's page.</Hint>}
-            <Hint>Release totals add up their songs.</Hint>
-          </section>
+          {view.lines.length === 0 ? (
+            <section className="card"><h4>Your releases and songs</h4><p className="muted">You have no songs yet. <Link to="/new/song">Add a song</Link> and put its ISRC on it to see its streams here.</p></section>
+          ) : (
+            <ReleasePicker lines={view.lines} q={q} setQ={setQ} sel={sel} setSel={setSel} />
+          )}
+          {noIsrc.length > 0 && <Hint>{noIsrc.length} song{noIsrc.length === 1 ? ' has' : 's have'} no ISRC, so streams cannot be matched to {noIsrc.length === 1 ? 'it' : 'them'}. Add the ISRC on the song's page. Release totals add up their songs.</Hint>}
 
           {view.unmatched.length > 0 && (
             <Collapsible title={`Not matched to a song (${view.unmatched.length})`} defaultOpen={false}>

@@ -6,12 +6,17 @@ const PALETTE = ['var(--accent)', '#4fc3ff', '#ff8c42', '#8bd17c', '#c792ea', '#
 
 export interface Series { name: string; values: number[] }
 
-// Rounds up to 1, 2, 5 or 10 times a power of ten, so axis labels land on tidy numbers.
-function niceMax(v: number) {
-  if (!(v > 0)) return 1
-  const p = 10 ** Math.floor(Math.log10(v))
-  const n = v / p
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p
+// The y-axis is built from the highest value on the chart: whole-number steps (1, 2, 2.5, 5 or 10 times a power of ten),
+// about four of them, and a top that is the first step at or above the highest value. So a chart peaking at 1,200 tops
+// out at 1,250 rather than 2,000, and a chart peaking at 3 shows 0, 1, 2, 3 and never 0.75.
+export function axisFor(max: number): { top: number; ticks: number[] } {
+  if (!(max > 0)) return { top: 4, ticks: [0, 1, 2, 3, 4] }
+  const raw = max / 4
+  const p = 10 ** Math.floor(Math.log10(raw))
+  const n = raw / p
+  const step = Math.max(1, (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 && p >= 10 ? 2.5 : n <= 5 ? 5 : 10) * p)
+  const count = Math.ceil(max / step - 1e-9)
+  return { top: count * step, ticks: Array.from({ length: count + 1 }, (_, i) => i * step) }
 }
 
 interface LineProps {
@@ -29,10 +34,9 @@ export function LineChart({ labels, series, height = 240, format = fmtCompact, l
   const m = { l: 46, r: 12, t: 12, b: 28 }
   const iw = W - m.l - m.r, ih = H - m.t - m.b
   const n = labels.length
-  const top = niceMax(Math.max(0, ...series.flatMap((s) => s.values)))
+  const { top, ticks } = axisFor(Math.max(0, ...series.flatMap((s) => s.values)))
   const x = (i: number) => m.l + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw)
   const y = (v: number) => m.t + ih - (v / top) * ih
-  const ticks = [0, 0.25, 0.5, 0.75, 1]
   const every = Math.max(1, Math.ceil(n / 8))
 
   if (n === 0) return <p className="muted">No data for this period.</p>
@@ -42,8 +46,8 @@ export function LineChart({ labels, series, height = 240, format = fmtCompact, l
         <title>{label}</title>
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={m.l} x2={W - m.r} y1={y(t * top)} y2={y(t * top)} className="chart-grid" />
-            <text x={m.l - 6} y={y(t * top) + 3.5} textAnchor="end" className="chart-axis">{format(t * top)}</text>
+            <line x1={m.l} x2={W - m.r} y1={y(t)} y2={y(t)} className="chart-grid" />
+            <text x={m.l - 6} y={y(t) + 3.5} textAnchor="end" className="chart-axis">{format(t)}</text>
           </g>
         ))}
         {labels.map((l, i) => i % every === 0 && (

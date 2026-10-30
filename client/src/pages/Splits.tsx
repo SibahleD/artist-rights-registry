@@ -69,7 +69,7 @@ export default function Splits() {
   useEffect(() => { load().catch((e) => setErr(e.message)) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (err) return <ErrorBox error={err} />
-  if (!r) return <Loading />
+  if (!r) return <Loading variant="detail" />
 
   async function act(fn: () => Promise<void>) {
     setBusy(true); setActionErr('')

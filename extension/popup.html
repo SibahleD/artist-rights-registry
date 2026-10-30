@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header><strong>Track Record helper</strong><button id="signout" class="ghost" hidden>Sign out</button></header>
+  <header><strong id="hello">Track Record helper</strong><button id="signout" class="ghost" hidden>Sign out</button></header>
 
   <section id="login" hidden>
     <label>Track Record API address<input id="api" placeholder="http://localhost:4000/api" /></label>
@@ -22,17 +22,28 @@
   </section>
 
   <section id="main" hidden>
-    <label>Release to send
-      <select id="release"></select>
-    </label>
+    <h2>Distributor</h2>
     <p class="note" id="where"></p>
+    <details>
+      <summary>Switch distributors on or off</summary>
+      <div id="dists"></div>
+      <p class="note">Switch one on only after you have read its terms on automated tools.</p>
+    </details>
 
-    <div id="preview" hidden>
-      <h3>Release details</h3>
+    <h2>Releases</h2>
+    <ul id="releaseList" class="pick" aria-label="Ready releases"></ul>
+    <div id="relBox" hidden>
       <table id="relTable"></table>
       <button id="fillRelease">Fill release details on this page</button>
+    </div>
 
-      <h3>UPC</h3>
+    <div id="preview" hidden>
+      <h2>Songs</h2>
+      <ul id="trackList" class="pick" aria-label="Songs on this release"></ul>
+      <table id="trackTable"></table>
+      <button id="fillTrack">Fill this song on this page</button>
+
+      <h2>UPC</h2>
       <p class="note">Your distributor generates the UPC. After it appears on their page, capture it here. Nothing is saved until you confirm.</p>
       <div class="row2"><button id="captureUpc">Capture UPC from this page</button><button id="manualUpc" class="ghost">Enter it myself</button></div>
       <div id="upcBox" hidden>
@@ -40,19 +51,9 @@
         <p class="note" id="upcMsg"></p>
         <div class="row2"><button id="upcSave">Save to this release</button><button id="upcCancel" class="ghost">Cancel</button></div>
       </div>
-
-      <h3>Songs</h3>
-      <label>Song<select id="track"></select></label>
-      <table id="trackTable"></table>
-      <button id="fillTrack">Fill this song on this page</button>
     </div>
     <p id="status" role="status"></p>
 
-    <details>
-      <summary>Distributors</summary>
-      <div id="dists"></div>
-      <p class="note">Switch one on only after you have read its terms on automated tools.</p>
-    </details>
     <p class="note">Fills text boxes and drop-downs, picks yes/no answers, and presses “Add artist” style buttons to make room for names. It never submits, accepts terms, uploads files or enters payment details. Check every field, then submit yourself.</p>
   </section>
 

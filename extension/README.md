@@ -32,7 +32,7 @@ Anything that does not match is skipped and listed as "not found".
 
 ## Tests
 `server/tests/upc.test.js` runs with the server tests. The extension tests need jsdom, which is not a project dependency:
-`cd /tmp && npm i jsdom && cd - && NODE_PATH=/tmp/node_modules node extension/test/filler.test.js` (and `popup-values.test.js`, which needs nothing).
+`cd /tmp && npm i jsdom && cd - && NODE_PATH=/tmp/node_modules node extension/test/filler.test.js` (and `popup-values.test.js`, which needs nothing, and `popup-ui.test.js`, which needs jsdom).
 
 ## How it stays narrow
 - Manual only: nothing runs until you press a Fill or Capture button. No background script, no always-on content script.

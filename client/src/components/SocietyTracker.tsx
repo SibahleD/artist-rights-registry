@@ -216,7 +216,7 @@ export default function SocietyTracker({ societies: soc, onBrowse }: { societies
   const { modal } = useUnsavedChanges({ dirty: editDirty || addDirty })
 
   if (soc.error && !soc.list) return <ErrorBox error={soc.error} />
-  if (!soc.list) return <Loading what="Loading your registrations" />
+  if (!soc.list) return <Loading what="Loading your registrations" variant="list" />
 
   return (
     <section className="card stack">

@@ -77,7 +77,16 @@ export function validateDistribution(form: ReleaseForm): string[] {
 
   form.tracks.forEach((t, i) => {
     const label = `Song ${i + 1}${t.title ? ` (“${t.title}”)` : ''}`
-    if (!parseStartTime(t.previewStart).ok) problems.push(`${label}: the preview start should look like 0:45, or a number of seconds up to ${MAX_PREVIEW_SECONDS}.`)
+    const featured = new Set<string>()
+    for (const f of cleanArtists(t.featuring)) {
+      if (featured.has(f.toLowerCase())) problems.push(`${label}: “${f}” is listed twice as a featured artist.`)
+      featured.add(f.toLowerCase())
+    }
+    const preview = parseStartTime(t.previewStart)
+    if (!preview.ok) problems.push(`${label}: the preview start should look like 0:45, or a number of seconds up to ${MAX_PREVIEW_SECONDS}.`)
+    else if (preview.seconds !== null && t.durationSeconds && preview.seconds >= t.durationSeconds) {
+      problems.push(`${label}: the preview start (${formatStartTime(preview.seconds)}) is after the end of the song (${formatStartTime(t.durationSeconds)}).`)
+    }
     const dup = creditDuplicates(t.credits, ` on ${label.toLowerCase()}`)
     if (dup) problems.push(dup)
   })

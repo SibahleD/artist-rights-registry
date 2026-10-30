@@ -15,6 +15,7 @@ import { featTitle, featuredNames } from '../lib/collab'
 import LinkRows from '../components/LinkRows'
 import { useUnsavedChanges } from '../components/UnsavedGuard'
 import { languageName } from '../data/options'
+import { fixLink } from '../lib/focusFields'
 import { blankRow, isBlankRow, rowName, rowToStore, storeToRow, type LinkRow } from '../data/services'
 import type { Collaborator, Notice, ReadinessCheck, ReadinessReport, Release, ReleaseExport, ReleaseLink, Track } from '../types'
 
@@ -116,7 +117,7 @@ function ReadinessChecklist({ checks }: { checks: ReadinessCheck[] }) {
           <li key={`${c.id}-${c.track ?? ''}-${i}`} className={`check ${c.level}`}>
             <span className="lvl">{LEVEL_LABEL[c.level]}</span>
             <span>{c.message}</span>
-            {c.level !== 'info' && <Link to={c.fix}>Open</Link>}
+            {c.level !== 'info' && <Link to={fixLink(c.fix, c.id)}>Open</Link>}
           </li>
         ))}
       </ul>
@@ -161,7 +162,7 @@ export default function ReleaseView() {
   useEffect(() => { load().catch((e) => setErr(e.message)) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (err) return <ErrorBox error={err} />
-  if (!r) return <Loading />
+  if (!r) return <Loading variant="detail" />
 
   // One endpoint returns the whole release as clean metadata (no internal ids, no co-writer emails).
   async function exportMetadata() {

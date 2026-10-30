@@ -34,7 +34,7 @@ export default function SharedTrackView() {
       </div>
     )
   }
-  if (!data) return <Loading what="Loading this song" />
+  if (!data) return <Loading what="Loading this song" variant="detail" />
 
   const { track: t, splits } = data
 

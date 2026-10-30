@@ -49,7 +49,7 @@ export default function Earnings() {
   }, [data, range])
 
   if (error) return <ErrorBox error={error} />
-  if (!data || !range || !view) return <Loading what="Loading your earnings estimate" />
+  if (!data || !range || !view) return <Loading what="Loading your earnings estimate" variant="dashboard" />
 
   const noData = data.stats.length === 0
   const lastMonth = data.last_period?.slice(0, 7) ?? currentMonth()

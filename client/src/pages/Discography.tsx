@@ -91,7 +91,7 @@ export default function DiscographyPage() {
   }, [])
 
   if (err) return <ErrorBox error={err} />
-  if (!releases || !shared) return <Loading what="Loading your discography" />
+  if (!releases || !shared) return <Loading what="Loading your discography" variant="list" />
 
 
   return (

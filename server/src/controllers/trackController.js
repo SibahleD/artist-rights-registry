@@ -165,7 +165,7 @@ async function createTrack(req, res) {
         if (!release) return;
 
         const cols = Object.keys(data);
-        const maxTracks = limits.enabled ? limits.maxTracksPerRelease : 1e9;
+        const maxTracks = limits.enabled && limits.maxTracksPerRelease > 0 ? limits.maxTracksPerRelease : 1e9;
         const values = [release.id, ...Object.values(data), maxTracks];
         const placeholders = cols.map((_, i) => `$${i + 2}`);
 
