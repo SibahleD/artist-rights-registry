@@ -1,6 +1,9 @@
 {
   "dependencies": {
     "@netlify/functions": "^6.0.3",
+    "bcrypt": "^6.0.0",
+    "express": "^5.3.0",
+    "pg": "^8.23.0",
     "serverless-http": "^4.0.0"
   },
   "private": true,
