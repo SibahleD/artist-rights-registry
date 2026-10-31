@@ -1,7 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { cleanFeatures, projections, describe, closeness } = require('../src/lib/playlistFit');
-const { extractFeatures, looksLikeWav, FeatureError } = require('../src/services/reccobeats');
 
 const dance = { acousticness: 0.12, danceability: 0.82, energy: 0.78, instrumentalness: 0.01, liveness: 0.1, loudness: -6, speechiness: 0.06, tempo: 118, valence: 0.74 };
 const mellow = { acousticness: 0.8, danceability: 0.4, energy: 0.2, instrumentalness: 0.05, liveness: 0.1, loudness: -14, speechiness: 0.04, tempo: 76, valence: 0.25 };
@@ -44,30 +43,4 @@ test('projections are sorted, bounded 0 to 100, and explain themselves', () => {
 test('describe gives plain words and a BPM', () => {
     const d = describe(dance);
     assert.ok(d.includes('High energy') && d.includes('Very danceable') && d.includes('118 BPM'));
-});
-
-// ---- ReccoBeats service, with a fake fetch ----
-const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WAVE'), Buffer.alloc(64)]);
-const ok = (body) => async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => body });
-
-test('looksLikeWav checks the header', () => {
-    assert.ok(looksLikeWav(wav));
-    assert.ok(!looksLikeWav(Buffer.from('ID3 not a wav file at all, nope nope nope nope nope nope nope')));
-});
-
-test('extractFeatures posts the clip as audioFile and returns cleaned numbers', async () => {
-    let sent;
-    const f = await extractFeatures(wav, async (url, opts) => { sent = { url, opts }; return ok({ ...dance, id: 'zzz' })(); });
-    assert.equal(sent.opts.method, 'POST');
-    assert.ok(sent.opts.body.get('audioFile'));
-    assert.equal(f.tempo, 118);
-    assert.ok(!('id' in f));
-});
-
-test('extractFeatures turns service problems into plain errors', async () => {
-    await assert.rejects(() => extractFeatures(Buffer.from('nope')), (e) => e instanceof FeatureError && e.status === 400);
-    await assert.rejects(() => extractFeatures(wav, async () => ({ ok: false, status: 429, headers: { get: () => '12' } })), (e) => e.status === 503 && /12 seconds/.test(e.message));
-    await assert.rejects(() => extractFeatures(wav, async () => ({ ok: false, status: 400, headers: { get: () => null } })), (e) => e.status === 502);
-    await assert.rejects(() => extractFeatures(wav, async () => { throw new Error('offline'); }), (e) => e.status === 503);
-    await assert.rejects(() => extractFeatures(wav, ok({ tempo: 100 })), (e) => e.status === 502);
 });

@@ -30,7 +30,6 @@ function Protected() {
   return user ? <Layout /> : <Navigate to="/login" replace />
 }
 
-// A data router, so the unsaved-changes guard can stop navigation from anywhere (sidebar links, the back button).
 function Root() {
   return <AuthProvider><Outlet /></AuthProvider>
 }

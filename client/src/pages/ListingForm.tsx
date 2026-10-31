@@ -2,27 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api, ApiError, upload } from '../api'
 import { useAuth } from '../auth'
-import TrackEditor, { EXPLICIT_LABELS, type SongSection } from '../components/TrackEditor'
-import ImagePicker from '../components/ImagePicker'
-import { UsageLine, useUsage } from '../components/files'
-import { ConfirmModal, ErrorBox, Loading, Panel } from '../components/ui'
-import SaveBar from '../components/SaveBar'
+import { TrackEditor, EXPLICIT_LABELS, type SongSection } from '../components/TrackEditor'
+import { ImagePicker, UsageLine, useUsage, CoverArtGuide } from '../components/files'
+import { ConfirmModal, ErrorBox, Hint, Loading, Panel } from '../components/ui'
+import { SaveBar, Req, RequiredNote, SelectOrOther, useGlowField } from '../components/form'
 import { useBackGuard } from '../components/UnsavedGuard'
-import type {
-  Collaborator, CollaboratorInput, ContributorsPayload, CreditRow, Notice, Release, ReleaseForm, ReleaseInput, Track, TrackForm, TrackInput,
-} from '../types'
-import CoverArtGuide from '../components/CoverArtGuide'
-import CreditsEditor from '../components/CreditsEditor'
-import PrimaryArtistsEditor from '../components/PrimaryArtistsEditor'
-import { Req, RequiredNote } from '../components/Required'
-import {
-  boolToYesNo, cleanArtists, cleanCredits, dateOrderProblem, formatStartTime, parseStartTime, validateDistribution, yesNoToBool,
-} from '../lib/distribution'
+import { type Collaborator, type CollaboratorInput, type ContributorsPayload, type CreditRow, type Notice, type Release, type ReleaseForm, type ReleaseInput, type Track, type TrackForm, type TrackInput, EXPLICIT_VALUES } from '../types'
+import { CreditsEditor, PrimaryArtistsEditor } from '../components/editors'
+import { boolToYesNo, cleanArtists, cleanCredits, dateOrderProblem, formatStartTime, parseStartTime, validateDistribution, yesNoToBool, featuredCredit, featuredNames, toCollaboratorInput } from '../lib/release'
 import { GENRES, LANGUAGES } from '../data/options'
-import { EXPLICIT_VALUES } from '../types'
-import SelectOrOther from '../components/SelectOrOther'
-import { featuredCredit, featuredNames, toCollaboratorInput } from '../lib/collab'
-import { useGlowField } from '../components/useGlowField'
 
 type Part = 'release' | 'songs'
 type ReleaseSection = 'info' | 'cover' | 'dates' | 'artists'
@@ -205,6 +193,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   if (!form) return err ? <ErrorBox error={err.error} /> : <Loading what="Opening the form" variant="form" />
   const isSong = form.releaseType === 'single'
   const showRelease = (t: ReleaseSection) => part === 'release' && relTab === t
+  const releaseName = form ? (isSong ? form.tracks[0]?.title : form.title) : ''
   const pickPart = (p: Part) => { setGlow(null); setPart(p) }
   const setTrack = (i: number, t: TrackForm) => setForm({ ...form, tracks: form.tracks.map((x, j) => (j === i ? t : x)) })
   
@@ -387,10 +376,24 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       {err && <ErrorBox error={err.error} details={err.details} />}
       <RequiredNote />
 
+      <div className="release-bar">
+        <span className="badge badge-release">{isSong ? 'Single' : 'Release'}</span>
+        <strong>{releaseName || 'Untitled release'}</strong>
+        {!isSong && <span className="muted">{form.releaseType === 'ep' ? 'EP' : 'Album'} · {form.tracks.length} song{form.tracks.length === 1 ? '' : 's'}</span>}
+      </div>
+
       <div className="tabs tabs-2" role="tablist" aria-label="Part of the listing">
         <button type="button" role="tab" aria-selected={part === 'release'} className={`tab${part === 'release' ? ' on' : ''}`} onClick={() => pickPart('release')}>Release</button>
         <button type="button" role="tab" aria-selected={part === 'songs'} className={`tab${part === 'songs' ? ' on' : ''}`} onClick={() => pickPart('songs')}>{isSong ? 'Song' : `Songs (${form.tracks.length})`}</button>
       </div>
+
+      <div className={part === 'songs' ? 'song-scope' : 'release-scope'}>
+      {part === 'songs' && (
+        <div className="scope-head">
+          <span><span className="scope-kicker">{isSong ? 'Song on' : 'Songs on'}</span> <strong>{releaseName || 'Untitled release'}</strong></span>
+          <button type="button" className="ghost link-btn" onClick={() => pickPart('release')}>← Release details</button>
+        </div>
+      )}
 
       {part === 'songs' && !isSong && (
         <div className="tabs tabs-songs">
@@ -406,6 +409,13 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         </div>
       )}
 
+      <div className={part === 'songs' ? 'song-body' : 'release-body'}>
+      {part === 'songs' && (
+        <div className="song-head">
+          <span className="badge badge-song">{isSong ? 'Song' : `Song ${active + 1} of ${form.tracks.length}`}</span>
+          {!isSong && <strong>{form.tracks[active]?.title || 'Untitled'}</strong>}
+        </div>
+      )}
       <div className="tabs tabs-sub" role="tablist" aria-label={part === 'release' ? 'Release sections' : 'Song sections'}>
         {part === 'release'
           ? RELEASE_TABS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={relTab === k} className={`tab${relTab === k ? ' on' : ''}`} onClick={() => { setGlow(null); setRelTab(k) }}>{label}</button>)
@@ -415,13 +425,13 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       {showRelease('info') && (
       <Panel title="Release info">
         <div className="grid2">
-          {!isSong && <label>Release title<Req /><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
-          {isSong && <label>Song title<Req /><input value={form.tracks[0].title} onChange={(e) => setSongTitle(e.target.value)} /></label>}
+          {!isSong && <label><span>Release title<Req /></span><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
+          {isSong && <label><span>Song title<Req /></span><input value={form.tracks[0].title} onChange={(e) => setSongTitle(e.target.value)} /></label>}
           {!isSong && <label>Type<select value={form.releaseType} onChange={(e) => setForm({ ...form, releaseType: e.target.value as ReleaseForm['releaseType'] })}><option value="ep">EP</option><option value="album">Album</option></select></label>}
-          <label>Main artist name<Req /><input value={form.albumArtist} onChange={(e) => setForm({ ...form, albumArtist: e.target.value })} /></label>
+          <label><span>Main artist name<Req /></span><input value={form.albumArtist} onChange={(e) => setForm({ ...form, albumArtist: e.target.value })} /></label>
           {isSong && <SelectOrOther label="Genre" options={GENRES} value={form.tracks[0].genre} onChange={(v) => setTrack(0, { ...form.tracks[0], genre: v })} otherPlaceholder="Type the genre" />}
           {!isSong && <SelectOrOther label="Genre (songs without their own use this)" options={GENRES} value={form.genre} onChange={(v) => setForm({ ...form, genre: v })} otherPlaceholder="Type the genre" />}
-          <label data-field="release-date">Release date (to streaming services)<Req /><input type="date" value={form.releaseDate} onChange={(e) => setForm({ ...form, releaseDate: e.target.value })} /></label>
+          <label data-field="release-date"><span>Release date (to streaming services)<Req /></span><input type="date" value={form.releaseDate} onChange={(e) => setForm({ ...form, releaseDate: e.target.value })} /></label>
           <label>Label (optional)<input value={form.labelName} onChange={(e) => setForm({ ...form, labelName: e.target.value })} placeholder="Leave blank if you release independently" /></label>
           <label>Main language
             <select value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
@@ -432,7 +442,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
           </label>
           <label data-field="upc">UPC (optional)
             <input inputMode="numeric" value={form.upc} onChange={(e) => setForm({ ...form, upc: e.target.value })} placeholder="12 or 13 digits" />
-            <small className="hint">The barcode for the release, on singles too. Your distributor assigns one if you don't have it.</small>
+            <Hint>The barcode for the release, on singles too. Your distributor assigns one if you don't have it.</Hint>
           </label>
         </div>
       </Panel>
@@ -440,7 +450,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       {showRelease('cover') && (
       <Panel title={<>Cover art<Req /></>} field="cover-art">
-        <div className="stack">
+        <div className="art-layout">
           <ImagePicker label="Cover art" mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 25 * 1024 * 1024}
             onPick={(f) => { setArtworkFile(f); setArtworkCleared(false) }}
             onClear={() => { setArtworkFile(undefined); setArtworkCleared(true) }} />
@@ -455,7 +465,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         <div className="grid2">
           <label data-field="sales-start">Sales start date
             <input type="date" value={form.salesStartDate} onChange={(e) => setForm({ ...form, salesStartDate: e.target.value })} />
-            <small className="hint">The first day the release can be sold or streamed.</small>
+            <Hint>The first day the release can be sold or streamed.</Hint>
             {form.releaseDate && form.salesStartDate !== form.releaseDate && (
               <button type="button" className="ghost link-btn" onClick={() => setForm({ ...form, salesStartDate: form.releaseDate })}>Use the release date</button>
             )}
@@ -468,13 +478,13 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
             {rereleased
               ? <label>Originally released
                   <input type="date" value={form.originallyReleased} onChange={(e) => setForm({ ...form, originallyReleased: e.target.value })} />
-                  <small className="hint">The date it was first released anywhere. It can't be after the sales start date.</small>
+                  <Hint>The date it was first released anywhere. It can't be after the sales start date.</Hint>
                 </label>
-              : <small className="hint">Counted as new music, first released on the release date.</small>}
+              : <Hint>Counted as new music, first released on the release date.</Hint>}
           </div>
           <label data-field="preorder">Pre-order date (optional)
             <input type="date" value={form.preorderDate} onChange={(e) => setForm({ ...form, preorderDate: e.target.value })} />
-            <small className="hint">The day fans can start pre-ordering, if you offer it.</small>
+            <Hint>The day fans can start pre-ordering, if you offer it.</Hint>
           </label>
           <SelectOrOther label="Second genre (optional)" options={GENRES} value={form.secondaryGenre} onChange={(v) => setForm({ ...form, secondaryGenre: v })} otherPlaceholder="Type the genre" />
           {!isSong && <label>Album version (optional)
@@ -490,7 +500,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
               onChange={(e) => setForm({ ...form, hasCoverVersions: e.target.value === '' ? null : e.target.value === 'yes' })}>
               <option value="">Not answered</option><option value="yes">Yes</option><option value="no">No</option>
             </select>
-            <small className="hint">Cover versions are songs written by someone else. If any song is a cover, answer Yes.</small>
+            <Hint>Cover versions are songs written by someone else. If any song is a cover, answer Yes.</Hint>
           </label>}
           {!isSong && <label>Does the release have lyrics?
             <select value={form.hasLyrics} onChange={(e) => setForm({ ...form, hasLyrics: e.target.value as ReleaseForm['hasLyrics'] })}>
@@ -522,6 +532,8 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       {part === 'songs' && (
         <TrackEditor key={active} section={songTab} track={form.tracks[active]} onChange={(t) => setTrack(active, t)} hideTitle={isSong} hideGenre={isSong} maxAudioBytes={usage?.limits.maxAudioBytes} releaseId={releaseId} />
       )}
+      </div>
+      </div>
       <UsageLine usage={usage} />
       {backModal}
       {deleting !== null && form.tracks[deleting] && (

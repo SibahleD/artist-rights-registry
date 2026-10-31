@@ -1,14 +1,11 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import Hero from '../components/Hero'
+import { Hero, Collapsible, ErrorBox, Hint } from '../components/ui'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fetchBlob, setToken } from '../api'
 import { useAuth } from '../auth'
-import { Collapsible, ErrorBox, Hint } from '../components/ui'
 import { DirtyProvider, useReportDirty } from '../components/UnsavedGuard'
-import TagPicker from '../components/TagPicker'
-import PasswordInput from '../components/PasswordInput'
-import { COLLABORATOR_ROLES, DEFAULT_PREFERENCES } from '../types'
-import type { CollaboratorRole, Preferences, User } from '../types'
+import { TagPicker, PasswordInput } from '../components/form'
+import { COLLABORATOR_ROLES, DEFAULT_PREFERENCES, type CollaboratorRole, type Preferences, type User } from '../types'
 import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
 
 type Note = { ok: boolean; text: string } | null

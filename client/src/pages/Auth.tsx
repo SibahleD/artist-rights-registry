@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { ErrorBox } from '../components/ui'
-import PasswordInput from '../components/PasswordInput'
+import { PasswordInput } from '../components/form'
 import AuthShell from '../components/AuthShell'
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import Hero, { BackLink } from '../components/Hero'
+import { Hero, BackLink, Collapsible, ErrorBox, fmtDate, fmtDuration, Loading } from '../components/ui'
 import { useParams } from 'react-router-dom'
 import { api } from '../api'
-import { Collapsible, ErrorBox, fmtDate, fmtDuration, Loading } from '../components/ui'
 import type { SharedTrackDetail } from '../types'
 
 const EXPLICIT_LABEL: Record<string, string> = {

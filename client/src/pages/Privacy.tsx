@@ -1,5 +1,5 @@
 import { useAuth } from '../auth'
-import { BackLink } from '../components/Hero'
+import { BackLink } from '../components/ui'
 
 // Public page: readable without signing in (the landing page links here too).
 // DRAFT: every [CONFIRM] needs a real answer before real artists use the app, and the whole text should be reviewed.

@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { api, fetchBlob } from '../api'
 import type { Usage } from '../types'
 import vinyl from '../assets/vinyl-placeholder.png'
+import { Overlay } from './ui'
+import { ART_NOT_ALLOWED, ART_TARGET } from '../lib/release'
 
+// ---- files -----------------------------------------------------------------
 export const MB = 1024 * 1024
 export const fmtBytes = (n: number) => (n >= MB ? `${Math.round((n / MB) * 10) / 10} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
 
@@ -127,4 +130,73 @@ export function tintGradient([r, g, b]: RGB): string {
   const k = lum > 0.4 ? 0.4 / lum : 1
   const c = (m: number) => [r, g, b].map((v) => Math.round(v * k * m)).join(' ')
   return `linear-gradient(135deg, rgb(${c(1)}), rgb(${c(0.5)}))`
+}
+
+// ---- ImagePicker -----------------------------------------------------------
+// Chooses a JPEG or PNG and previews it. Nothing is uploaded here: the parent uploads on save.
+export function ImagePicker({ label, mediaId, file, maxBytes, shape = 'square', onPick, onClear }: {
+  label: string; hint?: string; mediaId?: string | null; file?: File | null; maxBytes: number
+  shape?: 'square' | 'round'; onPick: (f: File) => void; onClear: () => void
+}) {
+  const input = useRef<HTMLInputElement>(null)
+  const [err, setErr] = useState('')
+  const [viewing, setViewing] = useState(false)
+  const has = !!file || !!mediaId
+  return (
+    <div className="image-picker">
+      {has ? (
+        <button type="button" className={`cover viewable${shape === 'round' ? ' round' : ''}`} aria-label={`View ${label.toLowerCase()} full size`} title="Click to view" onClick={() => setViewing(true)}>
+          <AuthImage mediaId={mediaId} file={file} alt={label} />
+        </button>
+      ) : (
+        <div className={`cover${shape === 'round' ? ' round' : ''}`}>
+          <AuthImage mediaId={mediaId} file={file} alt={label} fallback={shape === 'round' ? <span>+</span> : vinylFallback} />
+        </div>
+      )}
+      {viewing && <ImageViewer mediaId={mediaId} file={file} alt={label} onClose={() => setViewing(false)} />}
+      <div className="stack">
+        <div className="row">
+          <button type="button" className="secondary" onClick={() => input.current?.click()}>{has ? 'Change' : 'Choose image'}</button>
+          {has && <button type="button" className="ghost" onClick={() => { setErr(''); if (input.current) input.current.value = ''; onClear() }}>Remove</button>}
+        </div>
+        {err && <small className="warn">{err}</small>}
+        <input ref={input} type="file" accept="image/jpeg,image/png" hidden onChange={(e) => {
+          const f = e.target.files?.[0]; if (!f) return
+          const problem = checkImage(f, maxBytes)
+          if (problem) { setErr(problem); e.target.value = ''; return }
+          setErr(''); onPick(f)
+        }} />
+      </div>
+    </div>
+  )
+}
+
+// ---- ImageViewer -----------------------------------------------------------
+// Full-size view of a picture on a darkened full-screen layer. Click anywhere, press Escape, or use the close button to leave.
+// The page behind is locked, and the picture fills the screen's height.
+export function ImageViewer({ mediaId, file, alt, onClose }: { mediaId?: string | null; file?: File | null; alt: string; onClose: () => void }) {
+  return (
+    <Overlay variant="lightbox" label={alt} onClose={onClose}>
+      <button type="button" className="lightbox-close" aria-label="Close" onClick={onClose}>✕</button>
+      <AuthImage mediaId={mediaId} file={file} alt={alt} />
+    </Overlay>
+  )
+}
+
+// ---- CoverArtGuide ---------------------------------------------------------
+// Cover art rules that no program can check, shown as a list with a confirmation. The size and weight are checked on the
+// server and shown as warnings on the release page. The confirmation is a reminder for this visit and is not saved.
+export function CoverArtGuide({ confirmed, onConfirm }: { confirmed: boolean; onConfirm: (v: boolean) => void }) {
+  return (
+    <div className="art-guide">
+      <p className="art-guide-title">Cover art checklist</p>
+      <p className="hint">Aim for: {ART_TARGET}</p>
+      <p className="hint">Stores can reject cover art that contains or shows:</p>
+      <ul>{ART_NOT_ALLOWED.map((x) => <li key={x}>{x}</li>)}</ul>
+      <label className="consent">
+        <input type="checkbox" checked={confirmed} onChange={(e) => onConfirm(e.target.checked)} />
+        <span>I have checked my cover art against this list.</span>
+      </label>
+    </div>
+  )
 }

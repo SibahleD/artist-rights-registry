@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
-import Hero, { BackLink } from '../components/Hero'
+import { Hero, BackLink, Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, Loading } from '../components/ui'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { AuthImage, vinylFallback } from '../components/files'
-import { Badge, Collapsible, ErrorBox, fmtDate, fmtDateTime, Loading } from '../components/ui'
 import type { Collaborator, Release, ReleaseExport, Track } from '../types'
 import { downloadJson } from './ReleaseView'
-import { formatCopyright } from '../components/CopyrightInput'
-import { featTitle, featuredNames } from '../lib/collab'
+import { formatCopyright } from '../components/form'
+import { featTitle, featuredNames } from '../lib/release'
 
 interface Data { release: Release; track: Track; collaborators: Collaborator[] }
 

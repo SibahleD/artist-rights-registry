@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Track Record helper: Chrome extension</title>
+  <meta name="description" content="Download the Track Record helper Chrome extension and install it in four steps. It copies a ready release into your distributor's form. You review and submit." />
+  <meta name="theme-color" content="#03050a" />
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="site.css" />
+</head>
+<body class="lp-body">
+  <a class="lp-skip" href="#main">Skip to content</a>
+
+  <header class="lp-nav">
+    <div class="lp-wrap lp-nav-in">
+      <a class="lp-brand" href="index.html"><img src="assets/logo-mark.png" alt="" width="32" height="32" />Track Record</a>
+      <button class="lp-menu-btn" aria-label="Toggle menu" aria-expanded="false" aria-controls="menu">Menu</button>
+      <nav id="menu" class="lp-menu" aria-label="Main">
+        <div class="lp-links">
+          <a href="index.html">Home</a>
+          <a href="index.html#features">Features</a>
+          <a href="extension.html" aria-current="page">Extension</a>
+          <a href="about.html">About</a>
+          <a href="faq.html">FAQ</a>
+        </div>
+        <div class="lp-actions">
+          <a class="lp-btn lp-ghost" data-app="/login">Log in</a>
+          <a class="lp-btn" data-app="/register">Get started</a>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="lp-page-hero">
+      <div class="lp-wrap lp-narrow">
+        <p class="lp-kicker">Chrome extension</p>
+        <h1>Track Record helper: <span class="lp-grad">stop retyping your release.</span></h1>
+        <p>When a release is marked ready, the helper copies its details into your distributor's upload form. You review everything and press submit yourself.</p>
+        <div class="lp-cta">
+          <a class="lp-btn lp-big" href="assets/track-record-helper.zip" download>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg>
+            Download the extension
+          </a>
+          <a class="lp-btn lp-big lp-secondary" href="#install">How to install</a>
+        </div>
+        <p class="lp-dl-meta">ZIP &middot; version 0.3.0 &middot; for Chrome 108 or newer</p>
+      </div>
+    </section>
+
+    <section class="lp-section" style="padding-top:1rem" aria-labelledby="ext-h">
+      <div class="lp-wrap">
+        <div class="lp-ext-in">
+          <div class="lp-reveal">
+            <p class="lp-kicker">What it fills in</p>
+            <h2 id="ext-h">Title, artists, dates, genre, songs and credits.</h2>
+            <p class="lp-sub" style="margin-bottom:0">The helper copies the title, artists, dates, genre, &#8471; and &copy; lines, songs, credits and ISRCs from a ready release into the matching boxes, and lists anything it could not find so you can fill it by hand.</p>
+          </div>
+          <div class="lp-panel lp-popup lp-reveal" aria-hidden="true">
+            <div class="lp-panel-bar"><b>Track Record helper</b><span class="lp-dots"><i></i><i></i><i></i></span></div>
+            <div class="lp-field"><span>Release</span><span>Ijoro (ready)</span></div>
+            <div class="lp-field"><span>RouteNote</span><span class="lp-switch on"></span></div>
+            <div class="lp-field"><span>DistroKid</span><span class="lp-switch"></span></div>
+            <div class="lp-field"><span>TuneCore</span><span class="lp-switch"></span></div>
+            <span class="lp-fake-btn">Fill release details</span>
+            <p class="lp-eg">Illustration of the popup.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install" class="lp-section lp-alt" aria-labelledby="inst-h">
+      <div class="lp-wrap lp-center">
+        <p class="lp-kicker">Installation</p>
+        <h2 id="inst-h">Install it in four steps</h2>
+        <p class="lp-sub">It is not on the Chrome Web Store yet, so you add it yourself. It takes about a minute.</p>
+        <ol class="lp-steps-grid">
+          <li class="lp-card lp-install lp-reveal"><span class="lp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"/></svg></span><div><span class="lp-step-tag">Step 1</span><h3>Download and unzip</h3><p>Download the zip above and unzip it. You get a folder called <span class="lp-code">track-record-helper</span>.</p></div></li>
+          <li class="lp-card lp-install lp-reveal"><span class="lp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a2 2 0 1 1 4 0v2h4a1 1 0 0 1 1 1v4h-2a2 2 0 1 0 0 4h2v4a1 1 0 0 1-1 1h-4v-2a2 2 0 1 0-4 0v2H6a1 1 0 0 1-1-1v-4h2a2 2 0 1 0 0-4H5V7a1 1 0 0 1 1-1h4z"/></svg></span><div><span class="lp-step-tag">Step 2</span><h3>Open Chrome's extensions page</h3><p>Type <span class="lp-code">chrome://extensions</span> in the address bar and switch on <b>Developer mode</b> (top right).</p></div></li>
+          <li class="lp-card lp-install lp-reveal"><span class="lp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><div><span class="lp-step-tag">Step 3</span><h3>Load it unpacked</h3><p>Choose <b>Load unpacked</b> and pick the <span class="lp-code">track-record-helper</span> folder. Pin it from the puzzle-piece menu so it is one click away.</p></div></li>
+          <li class="lp-card lp-install lp-reveal"><span class="lp-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3"/></svg></span><div><span class="lp-step-tag">Step 4</span><h3>Connect your account</h3><p>Open the extension, enter the API address <span class="lp-code" data-api>https://your-site/api</span> and sign in with your Track Record account. Pick a ready release, open your distributor's upload page and press <b>Fill release details</b>.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="lp-section">
+      <div class="lp-wrap">
+        <div class="lp-two">
+          <article class="lp-card lp-reveal">
+            <h3>What it does</h3>
+            <ul class="lp-ticks" style="margin-top:0">
+              <li>Fills text boxes and drop-downs from your ready release</li>
+              <li>Picks yes or no answers, and presses &ldquo;Add artist&rdquo; style buttons to make room for names</li>
+              <li>Shows a preview of every value, each with a Copy button</li>
+              <li>Lists anything it could not find, so you fill it by hand</li>
+            </ul>
+          </article>
+          <article class="lp-card lp-tint-cyan lp-reveal">
+            <h3>What it never does</h3>
+            <ul class="lp-ticks lp-x" style="margin-top:0">
+              <li>Submit the form or tick terms and conditions</li>
+              <li>Upload your audio or artwork</li>
+              <li>Touch login, payment or bank fields</li>
+              <li>Run in the background or track your browsing</li>
+            </ul>
+          </article>
+        </div>
+        <p class="lp-note" style="margin-top:1.2rem">The helper only runs when you press a button, and only on a distributor you have switched on in its popup. Real distributors start switched off, so read your distributor's terms on automation first. This is an early version: it has been tested on a practice page that copies the RouteNote layout, so expect to check each field.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="lp-foot">
+    <div class="lp-wrap lp-foot-in">
+      <div>
+        <a class="lp-brand" href="index.html"><img src="assets/logo-mark.png" alt="" width="32" height="32" />Track Record</a>
+      </div>
+      <ul class="lp-foot-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="extension.html">Extension</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+        <li><a href="privacy.html">Your Privacy</a></li>
+        <li><a href="/app/terms">Terms</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,19 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import Hero from '../components/Hero'
+import { Hero, Collapsible, Hint } from '../components/ui'
 import { api, upload } from '../api'
-import ImagePicker from '../components/ImagePicker'
-import { useUsage } from '../components/files'
-import { Collapsible } from '../components/ui'
+import { ImagePicker, useUsage } from '../components/files'
 import { useBackGuard } from '../components/UnsavedGuard'
 import { useAuth } from '../auth'
 import type { ArtistLink, User } from '../types'
-import LinkRows from '../components/LinkRows'
+import { LinkRows } from '../components/links'
 import { isBlankRow, OTHER, rowName, withScheme, type LinkRow } from '../data/services'
-import { Hint } from '../components/ui'
 import { COUNTRIES, NATIONALITIES } from '../data/options'
-import SaveBar from '../components/SaveBar'
-import SelectOrOther from '../components/SelectOrOther'
+import { SaveBar, SelectOrOther } from '../components/form'
 
 const savedToRow = (l: ArtistLink): LinkRow => ({ id: l.id, service: l.service, label: l.service === OTHER ? l.label : '', kind: l.kind, url: l.url })
 // What counts as "changed": blank rows are ignored, and a typed address without https:// is compared as typed.
@@ -113,7 +109,7 @@ export function Profile() {
         <label>Email<input value={user?.email ?? ''} disabled /></label>
         <label>Contact info
           <input value={f.contactInfo} onChange={(e) => setF({ ...f, contactInfo: e.target.value })} placeholder="name@example.com or +250 7XX XXX XXX" />
-          <small className="hint">How people you work with can reach you: an email address or a phone number with country code. One is enough.</small>
+          <Hint>How people you work with can reach you: an email address or a phone number with country code. One is enough.</Hint>
         </label>
         <div className="grid2">
           <label>Country

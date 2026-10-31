@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import Chevron from './Chevron'
+import { Chevron, Modal } from './ui'
 import { useBlocker, useLocation, useNavigate } from 'react-router-dom'
-import { Modal } from './ui'
 
 type Save = () => Promise<boolean | void> | boolean | void   // return false (or throw) when saving failed, so we stay on the page
 

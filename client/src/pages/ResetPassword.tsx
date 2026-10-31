@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../api'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, Hint } from '../components/ui'
 import AuthShell from '../components/AuthShell'
-import PasswordInput from '../components/PasswordInput'
+import { PasswordInput } from '../components/form'
 
 export default function ResetPassword() {
   const [params] = useSearchParams()
@@ -48,7 +48,7 @@ export default function ResetPassword() {
               <>
                 <label>New password<PasswordInput required minLength={8} autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} /></label>
                 <label>Repeat new password<PasswordInput required minLength={8} autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} /></label>
-                <small className="hint">At least 8 characters.</small>
+                <Hint>At least 8 characters.</Hint>
                 <button disabled={busy || !next || !again}>{busy ? 'Saving…' : 'Change password'}</button>
                 <p className="muted">Link expired? <Link to="/forgot-password" className="muted">Request a new one</Link></p>
               </>

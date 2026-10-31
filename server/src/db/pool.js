@@ -1,18 +1,20 @@
 const { Pool } = require('pg');
 
 if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set. Add it to server/.env or the host environment.');
-    process.exit(1);
+    throw new Error('DATABASE_URL is not set. Add it to server/.env or the host environment.');
 }
 
+const { isProduction } = require('../env');
 const useSsl = process.env.DATABASE_SSL !== undefined
     ? process.env.DATABASE_SSL !== 'false'
-    : process.env.NODE_ENV === 'production';
+    : isProduction;
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: useSsl ? { rejectUnauthorized: false } : false,
-    max: Number(process.env.DB_POOL_MAX) || 10,
+    // Each serverless instance handles one request at a time, so a small pool is enough and keeps
+    // the total connections to Supabase down when many instances are warm.
+    max: Number(process.env.DB_POOL_MAX) || (isProduction ? 3 : 10),
 });
 
 pool.on('error', (err) => console.error('Unexpected database error on idle client:', err.message));

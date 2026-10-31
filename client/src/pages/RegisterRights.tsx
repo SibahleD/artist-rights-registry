@@ -1,8 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
-import Term from '../components/Term'
-import SocietyTracker, { useSocieties } from '../components/SocietyTracker'
-import TrackSocieties from '../components/TrackSocieties'
-import RoyaltyInfo from '../components/RoyaltyInfo'
+import { Term, RoyaltyInfo } from '../components/rights'
+import { SocietyTracker, useSocieties, TrackSocieties } from '../components/societies'
 import { CHECKED } from '../data/societies'
 
 const TABS = [['registrations', 'My registrations'], ['track', 'Track societies'], ['info', 'Info']] as const
@@ -31,7 +29,6 @@ export default function RegisterRights() {
         ))}
       </div>
 
-      {/* All three stay mounted, so an edit in progress survives a tab switch. */}
       <div className="stack" hidden={tab !== 'registrations'}>
         <SocietyTracker societies={societies} onBrowse={() => setTab('track')} />
       </div>

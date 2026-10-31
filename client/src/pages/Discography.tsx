@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { Badge, Collapsible, ErrorBox, fmtDate, Loading } from '../components/ui'
 import { AuthImage, vinylFallback, type RGB } from '../components/files'
-import { groupOf, type Group } from '../lib/groups'
+import { groupOf, type Group } from '../lib/release'
 import type { Release, SharedTrack } from '../types'
 
 function ReleaseCard({ r }: { r: Release }) {

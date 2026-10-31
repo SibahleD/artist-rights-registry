@@ -1,15 +1,69 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { ArtCard } from '../components/files'
-import { Badge, Collapsible, fmtDate } from '../components/ui'
-import Hero from '../components/Hero'
-import { groupOf } from '../lib/groups'
+import { Badge, Collapsible, fmtDate, Hero } from '../components/ui'
+import { LineChart } from '../components/performance'
+import { fmtCompact, fmtInt, fmtMonth } from '../lib/format'
+import { groupOf } from '../lib/release'
+import { filterStats, monthOf, monthsBetween, platformLabel, ranked, shiftMonth, sumBy, type PerfData } from '../lib/stats'
 import type { ReadinessCheck, ReadinessReport, Release, SharedTrack } from '../types'
 
-// Slot for analytics on released tracks. Intentionally empty until play counts are sorted out (build guide step 11).
-function AnalyticsSlot(): null { return null }
+// A short summary of the Performance page: the latest month against the one before, the last 12 months, and what led.
+function PerformanceSummary() {
+  const [data, setData] = useState<PerfData | null | undefined>(undefined) // undefined while loading, null if it failed
+  useEffect(() => { api<PerfData>('/streams').then(setData).catch(() => setData(null)) }, [])
+
+  const v = useMemo(() => {
+    if (!data || data.stats.length === 0 || !data.last_period) return null
+    const last = monthOf(data.last_period)
+    const months = monthsBetween(shiftMonth(last, -11), last)
+    const rows = filterStats(data.stats, { from: months[0], to: last }, null)
+    const byMonth = sumBy(rows, (r) => monthOf(r.period))
+    const values = months.map((m) => byMonth.get(m) ?? 0)
+    const thisMonth = values[values.length - 1], before = values[values.length - 2] ?? 0
+    const latest = rows.filter((r) => monthOf(r.period) === last)
+    const titleOf = new Map(data.tracks.filter((t) => t.isrc).map((t) => [t.isrc as string, t.title]))
+    const topSong = ranked(sumBy(latest, (r) => r.isrc))[0]
+    const topPlatform = ranked(sumBy(latest, (r) => r.platform))[0]
+    return {
+      last, months, values, thisMonth,
+      change: before > 0 ? (thisMonth - before) / before : null,
+      year: values.reduce((a, n) => a + n, 0),
+      topPlatform: topPlatform ? platformLabel(topPlatform[0]) : '—',
+      topSong: topSong ? titleOf.get(topSong[0]) ?? topSong[0] : '—',
+    }
+  }, [data])
+
+  if (data === undefined || data === null) return null
+  const open = <Link className="btn secondary" to="/performance">Open Performance</Link>
+
+  if (!v) {
+    return (
+      <Collapsible title="Performance" level="h2" className="" actions={open}>
+        <p className="muted">No streams yet. Import the streaming report from your distributor on the Performance page and your numbers will show up here.</p>
+      </Collapsible>
+    )
+  }
+  return (
+    <Collapsible title="Performance" level="h2" className="" actions={open}>
+      <div className="stack">
+        <div className="stats">
+          <Link to="/performance" className="option stat">
+            <span>Streams in {fmtMonth(`${v.last}-01`)}</span>
+            <b>{fmtCompact(v.thisMonth)}</b>
+            {v.change !== null && <span className={`perf-delta ${v.change >= 0 ? 'up' : 'down'}`}>{v.change >= 0 ? '▲' : '▼'} {Math.abs(Math.round(v.change * 100))}% vs last month</span>}
+          </Link>
+          <Link to="/performance" className="option stat"><span>Last 12 months</span><b>{fmtCompact(v.year)}</b></Link>
+          <Link to="/performance" className="option stat"><span>Top platform, {fmtMonth(`${v.last}-01`, true)}</span><b className="stat-text">{v.topPlatform}</b></Link>
+          <Link to="/performance" className="option stat"><span>Top song, {fmtMonth(`${v.last}-01`, true)}</span><b className="stat-text">{v.topSong}</b></Link>
+        </div>
+        <LineChart height={180} labels={v.months.map((m) => fmtMonth(`${m}-01`, true))} series={[{ name: 'Streams', values: v.values }]} exact={fmtInt} unit=" streams" label="Streams per month, last 12 months" />
+      </div>
+    </Collapsible>
+  )
+}
 
 // What to do next on a draft: the first thing still blocking it, else the first warning.
 function nextStep(checks: ReadinessCheck[]): ReadinessCheck | null {
@@ -85,6 +139,8 @@ export default function Home() {
         <Link className="btn secondary" to="/new/album">+ New Album / EP</Link>
       </div>
 
+      <PerformanceSummary />
+
       {toFinish.length > 0 && (
         <Collapsible title="Finish your drafts" level="h2" className="">
           <div className="stack">
@@ -132,7 +188,6 @@ export default function Home() {
         </Collapsible>
       )}
 
-      <AnalyticsSlot />
     </div>
   )
 }

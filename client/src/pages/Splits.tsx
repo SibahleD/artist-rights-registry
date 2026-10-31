@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
-import Hero, { BackLink } from '../components/Hero'
-import Chevron from '../components/Chevron'
+import { Hero, BackLink, Chevron, Badge, Collapsible, ErrorBox, fmtDate, Hint, Loading } from '../components/ui'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { buildRows, SEND_TEXT, type SendResult } from '../lib/splitRows'
-import { Badge, Collapsible, ErrorBox, fmtDate, Hint, Loading } from '../components/ui'
-import SaveBar from '../components/SaveBar'
+import { buildRows, SEND_TEXT, type SendResult, sumPercent, toCollaboratorInput } from '../lib/release'
+import { SaveBar } from '../components/form'
 import SplitsEditor from '../components/SplitsEditor'
 import { useUnsavedChanges } from '../components/UnsavedGuard'
-import { sumPercent, toCollaboratorInput } from '../lib/collab'
 import type { Collaborator, CollaboratorInput, Notice, Release, Track } from '../types'
 
 // Everything about agreeing the splits for one release, so the track editor can stay about entering data.

@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { BarList, LineChart } from '../components/Charts'
-import { Collapsible, ErrorBox, Hint, Loading } from '../components/ui'
+import { BarList, LineChart } from '../components/performance'
+import { Collapsible, ErrorBox, Hero, Loading, Note } from '../components/ui'
 import { EARNINGS_DISCLAIMER, RATES, RATE_CURRENCY, REVIEWED_ON, rateFor } from '../data/rates'
-import { earn, earnBy, rankedEst, unrated } from '../lib/earnings'
-import { buildEarningsReport } from '../lib/earningsReport'
+import { earn, earnBy, rankedEst, unrated, currentMonth, filterStats, monthsBetween, shiftMonth, sumBy, total, type PerfData, type Range, platformLabel } from '../lib/stats'
+import { buildEarningsReport, downloadReport } from '../lib/reports'
 import { fmtInt, fmtMoney, fmtMonth } from '../lib/format'
-import { currentMonth, filterStats, monthsBetween, shiftMonth, sumBy, total, type PerfData, type Range } from '../lib/performance'
-import { platformLabel } from '../lib/streamImport'
 import { Link } from 'react-router-dom'
 
 const money = (n: number) => fmtMoney(n, RATE_CURRENCY)
@@ -65,7 +63,6 @@ export default function Earnings() {
     if (!data || !range) return
     setBusy(true); setPdfError('')
     try {
-      const { downloadReport } = await import('../lib/pdf')
       await downloadReport(buildEarningsReport({ range, artist: user?.artist_name ?? '', stats: data.stats, tracks: data.tracks }))
     } catch { setPdfError('Could not build the PDF. Try again.') }
     finally { setBusy(false) }
@@ -73,10 +70,13 @@ export default function Earnings() {
 
   return (
     <div className="performance">
-      <div className="row perf-head">
-        <h2>Earnings (estimate)</h2>
-        {!noData && <button type="button" className="ghost" disabled={busy || !rangeOk} onClick={exportPdf}>{busy ? 'Building…' : 'Export PDF'}</button>}
-      </div>
+      <Hero>
+        <h1>Earnings</h1>
+        <div className="sub">Estimated from your streams{user?.artist_name ? ` · ${user.artist_name}` : ''}</div>
+        <div className="row actions perf-hero-actions">
+          {!noData && <button type="button" className="secondary" disabled={busy || !rangeOk} onClick={exportPdf}>{busy ? 'Building…' : 'Export PDF'}</button>}
+        </div>
+      </Hero>
 
       {/* Always visible on the page, never hidden in a tooltip. */}
       <div className="notice" role="note"><strong>Estimate only.</strong> {EARNINGS_DISCLAIMER}</div>
@@ -97,7 +97,7 @@ export default function Earnings() {
               <label><span>From</span><input type="month" value={range.from} max={range.to} onChange={(e) => e.target.value && setRange({ ...range, from: e.target.value })} /></label>
               <label><span>To</span><input type="month" value={range.to} min={range.from} max={currentMonth()} onChange={(e) => e.target.value && setRange({ ...range, to: e.target.value })} /></label>
             </div>
-            {!rangeOk && <Hint>Choose a start month before the end month, within 10 years.</Hint>}
+            {!rangeOk && <Note>Choose a start month before the end month, within 10 years.</Note>}
           </section>
 
           <div className="stats">
@@ -107,7 +107,7 @@ export default function Earnings() {
           </div>
 
           {view.missing.length > 0 && (
-            <Hint>No rate is set for {view.missing.map(platformLabel).join(', ')}, so those streams are not in the estimate.</Hint>
+            <Note>No rate is set for {view.missing.map(platformLabel).join(', ')}, so those streams are not in the estimate.</Note>
           )}
 
           <section className="card">

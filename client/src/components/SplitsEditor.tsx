@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { COLLABORATOR_ROLES } from '../types'
-import type { CollaboratorInput } from '../types'
-import { WRITER_STATUSES, WRITER_STATUS_LABELS } from '../data/options'
-import type { WriterStatus } from '../data/options'
-import { sumPercent } from '../lib/collab'
-import { Hint } from './ui'
+import { COLLABORATOR_ROLES, type CollaboratorInput } from '../types'
+import { WRITER_STATUSES, WRITER_STATUS_LABELS, type WriterStatus } from '../data/options'
+import { sumPercent } from '../lib/release'
+import { Hint, Note } from './ui'
 
 // The credit rows for one song: legal name, role, share, email, and optional details. The total must reach 100%.
 // `disabled` shows the rows read-only, for a release that is locked.
@@ -36,7 +34,7 @@ export default function SplitsEditor({ collaborators, onChange, disabled }: {
               <button type="button" className="ghost" onClick={() => setOpen({ ...open, [i]: !open[i] })}>{open[i] ? 'Hide details' : 'Details'}</button>
               <button type="button" className="ghost" onClick={() => onChange(collaborators.filter((_, j) => j !== i))}>Remove</button>
             </div>
-            {c.isFeatured && !(Number(c.ownershipPercent) > 0) && <Hint>Add their legal name if they will earn a share.</Hint>}
+            {c.isFeatured && !(Number(c.ownershipPercent) > 0) && <Note>Add their legal name if they will earn a share.</Note>}
             {open[i] && (
               <div className="grid2">
                 <label>IPI number (optional)<input inputMode="numeric" value={c.ipi ?? ''} onChange={(e) => setCollab(i, { ipi: e.target.value })} placeholder="9 to 11 digits" />
