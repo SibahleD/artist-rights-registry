@@ -22,6 +22,10 @@ const { isProduction } = require('./env');
     for (const m of problems) console.warn('Mail settings:', m);
 }
 
+if (!process.env.EMAIL_HASH_KEY) {
+    console.error('EMAIL_HASH_KEY is not set. Splits that include a co-writer email cannot be saved and invitations cannot be sent. Add it to the environment (Netlify: Site configuration > Environment variables).');
+}
+
 const app = express();
 
 if (process.env.TRUST_PROXY) {

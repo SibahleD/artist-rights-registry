@@ -1,7 +1,7 @@
 const pool = require('../db/pool');
 
 const { ROLES, parseCollaborators } = require('../lib/splits');
-const { emailHash } = require('../services/notices');
+const { emailHash, MISSING_KEY_MESSAGE } = require('../services/notices');
 
 
 async function claimInvites(user) {
@@ -116,6 +116,11 @@ async function replaceCollaborators(req, res) {
             return res.status(409).json({ error: 'Splits on a disputed track cannot be changed.' });
         }
         console.error('replaceCollaborators error:', err);
+        if (/EMAIL_HASH_KEY/.test(err.message)) return res.status(500).json({ error: MISSING_KEY_MESSAGE });
+        // 42P01 / 42703: a table or column is missing, i.e. the Supabase database is behind the code.
+        if (err.code === '42P01' || err.code === '42703') {
+            return res.status(500).json({ error: 'The database is missing a recent update. Run "npm run migrate" against the Supabase database.' });
+        }
         return res.status(500).json({ error: 'Internal server error' });
     } finally {
         if (client) client.release();

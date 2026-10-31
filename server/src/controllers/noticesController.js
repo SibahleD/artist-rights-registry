@@ -3,7 +3,7 @@ const limits = require('../limits');
 const { newToken } = require('../services/tokens');
 const { sendMail } = require('../services/mailer');
 const coWriterNotice = require('../services/cowriterNotice');
-const { NOTICE_VERSION, EXPIRY_DAYS, emailHash, noticeLink, sweepNotices } = require('../services/notices');
+const { NOTICE_VERSION, EXPIRY_DAYS, MISSING_KEY_MESSAGE, emailHash, noticeLink, sweepNotices } = require('../services/notices');
 
 async function sendNotices(req, res) {
     const client = await pool.connect();
@@ -79,6 +79,7 @@ async function sendNotices(req, res) {
                 }
                 budget -= 1;
                 mail.push({
+                    resultIndex: results.length, trackId: s.track_id, hash,
                     to: s.invited_email,
                     ...coWriterNotice({
                         kind: action === 'updated' ? 'updated' : 'new',
@@ -93,14 +94,23 @@ async function sendNotices(req, res) {
 
         await client.query('COMMIT');
 
-        for (const m of mail) {
-            try { await sendMail(m); }
-            catch (err) { console.error('notice email failed:', err.message); }
+        // Sent together (not one after another) so a release with several co-writers stays inside the serverless time limit.
+        const outcomes = await Promise.allSettled(mail.map(({ resultIndex, trackId, hash, ...message }) => sendMail(message)));
+        for (const [i, o] of outcomes.entries()) {
+            if (o.status === 'fulfilled') continue;
+            const m = mail[i];
+            console.error('notice email failed:', o.reason && o.reason.message);
+            results[m.resultIndex].action = 'email_failed';
+            // Without this the notice would stay 'pending' and the next click would say "already invited", so the email
+            // could never be retried. Removing it also removes the co-writer's address, which was never delivered to.
+            await pool.query('DELETE FROM collaborator_notices WHERE track_id = $1 AND email_hash = $2', [m.trackId, m.hash])
+                .catch((e) => console.error('could not clear failed notice:', e.message));
         }
         return res.json({ results });
     } catch (err) {
         await client.query('ROLLBACK').catch(() => {});
         console.error('sendNotices error:', err);
+        if (/EMAIL_HASH_KEY/.test(err.message)) return res.status(500).json({ error: MISSING_KEY_MESSAGE });
         return res.status(500).json({ error: 'Internal server error' });
     } finally {
         client.release();
@@ -142,16 +152,22 @@ async function remindNotice(req, res) {
         }
         if (n.reminder_sent_at) return res.status(409).json({ error: 'A reminder was already sent.' });
 
-        const { raw, hash } = newToken(); 
-        await pool.query('UPDATE collaborator_notices SET token_hash = $2, reminder_sent_at = now() WHERE id = $1', [n.id, hash]);
-        await sendMail({
-            to: n.email,
-            ...coWriterNotice({
-                kind: 'reminder', artistName: req.user.artistName, coWriterName: n.co_writer_name, role: n.role,
-                trackTitle: n.track_title, releaseTitle: n.release_title,
-                sharePercent: Number(n.share_percent), link: noticeLink(raw),
-            }),
-        });
+        const { raw, hash } = newToken();
+        await pool.query('UPDATE collaborator_notices SET token_hash = $2 WHERE id = $1', [n.id, hash]);
+        try {
+            await sendMail({
+                to: n.email,
+                ...coWriterNotice({
+                    kind: 'reminder', artistName: req.user.artistName, coWriterName: n.co_writer_name, role: n.role,
+                    trackTitle: n.track_title, releaseTitle: n.release_title,
+                    sharePercent: Number(n.share_percent), link: noticeLink(raw),
+                }),
+            });
+        } catch (err) {
+            console.error('reminder email failed:', err.message);
+            return res.status(502).json({ error: 'The reminder email could not be sent. Please try again in a few minutes.' });
+        }
+        await pool.query('UPDATE collaborator_notices SET reminder_sent_at = now() WHERE id = $1', [n.id]);
         return res.status(204).end();
     } catch (err) {
         console.error('remindNotice error:', err);

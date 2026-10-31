@@ -4,6 +4,8 @@ const NOTICE_VERSION = '2026-10-v1';
 const EXPIRY_DAYS = Number(process.env.NOTICE_EXPIRY_DAYS) || 14;
 const APP_URL = require('../appUrl');
 
+const MISSING_KEY_MESSAGE = 'Co-writer emails cannot be saved yet: the server is missing its EMAIL_HASH_KEY setting. Add it in the Netlify environment variables and redeploy.';
+
 function emailHash(email) {
     const key = process.env.EMAIL_HASH_KEY;
     if (!key) throw new Error('EMAIL_HASH_KEY is not set');
@@ -117,4 +119,4 @@ async function creditStatuses(release) {
     return out;
 }
 
-module.exports = { noticeReadiness, creditStatuses, NOTICE_VERSION, EXPIRY_DAYS, emailHash, noticeLink, sweepNotices };
+module.exports = { noticeReadiness, creditStatuses, NOTICE_VERSION, EXPIRY_DAYS, MISSING_KEY_MESSAGE, emailHash, noticeLink, sweepNotices };

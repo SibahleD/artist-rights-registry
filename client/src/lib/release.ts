@@ -158,6 +158,7 @@ export const SEND_TEXT: Record<string, string> = {
   blocked: 'removed themselves and cannot be invited again',
   limit: 'daily invitation limit reached, try again tomorrow',
   skipped_self: 'that is your own email, skipped',
+  email_failed: 'the email could not be sent, nothing was recorded. Click send again in a few minutes',
 }
 
 // One line on the Splits page: a sent notice, or someone with an email who has not been invited yet.
