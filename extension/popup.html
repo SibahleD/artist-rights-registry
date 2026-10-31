@@ -3,13 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Track Record helper</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <header><strong id="hello">Track Record helper</strong><button id="signout" class="ghost" hidden>Sign out</button></header>
+  <header>
+    <img class="brand" src="icons/logo-mark.png" alt="" width="28" height="28" />
+    <strong id="hello">Track Record helper</strong>
+    <button id="signout" class="ghost" hidden>Sign out</button>
+  </header>
 
   <section id="login" hidden>
-    <label>Track Record API address<input id="api" placeholder="http://localhost:4000/api" /></label>
+    <label>Track Record API address<input id="api" placeholder="https://trackrecordrw.netlify.app/api" /></label>
     <label>Email<input id="email" type="email" autocomplete="username" /></label>
     <label>Password
       <span class="pw-field">

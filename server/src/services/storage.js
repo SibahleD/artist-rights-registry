@@ -4,7 +4,12 @@ const crypto = require('crypto');
 
 // Files (audio) live in Supabase Storage when SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set,
 // and on local disk otherwise (development). Netlify functions have no writable disk.
-const SB_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+// Only the origin is used, so a pasted "Data API" address such as https://<ref>.supabase.co/rest/v1 still works.
+const SB_URL = (() => {
+    const raw = (process.env.SUPABASE_URL || '').trim();
+    if (!raw) return '';
+    try { return new URL(raw).origin; } catch { return raw.replace(/\/+$/, ''); }
+})();
 const SB_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const BUCKET = process.env.SUPABASE_BUCKET || 'uploads';
 const useSupabase = Boolean(SB_URL && SB_KEY);

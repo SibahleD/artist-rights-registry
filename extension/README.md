@@ -5,7 +5,7 @@ It never submits, ticks terms, uploads files, or touches login, payment or bank 
 
 ## Load it
 1. Chrome, `chrome://extensions`, switch on Developer mode, Load unpacked, pick this `extension` folder.
-2. Click the extension, enter the Track Record API address (default `http://localhost:4000/api`) and sign in.
+2. Click the extension, sign in. The API address defaults to the hosted site (`https://trackrecordrw.netlify.app/api`); to test against a local server, change it to `http://localhost:4000/api`. The browser remembers the address you save. The site also offers a ready-made zip at `/assets/track-record-helper.zip`, built on every deploy by `scripts/pack-extension.js`.
 3. Pick a ready release. The popup previews the values (from `GET /releases/:id/export`, which carries no internal ids or co-writer emails).
 
 ## Try it on the mock page

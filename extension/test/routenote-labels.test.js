@@ -26,9 +26,9 @@ test('"Add Artist" button is recognised', () => {
 test('cover versions radio matches the question and both answers', () => {
   const c = profile.choices.hasCoverVersions;
   assert.ok(c, 'hasCoverVersions is missing from the profile');
-  assert.match('Does this release contain cover versions?', c.group.re);
-  assert.match('yes', c.options.yes);
-  assert.match('No', c.options.no);
-  assert.doesNotMatch('yes', c.options.no);
+  assert.match('Does this release contain cover versions?', new RegExp(c.group.re, 'i'));
+  assert.match('yes', new RegExp(c.options.yes, 'i'));
+  assert.match('No', new RegExp(c.options.no, 'i'));
+  assert.doesNotMatch('yes', new RegExp(c.options.no, 'i'));
 });
 console.log(`\n${n} tests passed`)

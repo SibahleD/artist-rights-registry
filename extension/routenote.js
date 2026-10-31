@@ -28,4 +28,4 @@ const ROUTENOTE_PROFILE = {
                     add: '^\\s*\\+?\\s*add\\s+(another\\s+)?(contributor|credit|producer)' },
   },
 }
-module.exports = { ROUTENOTE_PROFILE }
+if (typeof module !== 'undefined') module.exports = { ROUTENOTE_PROFILE }

@@ -8,6 +8,6 @@
   },
   "private": true,
   "scripts": {
-    "build": "cd server && npm install && cd ../client && npm install && npm run build"
+    "build": "cd server && npm install && cd ../client && npm install && npm run build && cd .. && node scripts/pack-extension.js"
   }
 }

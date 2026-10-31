@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id)
-const DEFAULT_API = 'http://localhost:4000/api'
+// The hosted site. Change the address in the popup to point at a local server (http://localhost:4000/api) while developing.
+const DEFAULT_API = 'https://trackrecordrw.netlify.app/api'
 let API = DEFAULT_API, TOKEN = null, DOC = null, ENABLED = {}, RELEASES = [], CURRENT = null, TRACK_IX = 0
 
 const say = (text, kind = '') => { const s = $('status'); s.textContent = text; s.className = kind }
@@ -14,7 +15,7 @@ async function call(path, opts = {}) {
   let res
   try {
     res = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}) } })
-  } catch { throw new Error('Cannot reach Track Record. Is it running, and is the address right?') }
+  } catch { throw new Error('Cannot reach Track Record. Check your connection and the API address.') }
   const data = await res.json().catch(() => ({}))
   if (res.status === 401 && TOKEN) { await signOut(); throw new Error('Signed out. Please sign in again.') }
   if (!res.ok) throw new Error(data.error || 'Something went wrong.')

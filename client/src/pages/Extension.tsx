@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import AuthShell from '../components/AuthShell'
 
-const API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000/api'
+// VITE_API_URL is "/api" on the hosted site, which means nothing inside the extension, so show the full address.
+const RAW_API = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000/api'
+const API = RAW_API.startsWith('/') ? window.location.origin + RAW_API : RAW_API
+const ZIP = `${window.location.origin}/assets/track-record-helper.zip`
 
 export default function Extension() {
   return (
@@ -13,10 +16,10 @@ export default function Extension() {
           It only fills text boxes and drop-downs. It never submits, uploads files or touches login or payment fields.
         </p>
         <ol className="ext-steps">
-          <li>Download the <code>extension</code> folder from the project and unzip it.</li>
+          <li><a href={ZIP} download>Download the extension</a> and unzip it. You get a folder called <code>track-record-helper</code>.</li>
           <li>In Chrome open <code>chrome://extensions</code> and switch on Developer mode.</li>
           <li>Choose Load unpacked and pick the <code>extension</code> folder.</li>
-          <li>Open the extension, enter the API address <code>{API}</code> and sign in with your Track Record account.</li>
+          <li>Open the extension and sign in with your Track Record account. If it asks for an API address, use <code>{API}</code>.</li>
         </ol>
         <p className="muted">You check everything and press submit yourself.</p>
       </div>
