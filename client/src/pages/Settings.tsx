@@ -172,6 +172,17 @@ function PrivacyCard() {
   )
 }
 
+function ExtensionCard() {
+  return (
+    <Collapsible title="Browser extension" level="h2" className="" defaultOpen={false}>
+      <section className="card stack tight">
+        <p>The Track Record helper is a Chrome extension that copies a ready release into your distributor's form. You review everything and submit yourself.</p>
+        <div className="row actions"><Link className="btn secondary" to="/extension">Get the extension</Link></div>
+      </section>
+    </Collapsible>
+  )
+}
+
 function DeleteCard() {
   const { logout } = useAuth()
   const nav = useNavigate()
@@ -302,7 +313,7 @@ export default function Settings() {
       </div>
       <DirtyProvider>
         {/* All three stay mounted so edits survive a tab switch; the unsaved-changes guard still covers leaving the page. */}
-        <div className="stack" hidden={tab !== 'account'}><SignInCard /><PrivacyCard /><DeleteCard /></div>
+        <div className="stack" hidden={tab !== 'account'}><SignInCard /><PrivacyCard /><ExtensionCard /><DeleteCard /></div>
         <div className="stack" hidden={tab !== 'credits'}><CreditDetailsCard /></div>
         <div hidden={tab !== 'preferences'}><PreferencesTab /></div>
       </DirtyProvider>

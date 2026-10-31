@@ -8,10 +8,6 @@ It never submits, ticks terms, uploads files, or touches login, payment or bank 
 2. Click the extension, sign in. The API address defaults to the hosted site (`https://trackrecordrw.netlify.app/api`); to test against a local server, change it to `http://localhost:4000/api`. The browser remembers the address you save. The site also offers a ready-made zip at `/assets/track-record-helper.zip`, built on every deploy by `scripts/pack-extension.js`.
 3. Pick a ready release. The popup previews the values (from `GET /releases/:id/export`, which carries no internal ids or co-writer emails).
 
-## Try it on the mock page
-`cd extension && python3 -m http.server 8000`, open `http://localhost:8000/mock-distributor.html`, open the popup, press
-"Fill release details", then choose a song and press "Fill this song" (one song at a time).
-
 ## What it can fill (RouteNote layout)
 Release: title, artist, label, genre and second genre, release / originally released / pre-order / sales start dates, album version
 (albums and EPs), ℗ and © lines, language, compilation / lyrics / explicit answers, and the primary-artist list.
@@ -27,7 +23,7 @@ A number that fails the barcode check digit asks for a second confirmation.
 
 ## RouteNote selectors are not verified
 `routenote.js` holds every RouteNote pattern in one file. They were written from the field names RouteNote asks for and tested only on
-`mock-distributor.html`. Before relying on them, open RouteNote's real form, compare each label, and edit `routenote.js`.
+a test form (`test/fixtures/form.html`). Before relying on them, open RouteNote's real form, compare each label, and edit `routenote.js`.
 Anything that does not match is skipped and listed as "not found".
 
 ## Tests
@@ -46,4 +42,4 @@ Anything that does not match is skipped and listed as "not found".
 ## Adding a distributor's real form
 Fields are matched by label, placeholder, name and id (`filler.js`, `PATTERNS`). After inspecting a real form, add a
 `extra: { pLine: { re: 'master\\s*copyright' } }` entry for that distributor in `distributors.js`. Selectors for real sites
-have not been verified here; only the mock page is tested.
+have not been verified here; only the test form is used.

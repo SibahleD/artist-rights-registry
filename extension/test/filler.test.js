@@ -1,4 +1,4 @@
-// Runs the real filler.js and the UPC reader against mock-distributor.html in jsdom.
+// Runs the real filler.js and the UPC reader against fixtures/form.html (a test-only RouteNote-style form, not shipped) in jsdom.
 // Needs jsdom, which is not a project dependency:  cd /tmp && npm i jsdom && NODE_PATH=/tmp/node_modules node extension/test/filler.test.js
 const fs = require('fs'), path = require('path'), assert = require('assert')
 const { JSDOM } = require('jsdom')
@@ -6,7 +6,7 @@ const dir = path.join(__dirname, '..')
 const read = (f) => fs.readFileSync(path.join(dir, f), 'utf8')
 
 function page() {
-  const dom = new JSDOM(read('mock-distributor.html'), { runScripts: 'dangerously', pretendToBeVisual: true })
+  const dom = new JSDOM(fs.readFileSync(path.join(__dirname, 'fixtures', 'form.html'), 'utf8'), { runScripts: 'dangerously', pretendToBeVisual: true })
   const w = dom.window
   w.Element.prototype.getBoundingClientRect = () => ({ width: 100, height: 20, top: 0, left: 0, right: 100, bottom: 20 })
   let submitted = 0
