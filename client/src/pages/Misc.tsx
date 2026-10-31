@@ -124,7 +124,7 @@ export function Profile() {
         <small className="hint">Your roles, rights society, IPI and publisher are in <Link to="/settings?tab=credits">Settings, Credits</Link>.</small>
         </div>
         <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
-          mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 2 * 1024 * 1024}
+          mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 4 * 1024 * 1024}
           onPick={(f) => { setAvatarFile(f); setAvatarCleared(false) }}
           onClear={() => { setAvatarFile(undefined); setAvatarCleared(true) }} />
         </div>

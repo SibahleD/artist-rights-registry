@@ -209,7 +209,7 @@ Netlify serves the static client and runs the Express app as a function. Supabas
 
 ## 10. Known limitations
 
-- Uploaded audio and artwork are stored on local disk (`UPLOAD_DIR`). Netlify Functions have no persistent disk and cap request bodies at about 6 MB, so uploads need either Supabase Storage with signed uploads or a host with a disk. This is the main item left for production.
+- Audio (MP3 and FLAC only, up to `MAX_AUDIO_BYTES`, 50 MB by default) goes straight from the browser to a private Supabase Storage bucket with signed upload URLs, and plays back through short-lived signed links, so it never passes through the Netlify Function (which caps request and response bodies at about 6 MB). Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_BUCKET` in Netlify, create the bucket, and raise both the bucket's file size limit and the project's global limit (Storage settings) to at least `MAX_AUDIO_BYTES`. Cover art and profile photos stay in Postgres and go through the function, so they are capped at 4 MB by default.
 - Playlist fit and earnings are rules of thumb and estimates, not forecasts. The interface labels them as such.
 - The extension's RouteNote selectors were tested only against the included mock page and must be checked against the live form.
 - The extension and client have no automated browser tests beyond the extension unit tests.

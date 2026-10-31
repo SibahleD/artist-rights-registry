@@ -4,7 +4,7 @@ const {
     deleteAudio,
 } = require('../controllers/trackController');
 
-const { uploadAudio, downloadAudio } = require('../controllers/audioFileController');
+const { uploadAudio, audioUploadUrl, completeAudio, audioUrl, downloadAudio } = require('../controllers/audioFileController');
 const { saveFeatures, deleteFeatures } = require('../controllers/audioFeatureController');
 const collaboratorRoutes = require('./collaborators');
 
@@ -31,6 +31,9 @@ router.patch('/:trackId', updateTrack);
 router.delete('/:trackId', deleteTrack);
 router.put('/:trackId/audio/file', uploadAudio);
 router.get('/:trackId/audio/file', downloadAudio);
+router.post('/:trackId/audio/upload-url', audioUploadUrl);
+router.post('/:trackId/audio/complete', completeAudio);
+router.get('/:trackId/audio/url', audioUrl);
 router.delete('/:trackId/audio', deleteAudio);
 router.put('/:trackId/audio-features', saveFeatures);
 router.delete('/:trackId/audio-features', deleteFeatures);

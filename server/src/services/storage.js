@@ -51,6 +51,28 @@ async function put(key, buffer) {
     await fs.rename(tmp, full);
 }
 
+// Signed URLs let the browser talk to the bucket directly, so audio never passes through the Netlify Function
+// (which caps request and response bodies at about 6 MB). Both return null when Supabase is not configured.
+async function signUpload(key) {
+    if (!useSupabase) return null;
+    const res = await fetch(`${SB_URL}/storage/v1/object/upload/sign/${BUCKET}/${checkKey(key)}`, {
+        method: 'POST', headers: sbHeaders({ 'Content-Type': 'application/json' }), body: '{}',
+    });
+    if (!res.ok) await sbFail(res, 'sign upload');
+    const data = await res.json();
+    return { url: `${SB_URL}/storage/v1${data.url}` };
+}
+
+async function signDownload(key, expiresIn = 3600) {
+    if (!useSupabase) return null;
+    const res = await fetch(`${SB_URL}/storage/v1/object/sign/${BUCKET}/${checkKey(key)}`, {
+        method: 'POST', headers: sbHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ expiresIn }),
+    });
+    if (!res.ok) await sbFail(res, 'sign download');
+    const data = await res.json();
+    return `${SB_URL}/storage/v1${data.signedURL}`;
+}
+
 async function get(key) {
     if (useSupabase) {
         const res = await fetch(sbObject(key), { headers: sbHeaders() });
@@ -72,4 +94,4 @@ async function del(key) {
     catch (e) { if (e.code !== 'ENOENT') console.error('storage delete failed:', key, e.message); }
 }
 
-module.exports = { put, get, delete: del, newKey, ROOT };
+module.exports = { put, get, delete: del, newKey, signUpload, signDownload, isRemote: useSupabase, ROOT };

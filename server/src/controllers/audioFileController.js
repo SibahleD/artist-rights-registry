@@ -1,8 +1,9 @@
+const crypto = require('crypto');
 const multer = require('multer');
 const pool = require('../db/pool');
 const limits = require('../limits');
 const storage = require('../services/storage');
-const { inspectAudio } = require('../services/mediaInspect');
+const { inspectAudio, audioFormatError } = require('../services/mediaInspect');
 const { assertRoom, humanMB } = require('../services/usage');
 
 const maxBytes = () => limits.effective.audioBytes;
@@ -25,42 +26,32 @@ async function findTrack(client, req, { requireDraft, lock = false }) {
     return { track: rows[0] };
 }
 
-async function uploadAudio(req, res) {
-    const pre = await findTrack(pool, req, { requireDraft: true });
-    if (pre.error) return res.status(pre.status).json({ error: pre.error });
+const KEY_RE = /^audio\/[0-9a-f-]{36}\.(mp3|flac)$/;
+const ticketFor = (userId, trackId, key) =>
+    crypto.createHmac('sha256', process.env.JWT_SECRET || 'dev-only').update(`audio-upload:${userId}:${trackId}:${key}`).digest('hex');
 
-    const err = await receive(req, res);
-    if (err) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-            return res.status(413).json({ error: `That file is too large. The test limit is ${humanMB(maxBytes())} per song. Export a smaller MP3 and keep your original master.` });
-        }
-        return res.status(400).json({ error: 'Upload failed. Send one audio file in the "file" field.' });
-    }
-    if (!req.file) return res.status(400).json({ error: 'No file received. Send one audio file in the "file" field.' });
-
-    const info = await inspectAudio(req.file.buffer);
-    if (info.error) return res.status(400).json({ error: info.error });
-
-    const key = storage.newKey('audio', info.ext);
-    let client, oldKey = null, stored = false, committed = false;
+// Saves the database rows for an audio file that is already read and checked. `buffer` is given when the server still has
+// to store the file (local development); it is omitted when the browser already uploaded it to the bucket.
+async function commitAudio(req, res, { key, size, info, fileName, buffer }) {
+    let client, oldKey = null, stored = !buffer, committed = false;
     try {
         client = await pool.connect();
         await client.query('BEGIN');
         const found = await findTrack(client, req, { requireDraft: true, lock: true });
-        if (found.error) { await client.query('ROLLBACK'); return res.status(found.status).json({ error: found.error }); }
+        if (found.error) { await client.query('ROLLBACK'); await storage.delete(key); stored = false; return res.status(found.status).json({ error: found.error }); }
 
         const old = (await client.query('SELECT storage_key, size_bytes FROM audio_files WHERE track_id = $1', [found.track.id])).rows[0];
-        await assertRoom(client, req.user.id, req.file.size, old ? Number(old.size_bytes) : 0);
+        await assertRoom(client, req.user.id, size, old ? Number(old.size_bytes) : 0);
 
-        await storage.put(key, req.file.buffer); stored = true;
+        if (buffer) { await storage.put(key, buffer); stored = true; }
         await client.query(
             `INSERT INTO audio_files (track_id, owner_id, storage_key, mime_type, size_bytes)
              VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (track_id) DO UPDATE SET storage_key = EXCLUDED.storage_key,
                  mime_type = EXCLUDED.mime_type, size_bytes = EXCLUDED.size_bytes, created_at = now()`,
-            [found.track.id, req.user.id, key, info.mime, req.file.size]
+            [found.track.id, req.user.id, key, info.mime, size]
         );
-        
+
         const { rows } = await client.query(
             `INSERT INTO audio_specs (track_id, file_name, format, bitrate_kbps, sample_rate_hz, channels, size_bytes)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -68,22 +59,123 @@ async function uploadAudio(req, res) {
                  bitrate_kbps = EXCLUDED.bitrate_kbps, sample_rate_hz = EXCLUDED.sample_rate_hz,
                  channels = EXCLUDED.channels, size_bytes = EXCLUDED.size_bytes, recorded_at = now()
              RETURNING to_jsonb(audio_specs) - 'track_id' AS audio`,
-            [found.track.id, cleanName(req.file.originalname), info.format, info.bitrateKbps, info.sampleRateHz, info.channels, req.file.size]
+            [found.track.id, cleanName(fileName), info.format, info.bitrateKbps, info.sampleRateHz, info.channels, size]
         );
         // The length always comes from the file itself, replacing whatever was there before.
         await client.query('UPDATE tracks SET duration_seconds = $2 WHERE id = $1', [found.track.id, info.durationSeconds]);
         await client.query('COMMIT'); committed = true;
-        oldKey = old ? old.storage_key : null;
+        oldKey = old && old.storage_key !== key ? old.storage_key : null;
         return res.json({ audio: rows[0].audio, durationSeconds: info.durationSeconds });
     } catch (e) {
         if (client) await client.query('ROLLBACK').catch(() => {});
         if (stored && !committed) await storage.delete(key);
         if (e && e.status) return res.status(e.status).json({ error: e.message });
-        console.error('uploadAudio error:', e);
+        console.error('commitAudio error:', e);
         return res.status(500).json({ error: 'Internal server error' });
     } finally {
         if (client) client.release();
         if (oldKey) await storage.delete(oldKey);
+    }
+}
+
+// Local development only: the file comes through the server. On Netlify the browser uploads straight to the bucket instead
+// (see audioUploadUrl and completeAudio), because a function cannot receive more than about 6 MB.
+async function uploadAudio(req, res) {
+    const pre = await findTrack(pool, req, { requireDraft: true });
+    if (pre.error) return res.status(pre.status).json({ error: pre.error });
+
+    const err = await receive(req, res);
+    if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ error: `That file is too large. The limit is ${humanMB(maxBytes())} per song. Export a smaller MP3 or FLAC.` });
+        }
+        return res.status(400).json({ error: 'Upload failed. Send one audio file in the "file" field.' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'No file received. Send one audio file in the "file" field.' });
+
+    const info = await inspectAudio(req.file.buffer);
+    if (info.error) return res.status(400).json({ error: info.error });
+    const bad = audioFormatError(info);
+    if (bad) return res.status(400).json({ error: bad });
+
+    return commitAudio(req, res, {
+        key: storage.newKey('audio', info.ext), size: req.file.size, info, fileName: req.file.originalname, buffer: req.file.buffer,
+    });
+}
+
+// Step 1 of a direct upload: check the request and hand the browser a one-off signed URL for the bucket.
+async function audioUploadUrl(req, res) {
+    try {
+        if (!storage.isRemote) return res.json({ direct: false });
+        const pre = await findTrack(pool, req, { requireDraft: true });
+        if (pre.error) return res.status(pre.status).json({ error: pre.error });
+
+        const { fileName, size } = req.body || {};
+        const ext = (/\.(mp3|flac)$/i.exec(String(fileName || '')) || [])[1];
+        if (!ext) return res.status(400).json({ error: 'Only MP3 and FLAC files are accepted.' });
+        if (!Number.isFinite(size) || size <= 0) return res.status(400).json({ error: 'Send the size of the file in bytes.' });
+        if (size > maxBytes()) {
+            return res.status(413).json({ error: `That file is too large. The limit is ${humanMB(maxBytes())} per song. Export a smaller MP3 or FLAC.` });
+        }
+        const old = (await pool.query('SELECT size_bytes FROM audio_files WHERE track_id = $1', [req.params.trackId])).rows[0];
+        await assertRoom(pool, req.user.id, size, old ? Number(old.size_bytes) : 0);
+
+        const key = storage.newKey('audio', ext.toLowerCase());
+        const signed = await storage.signUpload(key);
+        return res.json({ direct: true, url: signed.url, key, ticket: ticketFor(req.user.id, req.params.trackId, key), maxBytes: maxBytes() });
+    } catch (e) {
+        if (e && e.status) return res.status(e.status).json({ error: e.message });
+        console.error('audioUploadUrl error:', e);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+// Step 2: the browser says the upload finished. Read the file back from the bucket, check it, and save its details.
+async function completeAudio(req, res) {
+    const { key, ticket, fileName } = req.body || {};
+    if (typeof key !== 'string' || !KEY_RE.test(key) || typeof ticket !== 'string') {
+        return res.status(400).json({ error: 'That upload could not be confirmed. Please try again.' });
+    }
+    const want = Buffer.from(ticketFor(req.user.id, req.params.trackId, key));
+    const got = Buffer.from(ticket);
+    if (want.length !== got.length || !crypto.timingSafeEqual(want, got)) {
+        return res.status(400).json({ error: 'That upload could not be confirmed. Please try again.' });
+    }
+    const pre = await findTrack(pool, req, { requireDraft: true });
+    if (pre.error) { await storage.delete(key); return res.status(pre.status).json({ error: pre.error }); }
+
+    let buffer;
+    try { buffer = await storage.get(key); }
+    catch (e) {
+        console.error('completeAudio read error:', e.message);
+        return res.status(400).json({ error: 'The file did not arrive in storage. Please upload it again.' });
+    }
+    const reject = async (status, error) => { await storage.delete(key); return res.status(status).json({ error }); };
+
+    if (buffer.length > maxBytes()) return reject(413, `That file is too large. The limit is ${humanMB(maxBytes())} per song.`);
+    const info = await inspectAudio(buffer);
+    if (info.error) return reject(400, info.error);
+    const bad = audioFormatError(info);
+    if (bad) return reject(400, bad);
+    if (!key.endsWith(`.${info.ext}`)) return reject(400, 'The file name says one format but the file is another. Export it again as an MP3 or FLAC.');
+
+    return commitAudio(req, res, { key, size: buffer.length, info, fileName });
+}
+
+// A short-lived link the browser can play directly. Local development has no bucket, so it returns null and the
+// browser falls back to downloading the file through the server.
+async function audioUrl(req, res) {
+    try {
+        const { rows } = await pool.query(
+            `SELECT f.storage_key FROM audio_files f JOIN tracks t ON t.id = f.track_id JOIN releases r ON r.id = t.release_id
+             WHERE t.id = $1 AND r.id = $2 AND r.owner_id = $3`,
+            [req.params.trackId, req.params.releaseId, req.user.id]
+        );
+        if (!rows[0]) return res.status(404).json({ error: 'No audio file for this track.' });
+        return res.json({ url: await storage.signDownload(rows[0].storage_key, 3600) });
+    } catch (e) {
+        console.error('audioUrl error:', e);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 }
 
@@ -112,4 +204,4 @@ async function downloadAudio(req, res) {
     }
 }
 
-module.exports = { uploadAudio, downloadAudio };
+module.exports = { uploadAudio, audioUploadUrl, completeAudio, audioUrl, downloadAudio };

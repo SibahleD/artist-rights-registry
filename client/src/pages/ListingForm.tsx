@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { api, ApiError, upload } from '../api'
+import { api, ApiError, upload, uploadAudio } from '../api'
 import { useAuth } from '../auth'
 import { TrackEditor, EXPLICIT_LABELS, type SongSection } from '../components/TrackEditor'
 import { ImagePicker, UsageLine, useUsage, CoverArtGuide } from '../components/files'
@@ -295,7 +295,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         }
         if (t.audioFile) {
           // The server reads the real format, bitrate and length from the file.
-          const r = await upload<{ audio: Record<string, any>; durationSeconds: number | null }>(`${base}/${t.id}/audio/file`, t.audioFile)
+          const r = await uploadAudio<{ audio: Record<string, any>; durationSeconds: number | null }>(`${base}/${t.id}`, t.audioFile)
           t.audio = {
             fileName: r.audio.file_name, format: r.audio.format, bitrateKbps: r.audio.bitrate_kbps,
             sampleRateHz: r.audio.sample_rate_hz, channels: r.audio.channels, sizeBytes: r.audio.size_bytes,
@@ -451,7 +451,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       {showRelease('cover') && (
       <Panel title={<>Cover art<Req /></>} field="cover-art">
         <div className="art-layout">
-          <ImagePicker label="Cover art" mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 25 * 1024 * 1024}
+          <ImagePicker label="Cover art" mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 4 * 1024 * 1024}
             onPick={(f) => { setArtworkFile(f); setArtworkCleared(false) }}
             onClear={() => { setArtworkFile(undefined); setArtworkCleared(true) }} />
           <CoverArtGuide confirmed={artChecked} onConfirm={setArtChecked} />

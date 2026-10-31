@@ -115,12 +115,12 @@ export function UsageLine({ usage }: { usage: Usage | null }) {
 
 export function checkImage(file: File, maxBytes: number): string | null {
   if (!['image/jpeg', 'image/png'].includes(file.type)) return 'Images must be JPEG or PNG files.'
-  if (file.size > maxBytes) return `That image is ${fmtBytes(file.size)}. The limit for the test is ${fmtBytes(maxBytes)}.`
+  if (file.size > maxBytes) return `That image is ${fmtBytes(file.size)}. The limit is ${fmtBytes(maxBytes)}.`
   return null
 }
 export function checkAudio(file: File, maxBytes: number): string | null {
-  if (!/\.(mp3|aac|m4a|wav|flac)$/i.test(file.name)) return 'Please choose an mp3, aac, m4a, wav or flac file.'
-  if (file.size > maxBytes) return `That file is ${fmtBytes(file.size)}. The limit for the test is ${fmtBytes(maxBytes)}.`
+  if (!/\.(mp3|flac)$/i.test(file.name)) return 'Please choose an MP3 or FLAC file.'
+  if (file.size > maxBytes) return `That file is ${fmtBytes(file.size)}. The limit is ${fmtBytes(maxBytes)}.`
   return null
 }
 

@@ -7,7 +7,7 @@ import { GENRES, LANGUAGES, ORIGIN_LABELS, ORIGIN_WARNING, TRACK_ORIGINS } from 
 import { checkAudio, fmtBytes } from './files'
 import { CopyrightInput, SelectOrOther, Req } from './form'
 import { FeaturedArtistsEditor, CreditsEditor } from './editors'
-import { fetchBlob } from '../api'
+import { api, fetchBlob } from '../api'
 
 // ---- TrackEditor -----------------------------------------------------------
 export const EXPLICIT_LABELS: Record<(typeof EXPLICIT_VALUES)[number], string> = {
@@ -30,7 +30,7 @@ const previewDuration = (f: File) => new Promise<number | null>((resolve) => {
 export type SongSection = 'general' | 'audio' | 'publishing' | 'credits' | 'splits'
 
 // One section of one song at a time: the release form puts them under tabs. All the song's values live in `track`, so switching tabs loses nothing.
-export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, maxAudioBytes = 200 * 1024 * 1024, releaseId }: {
+export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, maxAudioBytes = 50 * 1024 * 1024, releaseId }: {
   track: TrackForm; onChange: (t: TrackForm) => void; section: SongSection; hideTitle?: boolean; hideGenre?: boolean; maxAudioBytes?: number; releaseId?: string
 }) {
   const [audioErr, setAudioErr] = useState('')
@@ -103,9 +103,9 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
 
       {section === 'audio' && (
       <Panel title={<>Audio file<Req /></>} field="track-audio">
-        <Hint>MP3, WAV, FLAC or AAC, up to {fmtBytes(maxAudioBytes)}. Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
+        <Hint>MP3 or FLAC only, up to {fmtBytes(maxAudioBytes)}. Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
         <div className="row">
-          <input type="file" accept=".mp3,.aac,.m4a,.wav,.flac,audio/*" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
+          <input type="file" accept=".mp3,.flac,audio/mpeg,audio/flac" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
           {(track.audio || track.audioFile) && (
             <button type="button" className="ghost" onClick={() => { setAudioErr(''); onChange({ ...track, audio: null, audioFile: undefined, durationSeconds: null }) }}>Remove audio</button>
           )}
@@ -211,16 +211,19 @@ export function AudioPreview({ file, releaseId, trackId, previewStart, onPreview
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  useEffect(() => () => { if (src && !file) URL.revokeObjectURL(src) }, [src, file])
+  useEffect(() => () => { if (src && !file && src.startsWith('blob:')) URL.revokeObjectURL(src) }, [src, file])
   useEffect(() => { if (!file) setSrc(null) }, [trackId, file])
 
   async function loadSaved() {
     if (!releaseId || !trackId) return
     setLoading(true); setErr('')
     try {
-      const blob = await fetchBlob(`/releases/${releaseId}/tracks/${trackId}/audio/file`)
+      // On the hosted site the file plays straight from storage through a short-lived link; the API host
+      // cannot return large files. Without a bucket (local development) it is downloaded through the server.
+      const { url } = await api<{ url: string | null }>(`/releases/${releaseId}/tracks/${trackId}/audio/url`)
       wantPlay.current = true
-      setSrc(URL.createObjectURL(blob))
+      if (url) setSrc(url)
+      else setSrc(URL.createObjectURL(await fetchBlob(`/releases/${releaseId}/tracks/${trackId}/audio/file`)))
     } catch (e) { setErr((e as Error).message) } finally { setLoading(false) }
   }
 

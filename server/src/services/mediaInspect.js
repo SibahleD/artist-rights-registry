@@ -35,6 +35,10 @@ async function inspectAudio(buffer) {
     };
 }
 
+// The only audio formats the platform accepts. inspectAudio can read more (WAV, AAC), but those are refused at upload.
+const ALLOWED_AUDIO = ['mp3', 'flac'];
+const audioFormatError = (info) => (ALLOWED_AUDIO.includes(info.format) ? null : 'Only MP3 and FLAC files are accepted.');
+
 function inspectImage(buffer) {
     let info;
     try { info = imageSize(buffer); } catch { return { error: 'That file could not be read as an image.' }; }
@@ -43,4 +47,4 @@ function inspectImage(buffer) {
     return { mime: kinds[info.type], width: info.width, height: info.height };
 }
 
-module.exports = { inspectAudio, inspectImage };
+module.exports = { inspectAudio, inspectImage, ALLOWED_AUDIO, audioFormatError };
