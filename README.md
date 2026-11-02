@@ -6,8 +6,12 @@ Built as an African Leadership University (ALU) capstone project, *"Closing the 
 
 | | |
 |---|---|
+<<<<<<< HEAD
 | **Walkthrough Video** | https://youtu.be/f1pMR7_QsZ4 |
 | **Technical report (PDF)** | https://docs.google.com/document/d/1x5w7tqAypvQRFVFxGDhkHUez-T2-ClbRkgC_659wow0/edit?usp=sharing |
+=======
+| **Technical report (PDF)** | [https://docs.google.com/document/d/1x5w7tqAypvQRFVFxGDhkHUez-T2-ClbRkgC_659wow0/edit?usp=sharing |
+>>>>>>> 4de18992c9be2941731e01ae15f93c87befd9d45
 | **Live app** | https://trackrecordrw.netlify.app/ |
 | **Repository** | https://github.com/SibahleD/artist-rights-registry |
 | **Designs (Figma)** | https://www.figma.com/design/GydtWf28Zd0euZayfW1RPL/Untitled?node-id=2046-262&t=VfeWID24C8KMZMQq-1 |
