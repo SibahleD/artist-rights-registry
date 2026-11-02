@@ -20,10 +20,11 @@ const json = (b, ok = true) => Promise.resolve({ ok, status: ok ? 200 : 400, jso
 ;(async () => {
   const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/' })
   const w = dom.window
-  const mem = { api: 'http://api.test/api', token: 'T' }
+  const mem = { token: 'T' }
+  const HOSTED = 'https://trackrecordrw.netlify.app/api'
   w.chrome = {
     storage: {
-      local: { get: async (k) => ({ [k]: mem[k] }), set: async () => {} },
+      local: { get: async (k) => ({ [k]: mem[k] }), set: async () => {}, remove: async () => {} },
       session: { get: async (k) => ({ [k]: mem[k] }), set: async () => {}, remove: async () => {} },
     },
     tabs: { query: async () => [{ id: 1, url: 'https://routenote.com/x' }] },
@@ -31,7 +32,7 @@ const json = (b, ok = true) => Promise.resolve({ ok, status: ok ? 200 : 400, jso
   }
   w.URL.createObjectURL = (b) => 'blob:fake'
   w.fetch = (url, opts = {}) => {
-    calls.push([opts.method || 'GET', url.replace('http://api.test/api', ''), opts.headers && opts.headers.Authorization])
+    calls.push([opts.method || 'GET', url.replace(HOSTED, ''), opts.headers && opts.headers.Authorization])
     if (url.endsWith('/users/me')) return json({ user: { first_name: 'Sam', artist_name: 'SD Forever' } })
     if (url.endsWith('/releases')) return json({ releases })
     if (url.includes('/media/')) return json({})

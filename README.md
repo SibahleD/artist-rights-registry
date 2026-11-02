@@ -6,9 +6,9 @@ Built as an African Leadership University (ALU) capstone project, *"Closing the 
 
 | | |
 |---|---|
-| **Walkthrough video** | `ADD VIDEO LINK` |
-| **Technical report (PDF)** | `ADD REPORT LINK` |
-| **Live app** | `ADD LIVE URL` |
+| **Walkthrough Video** | https://youtu.be/f1pMR7_QsZ4 |
+| **Technical report (PDF)** | https://docs.google.com/document/d/1x5w7tqAypvQRFVFxGDhkHUez-T2-ClbRkgC_659wow0/edit?usp=sharing |
+| **Live app** | https://trackrecordrw.netlify.app/ |
 | **Repository** | https://github.com/SibahleD/artist-rights-registry |
 | **Designs (Figma)** | https://www.figma.com/design/GydtWf28Zd0euZayfW1RPL/Untitled?node-id=2046-262&t=VfeWID24C8KMZMQq-1 |
 

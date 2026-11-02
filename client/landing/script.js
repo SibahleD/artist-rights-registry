@@ -11,9 +11,6 @@ document.querySelectorAll('[data-app]').forEach((a) => {
   if (signedIn) a.textContent = 'Open the app'
 })
 
-// The API address the extension needs is this site's own /api
-document.querySelectorAll('[data-api]').forEach((el) => { el.textContent = location.origin + '/api' })
-
 // Mobile menu
 const btn = document.querySelector('.lp-menu-btn')
 const menu = document.getElementById('menu')

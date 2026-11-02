@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id)
-// The hosted site. Change the address in the popup to point at a local server (http://localhost:4000/api) while developing.
-const DEFAULT_API = 'https://trackrecordrw.netlify.app/api'
-let API = DEFAULT_API, TOKEN = null, DOC = null, ENABLED = {}, RELEASES = [], CURRENT = null, TRACK_IX = 0
+// The hosted app. To test against a local server while developing, temporarily change this to http://localhost:4000/api.
+const API = 'https://trackrecordrw.netlify.app/api'
+let TOKEN = null, DOC = null, ENABLED = {}, RELEASES = [], CURRENT = null, TRACK_IX = 0
 
 const say = (text, kind = '') => { const s = $('status'); s.textContent = text; s.className = kind }
 const store = {
@@ -15,7 +15,7 @@ async function call(path, opts = {}) {
   let res
   try {
     res = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}) } })
-  } catch { throw new Error('Cannot reach Track Record. Check your connection and the API address.') }
+  } catch { throw new Error('Cannot reach Track Record. Check your connection and try again.') }
   const data = await res.json().catch(() => ({}))
   if (res.status === 401 && TOKEN) { await signOut(); throw new Error('Signed out. Please sign in again.') }
   if (!res.ok) throw new Error(data.error || 'Something went wrong.')
@@ -34,12 +34,11 @@ async function signOut() {
 }
 
 async function signIn() {
-  API = $('api').value.trim().replace(/\/$/, '') || DEFAULT_API
   say('')
   try {
     const r = await call('/auth/login', { method: 'POST', body: JSON.stringify({ email: $('email').value, password: $('pw').value }) })
     TOKEN = r.token; $('pw').value = ''
-    await store.setLocal({ api: API }); await store.setSession({ token: TOKEN })
+    await store.setSession({ token: TOKEN })
     show(true); await greet(); await loadReleases()
   } catch (e) { alert(e.message) }
 }
@@ -303,9 +302,8 @@ $('upcSave').onclick = saveUpc
 $('upcCancel').onclick = closeUpc
 
 ;(async () => {
-  API = (await store.local('api')) || DEFAULT_API
+  chrome.storage.local.remove('api')   // an address saved by an older version is no longer used
   ENABLED = (await store.local('enabled')) || {}
-  $('api').value = API
   TOKEN = (await store.session('token')) || null
   renderDists(); await where()
   show(!!TOKEN)
