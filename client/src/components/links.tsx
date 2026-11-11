@@ -6,13 +6,14 @@ import type { ReleaseLink } from '../types'
 // The one editor for artist links and release store links: [service dropdown] [URL] [Remove], an Add button, and a
 // button that opens the service's own artist dashboard when it has one. `rows` is the whole list; only rows whose kind
 // is in `kinds` are shown, so one list can feed several sections (Streaming and Social on the profile).
-export function LinkRows({ rows, onChange, kinds, addLabel = 'Add link', minRows = 0, max }: {
+export function LinkRows({ rows, onChange, kinds, addLabel = 'Add link', minRows = 0, max, showDashboards = true }: {
   rows: LinkRow[]
   onChange: (rows: LinkRow[]) => void
   kinds: readonly LinkKind[]
   addLabel?: string
   minRows?: number
   max?: number
+  showDashboards?: boolean   // the service dashboard buttons belong on the Artist Profile, not on a release
 }) {
   const shown = rows.map((row, i) => ({ row, i })).filter(({ row }) => kinds.includes(row.kind))
   const options = SERVICES.filter((s) => kinds.includes(s.kind))
@@ -21,7 +22,7 @@ export function LinkRows({ rows, onChange, kinds, addLabel = 'Add link', minRows
     const s = serviceById(id)
     set(i, { service: id, kind: s ? s.kind : rows[i].kind, label: id === OTHER ? rows[i].label : '' })
   }
-  const dashboards = [...new Map(shown.flatMap(({ row }) => {
+  const dashboards = !showDashboards ? [] : [...new Map(shown.flatMap(({ row }) => {
     const s = serviceById(row.service)
     return s?.dashboardUrl ? [[s.dashboardUrl, s] as const] : []
   })).values()]

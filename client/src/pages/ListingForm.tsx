@@ -17,6 +17,8 @@ type ReleaseSection = 'info' | 'cover' | 'dates' | 'artists'
 const RELEASE_TABS: [ReleaseSection, string][] = [['info', 'General info'], ['cover', 'Cover art'], ['dates', 'Dates and distribution'], ['artists', 'Artists and credits']]
 const SONG_TABS: [SongSection, string][] = [['general', 'General info'], ['audio', 'Audio file'], ['publishing', 'Publishing info'], ['credits', 'Credits'], ['splits', 'Royalty splits']]
 
+const REQUIRED_TABS = new Set<string>(['cover', 'audio', 'splits'])
+
 const FIELD_HOME: Record<string, [Part, ReleaseSection | SongSection]> = {
   'release-date': ['release', 'info'], upc: ['release', 'info'],
   'cover-art': ['release', 'cover'],
@@ -390,8 +392,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       <div className={part === 'songs' ? 'song-scope' : 'release-scope'}>
       {part === 'songs' && (
         <div className="scope-head">
-          <span><span className="scope-kicker">{isSong ? 'Song on' : 'Songs on'}</span> <strong>{releaseName || 'Untitled release'}</strong></span>
-          <button type="button" className="ghost link-btn" onClick={() => pickPart('release')}>← Release details</button>
+          <span><span className="scope-kicker">{isSong ? 'Song:' : 'Songs on'}</span> <strong>{releaseName || 'Untitled release'}</strong></span>
         </div>
       )}
 
@@ -418,12 +419,12 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       )}
       <div className="tabs tabs-sub" role="tablist" aria-label={part === 'release' ? 'Release sections' : 'Song sections'}>
         {part === 'release'
-          ? RELEASE_TABS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={relTab === k} className={`tab${relTab === k ? ' on' : ''}`} onClick={() => { setGlow(null); setRelTab(k) }}>{label}</button>)
-          : SONG_TABS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={songTab === k} className={`tab${songTab === k ? ' on' : ''}`} onClick={() => { setGlow(null); setSongTab(k) }}>{label}</button>)}
+          ? RELEASE_TABS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={relTab === k} className={`tab${relTab === k ? ' on' : ''}`} onClick={() => { setGlow(null); setRelTab(k) }}>{label}{REQUIRED_TABS.has(k) && <Req />}</button>)
+          : SONG_TABS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={songTab === k} className={`tab${songTab === k ? ' on' : ''}`} onClick={() => { setGlow(null); setSongTab(k) }}>{label}{REQUIRED_TABS.has(k) && <Req />}</button>)}
       </div>
 
       {showRelease('info') && (
-      <Panel title="Release info">
+      <Panel>
         <div className="grid2">
           {!isSong && <label><span>Release title<Req /></span><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>}
           {isSong && <label><span>Song title<Req /></span><input value={form.tracks[0].title} onChange={(e) => setSongTitle(e.target.value)} /></label>}
@@ -449,7 +450,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       )}
 
       {showRelease('cover') && (
-      <Panel title={<>Cover art<Req /></>} field="cover-art">
+      <Panel field="cover-art">
         <div className="art-layout">
           <ImagePicker label="Cover art" mediaId={artworkCleared ? null : artworkId} file={artworkFile} maxBytes={usage?.limits.maxCoverBytes ?? 4 * 1024 * 1024}
             onPick={(f) => { setArtworkFile(f); setArtworkCleared(false) }}
@@ -460,7 +461,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       )}
 
       {showRelease('dates') && (
-      <Panel title="Dates and details for distributors">
+      <Panel>
         <p className="hint">Distributors usually ask for these. None of them stop you marking a release ready.</p>
         <div className="grid2">
           <label data-field="sales-start">Sales start date
@@ -520,7 +521,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
       )}
 
       {showRelease('artists') && (
-      <Panel title="Artists and credits">
+      <Panel>
         <div data-field="primary-artists"><PrimaryArtistsEditor value={form.primaryArtists} onChange={(v) => setForm({ ...form, primaryArtists: v })} /></div>
         {!isSong && (
           <CreditsEditor legend="Release credits" value={form.credits} onChange={(v) => setForm({ ...form, credits: v })}

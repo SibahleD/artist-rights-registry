@@ -63,7 +63,7 @@ function ReleasedPanel({ release, links, onChanged }: { release: Release; links:
   const form = (
     <div className="stack">
       <Hint>Once the release is live, paste its link from each store's share menu. At least one is needed.</Hint>
-      <LinkRows rows={rows} onChange={setRows} kinds={['streaming', 'store']} addLabel="Add another store" minRows={1} />
+      <LinkRows rows={rows} onChange={setRows} kinds={['streaming', 'store']} addLabel="Add another store" minRows={1} showDashboards={false} />
       {err && <ErrorBox error={err} />}
       <div className="row actions">
         <button disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : live ? 'Save links' : 'Mark as released'}</button>

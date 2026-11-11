@@ -57,15 +57,7 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
   return (
     <div className="stack">
       {section === 'general' && (
-        <Panel title="General info" field="song-info">
-          <div className="subsection" data-field="artist-info">
-            <h5>Artist info</h5>
-            <div className="grid2">
-              <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
-            </div>
-            <FeaturedArtistsEditor value={track.featuring} onChange={(v) => set('featuring', v)} />
-          </div>
-          <hr className="divider" />
+        <Panel field="song-info">
           <div className="subsection" data-field="track-info">
             <h5>Track info</h5>
             <div className="grid2">
@@ -73,7 +65,7 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
               {!hideGenre && <SelectOrOther label="Genre" options={GENRES} value={track.genre} onChange={(v) => set('genre', v)} otherPlaceholder="Type the genre" />}
               <label>Version title (optional)<input value={track.versionTitle} onChange={(e) => set('versionTitle', e.target.value)} placeholder="Acoustic, Radio edit, Remix…" /></label>
               <label>Language of the lyrics
-                <select value={track.language} onChange={(e) => set('language', e.target.value)}>
+                <select value={track.language} onChange={(e) => onChange({ ...track, language: e.target.value, hasLyrics: e.target.value ? 'yes' : track.hasLyrics })}>
                   <option value="">Not specified</option>
                   {LANGUAGES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
                   {track.language && !LANGUAGES.some(([c]) => c === track.language) && <option value={track.language}>{track.language}</option>}
@@ -91,18 +83,26 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
                 </select>
               </label>
               <label data-field="track-lyrics">Does the song have lyrics?
-                <select value={track.hasLyrics} onChange={(e) => set('hasLyrics', e.target.value as TrackForm['hasLyrics'])}>
+                <select value={track.hasLyrics} onChange={(e) => { const v = e.target.value as TrackForm['hasLyrics']; onChange({ ...track, hasLyrics: v, language: v === 'no' ? '' : track.language }) }}>
                   <option value="">Not answered</option><option value="yes">Yes</option><option value="no">No (instrumental)</option>
                 </select>
               </label>
             </div>
             {track.origin !== 'original' && <small className="warn">{ORIGIN_WARNING}</small>}
           </div>
+          <hr className="divider" />
+          <div className="subsection" data-field="artist-info">
+            <h5>Artist info</h5>
+            <div className="grid2">
+              <label>Performing artist<input value={track.artistName} onChange={(e) => set('artistName', e.target.value)} placeholder="Defaults to the main artist" /></label>
+            </div>
+            <FeaturedArtistsEditor value={track.featuring} onChange={(v) => set('featuring', v)} />
+          </div>
         </Panel>
       )}
 
       {section === 'audio' && (
-      <Panel title={<>Audio file<Req /></>} field="track-audio">
+      <Panel field="track-audio">
         <Hint>MP3 or FLAC only, up to {fmtBytes(maxAudioBytes)}. Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
         <div className="row">
           <input type="file" accept=".mp3,.flac,audio/mpeg,audio/flac" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
@@ -139,8 +139,7 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
       )}
 
       {section === 'publishing' && (
-      <Panel title="Publishing info">
-        
+      <Panel>
         <div className="grid2">
           <label>Composition title<input value={track.compositionTitle} onChange={(e) => set('compositionTitle', e.target.value)} />
             <Hint>The name of the underlying song (words and music), which can differ from the recording title, e.g. for remixes.</Hint></label>
@@ -160,7 +159,7 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
       )}
 
       {section === 'credits' && (
-      <Panel title="Credits">
+      <Panel>
         <CreditsEditor legend="Producers, engineers and performers" value={track.credits} onChange={(v) => set('credits', v)}
           hint="Anyone who worked on this song and should be credited, with what they did. Writers and their shares are on the Splits page, not here." />
 
@@ -168,7 +167,7 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
       )}
 
       {section === 'splits' && (
-      <Panel title={<>Royalty splits<Req /></>} field="track-splits">
+      <Panel field="track-splits">
         <div className="row between">
           {releaseId && track.id
             ? <span>{credits} {credits === 1 ? 'credit' : 'credits'}, {total}%{total !== 100 && <span className="warn"> (must total 100%)</span>}</span>
