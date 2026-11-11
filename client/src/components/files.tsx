@@ -157,7 +157,7 @@ export function ImagePicker({ label, mediaId, file, maxBytes, shape = 'square', 
       <div className="stack">
         <div className="row">
           <button type="button" className="secondary" onClick={() => input.current?.click()}>{has ? 'Change' : 'Choose image'}</button>
-          {has && <button type="button" className="ghost" onClick={() => { setErr(''); if (input.current) input.current.value = ''; onClear() }}>Remove</button>}
+          {has && <button type="button" className="ghost" aria-label="Remove image" title="Remove image" onClick={() => { setErr(''); if (input.current) input.current.value = ''; onClear() }}>✕</button>}
         </div>
         {err && <small className="warn">{err}</small>}
         <input ref={input} type="file" accept="image/jpeg,image/png" hidden onChange={(e) => {

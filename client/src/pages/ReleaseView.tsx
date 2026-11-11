@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Hero, BackLink, Badge, Collapsible, ConfirmModal, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Hint, Loading } from '../components/ui'
+import { Hero, BackLink, Badge, Collapsible, ConfirmModal, ErrorBox, fmtDate, fmtDateTime, fmtDuration, Note, Loading } from '../components/ui'
 import { StoreButtons, LinkRows } from '../components/links'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api'
@@ -62,7 +62,7 @@ function ReleasedPanel({ release, links, onChanged }: { release: Release; links:
 
   const form = (
     <div className="stack">
-      <Hint>Once the release is live, paste its link from each store's share menu. At least one is needed.</Hint>
+      <Note>Once the release is live, paste its link from each store's share menu. At least one is needed.</Note>
       <LinkRows rows={rows} onChange={setRows} kinds={['streaming', 'store']} addLabel="Add another store" minRows={1} showDashboards={false} />
       {err && <ErrorBox error={err} />}
       <div className="row actions">

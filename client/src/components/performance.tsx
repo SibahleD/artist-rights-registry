@@ -2,7 +2,7 @@ import { fmtCompact, fmtInt, fmtMonth } from '../lib/format'
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { api, ApiError } from '../api'
 import { AuthImage, vinylFallback } from './files'
-import { Collapsible, ErrorBox, Hint, Spinner, Modal, Note } from './ui'
+import { Collapsible, ErrorBox, Spinner, Modal, Note } from './ui'
 import { releaseTypeLabel, type ReleaseLine, type Selection, parseCsv, findHeaderRow, FIELD_LABELS, STREAMING_PLATFORMS, guessMapping, platformLabel, readRows, type DateOrder, type FieldKey, type Mapping } from '../lib/stats'
 
 // ---- Charts ----------------------------------------------------------------
@@ -390,7 +390,7 @@ export function StreamImport({ onClose, onDone }: { onClose: () => void; onDone:
           <>
             <p className="muted">Export your streaming report from your distributor as a CSV and choose it here. Each row needs an ISRC, a month or date, a number of streams and (unless the file is for one platform) the platform.</p>
             <input ref={input} type="file" accept=".csv,.tsv,.txt,text/csv" onChange={(e) => pick(e.target.files?.[0])} />
-            <Hint>Importing the same month again replaces the earlier figure, so it is safe to re-upload a corrected file.</Hint>
+            <Note>Importing the same month again replaces the earlier figure, so it is safe to re-upload a corrected file.</Note>
           </>
         ) : (
           <>

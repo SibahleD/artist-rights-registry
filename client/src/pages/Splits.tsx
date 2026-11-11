@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Hero, BackLink, Chevron, Badge, Collapsible, ErrorBox, fmtDate, Hint, Loading } from '../components/ui'
+import { Hero, BackLink, Chevron, Badge, Collapsible, ErrorBox, fmtDate, Note, Loading } from '../components/ui'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
@@ -104,7 +104,7 @@ export default function Splits() {
       {actionErr && <ErrorBox error={actionErr} />}
 
       <Collapsible title={<>Royalty splits <small className="muted">(legal names)</small></>}>
-        <Hint>Ownership must total exactly 100% for each song, with at most 2 decimals. Add emails for co-writers you want to ask to confirm, then send the invitations below. Once the release is marked ready, splits are locked. Revert it to draft to edit them (not possible after a dispute is raised).</Hint>
+        <Note>Ownership must total exactly 100% for each song, with at most 2 decimals. Add emails for co-writers you want to ask to confirm, then send the invitations below. Once the release is marked ready, splits are locked. Revert it to draft to edit them (not possible after a dispute is raised).</Note>
         {tracks.map((t) => {
           const total = sumPercent(drafts[t.id] ?? [])
           return (

@@ -32,7 +32,7 @@ export default function SplitsEditor({ collaborators, onChange, disabled }: {
               <input type="number" min={0} max={100} step="0.01" className="pct" placeholder="%" value={c.ownershipPercent || ''} onChange={(e) => setCollab(i, { ownershipPercent: Number(e.target.value) })} />
               <input type="email" placeholder="Email" value={c.invitedEmail ?? ''} onChange={(e) => setCollab(i, { invitedEmail: e.target.value })} />
               <button type="button" className="ghost" onClick={() => setOpen({ ...open, [i]: !open[i] })}>{open[i] ? 'Hide details' : 'Details'}</button>
-              <button type="button" className="ghost" onClick={() => onChange(collaborators.filter((_, j) => j !== i))}>Remove</button>
+              <button type="button" className="ghost" aria-label="Remove this credit" title="Remove this credit" onClick={() => onChange(collaborators.filter((_, j) => j !== i))}>✕</button>
             </div>
             {c.isFeatured && !(Number(c.ownershipPercent) > 0) && <Note>Add their legal name if they will earn a share.</Note>}
             {open[i] && (

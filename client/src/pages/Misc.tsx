@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Hero, Collapsible, Hint } from '../components/ui'
+import { Hero, Collapsible, Note } from '../components/ui'
 import { api, upload } from '../api'
 import { ImagePicker, useUsage } from '../components/files'
 import { useBackGuard } from '../components/UnsavedGuard'
@@ -29,6 +29,7 @@ export function Profile() {
     roles: (user?.roles ?? []) as CollaboratorRole[],
   })
   const [msg, setMsg] = useState('')
+  const [saving, setSaving] = useState(false)
   const [baseline, setBaseline] = useState(() => JSON.stringify(f))
   const [linkRows, setLinkRows] = useState<LinkRow[]>([])
   const [savedLinks, setSavedLinks] = useState<ArtistLink[]>([])
@@ -70,6 +71,12 @@ export function Profile() {
   }
 
   async function doSave(): Promise<boolean> {
+    if (saving) return false
+    setSaving(true)
+    try { return await saveAll() } finally { setSaving(false) }
+  }
+
+  async function saveAll(): Promise<boolean> {
     setMsg('')
     const bad = linkRows.filter((r) => !isBlankRow(r)).find((r) => !r.service || !r.url.trim() || (r.service === OTHER && !rowName(r)))
     if (bad) {
@@ -92,13 +99,13 @@ export function Profile() {
   }
 
   return (
-    <div className="stack">
+    <div className={`stack${saving ? ' is-saving' : ''}`} aria-busy={saving}>
       {backModal}
       <Hero back={backButton}>
         <h1>Artist Profile</h1>
         <div className="sub">Artist: {user?.artist_name}</div>
       </Hero>
-      <SaveBar dirty={dirty} busy={false} onSave={() => void doSave()} onCancel={goBack} message={msg} />
+      <SaveBar dirty={dirty} busy={saving} onSave={() => void doSave()} onCancel={goBack} message={msg} />
       <Collapsible title="General Info" level="h2" className="">
       <form className="card stack" onSubmit={save}>
         <h4>Artist Profile</h4>
@@ -131,7 +138,7 @@ export function Profile() {
 
       <Collapsible title="Credits" level="h2" className="">
       <section className="card stack tight">
-        <Hint>Used to pre-fill your credits on new songs. Saved with the Save button at the top.</Hint>
+        <Note>Used to pre-fill your credits on new songs. Saved with the Save button at the top.</Note>
         <TagPicker label="What you do" options={COLLABORATOR_ROLES.filter((r) => r !== 'other')} value={f.roles}
           onChange={(roles) => setF({ ...f, roles })} />
         <div className="grid2">
@@ -158,7 +165,7 @@ export function Profile() {
           <LinkRows rows={linkRows} onChange={setLinkRows} kinds={['social']} addLabel="Add social link" max={12} />
         </section>
       </div>
-      <Hint>Links are saved with the Save button at the top.</Hint>
+      <Note>Links are saved with the Save button at the top.</Note>
       </Collapsible>
     </div>
   )

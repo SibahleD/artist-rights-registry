@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { EXPLICIT_VALUES, type TrackForm } from '../types'
 import { sumPercent, formatStartTime, parseStartTime } from '../lib/release'
-import { Hint, Panel, Spinner } from './ui'
+import { Hint, Note, Panel, Spinner } from './ui'
 import { GENRES, LANGUAGES, ORIGIN_LABELS, ORIGIN_WARNING, TRACK_ORIGINS } from '../data/options'
 import { checkAudio, fmtBytes } from './files'
 import { CopyrightInput, SelectOrOther, Req } from './form'
@@ -103,11 +103,11 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
 
       {section === 'audio' && (
       <Panel field="track-audio">
-        <Hint>MP3 or FLAC only, up to {fmtBytes(maxAudioBytes)}. Keep your original master file. A release can't be marked ready until every song has an audio file.</Hint>
+        <Note>MP3 or FLAC only, up to {fmtBytes(maxAudioBytes)}. Keep your original master file. A release can't be marked ready until every song has an audio file.</Note>
         <div className="row">
           <input type="file" accept=".mp3,.flac,audio/mpeg,audio/flac" onChange={(e) => { pickFile(e.target.files?.[0]); e.target.value = '' }} />
           {(track.audio || track.audioFile) && (
-            <button type="button" className="ghost" onClick={() => { setAudioErr(''); onChange({ ...track, audio: null, audioFile: undefined, durationSeconds: null }) }}>Remove audio</button>
+            <button type="button" className="ghost" aria-label="Remove audio" title="Remove audio" onClick={() => { setAudioErr(''); onChange({ ...track, audio: null, audioFile: undefined, durationSeconds: null }) }}>✕</button>
           )}
         </div>
         {audioErr && <small className="warn">{audioErr}</small>}
@@ -174,7 +174,7 @@ export function TrackEditor({ track, onChange, section, hideTitle, hideGenre, ma
             : <span className="muted">Save the release first, then add splits.</span>}
           {releaseId && track.id && <Link className="btn secondary" to={`/releases/${releaseId}/splits`}>Edit splits</Link>}
         </div>
-        <Hint>Who owns what share of this song, by legal name. They are edited on the Splits page, where co-writers are also asked to confirm.</Hint>
+        <Note>Who owns what share of this song, by legal name. They are edited on the Splits page, where co-writers are also asked to confirm.</Note>
       </Panel>
       )}
     </div>

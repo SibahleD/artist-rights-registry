@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Hero, Collapsible, ErrorBox, Hint } from '../components/ui'
+import { Hero, Collapsible, ErrorBox, Hint, Note as HelpNote } from '../components/ui'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fetchBlob, setToken } from '../api'
 import { useAuth } from '../auth'
@@ -74,7 +74,7 @@ function SignInCard() {
           )}
           <label>New email<input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} autoComplete="email" /></label>
           <label>Current password<PasswordInput value={emailPw} onChange={(e) => setEmailPw(e.target.value)} autoComplete="current-password" /></label>
-          <Hint>We email a link to the new address. The change only applies once you open it.</Hint>
+          <HelpNote>We email a link to the new address. The change only applies once you open it.</HelpNote>
           <div className="row actions"><button disabled={em.busy || !newEmail || !emailPw}>Send confirmation</button><Msg n={em.note} /></div>
         </form>
 
@@ -82,10 +82,9 @@ function SignInCard() {
           <h4>Password</h4>
           <label>Current password<PasswordInput value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" /></label>
           <div className="grid2">
-            <label>New password<PasswordInput value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" /></label>
+            <label>New password<PasswordInput value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" /><Hint>At least 8 characters.</Hint></label>
             <label>Repeat new password<PasswordInput value={again} onChange={(e) => setAgain(e.target.value)} autoComplete="new-password" /></label>
           </div>
-          <Hint>At least 8 characters.</Hint>
           <div className="row actions"><button disabled={pw.busy || !cur || !next}>Change password</button><Msg n={pw.note} /></div>
         </form>
       </div>
@@ -122,7 +121,7 @@ function PrivacyCard() {
           <button type="button" className="ghost" disabled={s.busy} onClick={download}>Download my data (JSON)</button>
           <Msg n={s.note} />
         </div>
-        <Hint>The file has your profile, links, releases with credits, and notices. Audio, images and co-writer email addresses are not included.</Hint>
+        <HelpNote>The file has your profile, links, releases with credits, and notices. Audio, images and co-writer email addresses are not included.</HelpNote>
       </section>
     </Collapsible>
   )
@@ -236,12 +235,12 @@ function PreferencesTab() {
           hint="Off by default. Nothing optional is emailed to you until you switch this on. Emails about your account and security (verification, password reset, email or password changes) are always sent." />
         <Toggle label="Split disputes" disabled={!prefs.notify_emails} checked={prefs.notify_disputes} onChange={(v) => set({ notify_disputes: v })} />
         <Toggle label="Approvals from co-writers" disabled={!prefs.notify_emails} checked={prefs.notify_approvals} onChange={(v) => set({ notify_approvals: v })} />
-        <Hint>Browser notifications are not available yet.</Hint>
+        <HelpNote>Browser notifications are not available yet.</HelpNote>
       </section>
 
       <section className="card stack tight">
         <h4>Download your play counts</h4>
-        <Hint>Your own figures, one row per track, platform and month. Choose CSV for a spreadsheet or JSON for other tools.</Hint>
+        <HelpNote>Your own figures, one row per track, platform and month. Choose CSV for a spreadsheet or JSON for other tools.</HelpNote>
         <div className="row actions">
           <button type="button" className="ghost" disabled={s.busy} onClick={() => downloadCounts('csv')}>Download CSV</button>
           <button type="button" className="ghost" disabled={s.busy} onClick={() => downloadCounts('json')}>Download JSON</button>

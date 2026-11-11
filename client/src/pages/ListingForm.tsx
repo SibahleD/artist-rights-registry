@@ -4,7 +4,7 @@ import { api, ApiError, upload, uploadAudio } from '../api'
 import { useAuth } from '../auth'
 import { TrackEditor, EXPLICIT_LABELS, type SongSection } from '../components/TrackEditor'
 import { ImagePicker, UsageLine, useUsage, CoverArtGuide } from '../components/files'
-import { ConfirmModal, ErrorBox, Hint, Loading, Panel } from '../components/ui'
+import { ConfirmModal, ErrorBox, Hint, Loading, Note, Panel } from '../components/ui'
 import { SaveBar, Req, RequiredNote, SelectOrOther, useGlowField } from '../components/form'
 import { useBackGuard } from '../components/UnsavedGuard'
 import { type Collaborator, type CollaboratorInput, type ContributorsPayload, type CreditRow, type Notice, type Release, type ReleaseForm, type ReleaseInput, type Track, type TrackForm, type TrackInput, EXPLICIT_VALUES } from '../types'
@@ -371,7 +371,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
   }
 
   return (
-    <div className="stack">
+    <div className={`stack${busy ? ' is-saving' : ''}`} aria-busy={busy}>
       {backButton}
       <h1>{id ? 'Edit draft' : isSong ? 'New Song Listing' : 'New Album / EP Listing'}</h1>
       <SaveBar dirty={dirty} busy={busy} onSave={() => void submit()} onCancel={goBack} />
@@ -481,7 +481,7 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
                   <input type="date" value={form.originallyReleased} onChange={(e) => setForm({ ...form, originallyReleased: e.target.value })} />
                   <Hint>The date it was first released anywhere. It can't be after the sales start date.</Hint>
                 </label>
-              : <Hint>Counted as new music, first released on the release date.</Hint>}
+              : <Note>Counted as new music, first released on the release date.</Note>}
           </div>
           <label data-field="preorder">Pre-order date (optional)
             <input type="date" value={form.preorderDate} onChange={(e) => setForm({ ...form, preorderDate: e.target.value })} />

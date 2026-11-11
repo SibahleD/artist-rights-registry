@@ -46,9 +46,8 @@ export default function ResetPassword() {
               <p className="muted"><Link to="/forgot-password">Request a new link</Link></p>
             ) : (
               <>
-                <label>New password<PasswordInput required minLength={8} autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} /></label>
+                <label>New password<PasswordInput required minLength={8} autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} /><Hint>At least 8 characters.</Hint></label>
                 <label>Repeat new password<PasswordInput required minLength={8} autoComplete="new-password" value={again} onChange={(e) => setAgain(e.target.value)} /></label>
-                <Hint>At least 8 characters.</Hint>
                 <button disabled={busy || !next || !again}>{busy ? 'Saving…' : 'Change password'}</button>
                 <p className="muted">Link expired? <Link to="/forgot-password" className="muted">Request a new one</Link></p>
               </>

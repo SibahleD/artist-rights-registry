@@ -4572,3 +4572,46 @@ label > .hint-tip .hint-pop {
   .home-hero { flex-direction: column; align-items: flex-start; }
   .stats.stats-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
 }
+
+
+/* While a page is saving: everything but the save bar and heading is dimmed and cannot be edited */
+.is-saving > :not(.savebar):not(h1):not(.hero) {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.is-saving input,
+.is-saving select,
+.is-saving textarea { cursor: progress; }
+
+/* Hint icons sit right after the label text instead of in the label's corner */
+label:has(> .hint-tip) {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  justify-items: start;
+  column-gap: 0;
+}
+label:has(> .hint-tip) > input,
+label:has(> .hint-tip) > select,
+label:has(> .hint-tip) > textarea,
+label:has(> .hint-tip) > div,
+label:has(> .hint-tip) > fieldset,
+label:has(> .hint-tip) > small,
+label:has(> .hint-tip) > .adorned,
+label:has(> .hint-tip) > .pw {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+}
+label > .hint-tip {
+  position: relative;
+  top: auto;
+  right: auto;
+  grid-column: 2;
+  grid-row: 1;
+  margin-left: 0.35rem;
+}
+label > .hint-tip .hint-pop {
+  left: 0;
+  right: auto;
+}

@@ -1,5 +1,5 @@
 import { blankRow, OTHER, SERVICES, serviceById, type LinkKind, type LinkRow } from '../data/services'
-import { Hint } from './ui'
+import { Note } from './ui'
 import type { ReleaseLink } from '../types'
 
 // ---- LinkRows --------------------------------------------------------------
@@ -42,7 +42,7 @@ export function LinkRows({ rows, onChange, kinds, addLabel = 'Add link', minRows
             )}
           </div>
           <input aria-label="Web address" value={row.url} placeholder="https://…" onChange={(e) => set(i, { url: e.target.value })} />
-          <button type="button" className="ghost" disabled={shown.length <= minRows} onClick={() => onChange(rows.filter((_, j) => j !== i))}>Remove</button>
+          <button type="button" className="ghost" aria-label="Remove link" title="Remove link" disabled={shown.length <= minRows} onClick={() => onChange(rows.filter((_, j) => j !== i))}>✕</button>
         </div>
       ))}
       <div className="row">
@@ -52,7 +52,7 @@ export function LinkRows({ rows, onChange, kinds, addLabel = 'Add link', minRows
         ))}
       </div>
       {dashboards.length > 0 && (
-        <Hint>The dashboard buttons open each service's own sign-in in a new tab. Claim your artist profile there to see your stats. We never ask for or store your password for these services.</Hint>
+        <Note>The dashboard buttons open each service's own sign-in in a new tab. Claim your artist profile there to see your stats. We never ask for or store your password for these services.</Note>
       )}
     </div>
   )
