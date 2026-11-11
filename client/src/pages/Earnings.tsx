@@ -1,34 +1,38 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { BarList, LineChart } from '../components/performance'
+import { BarList, LineChart, StreamImport } from '../components/performance'
 import { Collapsible, ErrorBox, Hero, Loading, Note } from '../components/ui'
 import { EARNINGS_DISCLAIMER, RATES, RATE_CURRENCY, REVIEWED_ON, rateFor } from '../data/rates'
 import { earn, earnBy, rankedEst, unrated, currentMonth, filterStats, monthsBetween, shiftMonth, sumBy, total, type PerfData, type Range, platformLabel } from '../lib/stats'
 import { buildEarningsReport, downloadReport } from '../lib/reports'
 import { fmtInt, fmtMoney, fmtMonth } from '../lib/format'
-import { Link } from 'react-router-dom'
 
 const money = (n: number) => fmtMoney(n, RATE_CURRENCY)
 const label = (m: string) => fmtMonth(`${m}-01`, true)
 
-export default function Earnings() {
+export default function Earnings({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth()
   const [data, setData] = useState<PerfData | null>(null)
   const [error, setError] = useState('')
   const [range, setRange] = useState<Range | null>(null)
   const [busy, setBusy] = useState(false)
   const [pdfError, setPdfError] = useState('')
+  const [importing, setImporting] = useState(false)
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api<PerfData>('/streams').then((d) => {
       setData(d)
-      const to = d.last_period?.slice(0, 7) ?? currentMonth()
-      const from = shiftMonth(to, -11)
-      const first = d.first_period?.slice(0, 7)
-      setRange({ from: first && first > from ? first : from, to })
+      setRange((r) => {
+        if (r) return r
+        const to = d.last_period?.slice(0, 7) ?? currentMonth()
+        const from = shiftMonth(to, -11)
+        const first = d.first_period?.slice(0, 7)
+        return { from: first && first > from ? first : from, to }
+      })
     }).catch((e) => setError((e as Error).message))
   }, [])
+  useEffect(() => { load() }, [load])
 
   const view = useMemo(() => {
     if (!data || !range) return null
@@ -70,13 +74,22 @@ export default function Earnings() {
 
   return (
     <div className="performance">
-      <Hero>
-        <h1>Earnings</h1>
-        <div className="sub">Estimated from your streams{user?.artist_name ? ` · ${user.artist_name}` : ''}</div>
+      {embedded ? (
         <div className="row actions perf-hero-actions">
           {!noData && <button type="button" className="secondary" disabled={busy || !rangeOk} onClick={exportPdf}>{busy ? 'Building…' : 'Export PDF'}</button>}
+          <button type="button" onClick={() => setImporting(true)}>Import streams</button>
         </div>
-      </Hero>
+      ) : (
+        <Hero>
+          <h1>Earnings</h1>
+          <div className="sub">Estimated from your streams{user?.artist_name ? ` · ${user.artist_name}` : ''}</div>
+          <div className="row actions perf-hero-actions">
+            {!noData && <button type="button" className="secondary" disabled={busy || !rangeOk} onClick={exportPdf}>{busy ? 'Building…' : 'Export PDF'}</button>}
+            <button type="button" onClick={() => setImporting(true)}>Import streams</button>
+          </div>
+        </Hero>
+      )}
+      <Note>Importing streams here also updates your Performance stats and projections, because both use the same figures.</Note>
 
       {/* Always visible on the page, never hidden in a tooltip. */}
       <div className="notice" role="note"><strong>Estimate only.</strong> {EARNINGS_DISCLAIMER}</div>
@@ -85,7 +98,7 @@ export default function Earnings() {
       {noData ? (
         <section className="card">
           <h4>No streams yet</h4>
-          <p className="muted">Estimates are worked out from your streams. Import your distributor's streaming report on the <Link to="/performance">Performance page</Link> first.</p>
+          <p className="muted">Estimates are worked out from your streams. Use Import streams above to load your distributor's streaming report. Songs are matched by ISRC, so each song needs its ISRC filled in.</p>
         </section>
       ) : (
         <>
@@ -165,6 +178,7 @@ export default function Earnings() {
           </table>
         </div>
       </Collapsible>
+      {importing && <StreamImport onClose={() => setImporting(false)} onDone={load} />}
     </div>
   )
 }

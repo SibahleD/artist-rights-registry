@@ -28,12 +28,12 @@ function BestSongs() {
   }, [data])
 
   if (data === undefined || data === null) return null
-  const open = <Link className="btn secondary" to="/performance">Open Performance</Link>
+  const open = <Link className="btn secondary" to="/metrics">Open Metrics</Link>
 
   if (!v || v.songs.length === 0) {
     return (
       <Collapsible title="Best performing songs" level="h2" className="" actions={open}>
-        <p className="muted">No streams yet. Import the streaming report from your distributor on the Performance page and your best songs will show up here.</p>
+        <p className="muted">No streams yet. Import the streaming report from your distributor on the Metrics page and your best songs will show up here.</p>
       </Collapsible>
     )
   }

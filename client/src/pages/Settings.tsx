@@ -210,21 +210,12 @@ function PreferencesTab() {
     })
   }
 
-  const downloadCounts = (format: 'csv' | 'json') => void s.run(async () => {
-    const blob = await fetchBlob(`/streams/export?format=${format}`)
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `play-counts-${new Date().toISOString().slice(0, 10)}.${format}`; a.click()
-    URL.revokeObjectURL(url)
-    return 'Downloaded.'
-  })
-
   return (
     <div className="stack">
       <section className="card stack tight">
         <h4>Sharing</h4>
         <Toggle label="Include me in play counts" checked={prefs.play_counts_opt_in} onChange={(v) => set({ play_counts_opt_in: v })}
-          hint="Off by default. When on, the number of plays your tracks get is counted and kept with your account. You can download these figures below." />
+          hint="Off by default. When on, the number of plays your tracks get is counted and kept with your account. You can download these figures from the Metrics page." />
         <Toggle label="Include my activity in platform analytics" checked={prefs.analytics_opt_in} onChange={(v) => set({ analytics_opt_in: v })}
           hint="Off by default. When on, your activity in this app (for example which pages you use) is included in platform-wide usage statistics. Nothing is shared outside Track Record." />
       </section>
@@ -238,14 +229,6 @@ function PreferencesTab() {
         <HelpNote>Browser notifications are not available yet.</HelpNote>
       </section>
 
-      <section className="card stack tight">
-        <h4>Download your play counts</h4>
-        <HelpNote>Your own figures, one row per track, platform and month. Choose CSV for a spreadsheet or JSON for other tools.</HelpNote>
-        <div className="row actions">
-          <button type="button" className="ghost" disabled={s.busy} onClick={() => downloadCounts('csv')}>Download CSV</button>
-          <button type="button" className="ghost" disabled={s.busy} onClick={() => downloadCounts('json')}>Download JSON</button>
-        </div>
-      </section>
       <div className="row actions"><Msg n={s.note} /></div>
       <PrivacyCard />
     </div>

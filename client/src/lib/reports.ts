@@ -254,7 +254,7 @@ export function buildPerformanceReport(i: ReportInput): PdfReport {
   ]
 
   if (sum === 0) {
-    blocks.push({ type: 'text', text: 'There are no streams recorded for this period. Import your distributor CSV on the Performance page to fill it in.', muted: true })
+    blocks.push({ type: 'text', text: 'There are no streams recorded for this period. Import your distributor CSV on the Metrics page to fill it in.', muted: true })
   } else {
     blocks.push({ type: 'heading', text: 'Streams by platform' })
     blocks.push({ type: 'bars', items: byPlatform.map(([id, v]) => ({ label: platformLabel(id), value: v })), format: fmtInt })

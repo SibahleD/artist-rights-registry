@@ -14,12 +14,11 @@ import logoDark from '../assets/logo-dark.png'
 import logoMark from '../assets/logo-mark.png'
 import moneyIco from '../assets/ico/money.svg'
 import chartIco from '../assets/ico/chart.svg'
-import walletIco from '../assets/ico/wallet.svg'
 import { ConfirmModal, Icon } from './ui'
 import { AuthImage } from './files'
 
 const links = [
-  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/performance', 'Performance', chartIco], ['/earnings', 'Earnings', walletIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
+  ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/metrics', 'Metrics', chartIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
 ]
 
 function VerifyBanner() {

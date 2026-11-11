@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { api } from '../api'
+import { api, fetchBlob } from '../api'
 import { useAuth } from '../auth'
 import { BarList, LineChart, type Series, PlaylistProjections, StreamImport } from '../components/performance'
 import { AuthImage, vinylFallback, type RGB } from '../components/files'
@@ -12,6 +12,36 @@ import { buildPerformanceReport, downloadReport, reportTitle, type ReportKind } 
 interface ImportLog { id: string; source: string; platform: string | null; file_name: string | null; rows_read: number; rows_saved: number; rows_skipped: number; created_at: string }
 
 const monthLabel = (m: string, short = true) => fmtMonth(`${m}-01`, short)
+
+// ---- Download play counts -------------------------------------------------------------------------------
+
+function PlayCountDownload() {
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  async function download(format: 'csv' | 'json') {
+    setBusy(true); setMsg('')
+    try {
+      const blob = await fetchBlob(`/streams/export?format=${format}`)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `play-counts-${new Date().toISOString().slice(0, 10)}.${format}`; a.click()
+      URL.revokeObjectURL(url)
+      setMsg('Downloaded.')
+    } catch (e) { setMsg((e as Error).message) }
+    finally { setBusy(false) }
+  }
+  return (
+    <section className="card stack tight">
+      <h4>Download your play counts</h4>
+      <Note>Your own figures, one row per track, platform and month. Choose CSV for a spreadsheet or JSON for other tools.</Note>
+      <div className="row actions">
+        <button type="button" className="ghost" disabled={busy} onClick={() => void download('csv')}>Download CSV</button>
+        <button type="button" className="ghost" disabled={busy} onClick={() => void download('json')}>Download JSON</button>
+        {msg && <span className="muted" role="status">{msg}</span>}
+      </div>
+    </section>
+  )
+}
 
 // ---- PDF report dialog ----------------------------------------------------------------------------------
 
@@ -212,7 +242,7 @@ function ReleasePicker({ lines, q, setQ, sel, setSel }: { lines: ReleaseLine[]; 
 
 // ---- Page -----------------------------------------------------------------------------------------------
 
-export default function Performance() {
+export default function Performance({ embedded = false }: { embedded?: boolean }) {
   const { user } = useAuth()
   const [data, setData] = useState<PerfData | null>(null)
   const [error, setError] = useState('')
@@ -297,14 +327,21 @@ export default function Performance() {
 
   return (
     <div className="performance">
-      <Hero>
-        <h1>Performance</h1>
-        <div className="sub">{user?.artist_name ? `Artist: ${user.artist_name}` : 'Your streams across every platform'}</div>
+      {embedded ? (
         <div className="row actions perf-hero-actions">
           {!noData && <button type="button" className="secondary" onClick={() => setReporting(true)}>Export PDF</button>}
           <button type="button" onClick={() => setImporting(true)}>Import streams</button>
         </div>
-      </Hero>
+      ) : (
+        <Hero>
+          <h1>Performance</h1>
+          <div className="sub">{user?.artist_name ? `Artist: ${user.artist_name}` : 'Your streams across every platform'}</div>
+          <div className="row actions perf-hero-actions">
+            {!noData && <button type="button" className="secondary" onClick={() => setReporting(true)}>Export PDF</button>}
+            <button type="button" onClick={() => setImporting(true)}>Import streams</button>
+          </div>
+        </Hero>
+      )}
 
       <div className="tabs perf-tabs" role="tablist" aria-label="Performance sections">
         <button type="button" role="tab" id="perf-tab-stats" aria-selected={tab === 'stats'} aria-controls="perf-panel-stats" className={`tab${tab === 'stats' ? ' on' : ''}`} onClick={() => setTab('stats')}>Stats</button>
@@ -409,6 +446,7 @@ export default function Performance() {
       )}
 
       {tab === 'stats' && <ImportHistory reloadKey={reload} onChanged={refreshed} />}
+      {tab === 'stats' && !noData && <PlayCountDownload />}
 
       {importing && <StreamImport onClose={() => setImporting(false)} onDone={refreshed} />}
       {reporting && <ReportDialog data={data} range={range} selection={sel} artist={user?.artist_name ?? ''} onClose={() => setReporting(false)} />}
