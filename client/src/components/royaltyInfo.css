@@ -105,3 +105,52 @@
     margin-bottom: 0.6rem;
   }
 }
+
+/* ---- Diagrams ---- */
+.rd { display: block; width: 100%; max-width: 520px; height: auto; margin: 0 auto; }
+.rd-tall { max-width: 460px; }
+.rd-node { fill: var(--input-bg); stroke: var(--border-mid); stroke-width: 1.5; }
+.rd-node.rec { stroke: var(--link-blue); }
+.rd-node.comp { stroke: var(--ok); }
+.rd-note { fill: none; stroke: var(--warn); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.rd-text { fill: var(--pri-font); font-family: var(--font-body); font-size: 14px; }
+.rd-strong { font-weight: 600; font-size: 15px; }
+.rd-sub { fill: var(--sec-font); font-size: 13px; }
+.rd-warn { fill: var(--warn); font-size: 13px; }
+.rd-line { fill: none; stroke: var(--border-light); stroke-width: 2; }
+.rd-line.rec { stroke: var(--link-blue); }
+.rd-line.comp { stroke: var(--ok); }
+.rd-dash { stroke-dasharray: 6 5; }
+.rd-head { fill: context-stroke; }
+
+/* ---- Info text ---- */
+.info-more summary { cursor: pointer; color: var(--sec-font); font-size: 0.9rem; }
+.info-more[open] summary { margin-bottom: 0.4rem; }
+.info-mixups { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.45rem; }
+
+/* ---- Glossary words in running text ---- */
+.term-wrap { display: inline; }
+a.term { color: var(--link-blue); text-decoration: none; border-radius: 3px; }
+a.term:hover, a.term:focus-visible { color: var(--pri-font); background: var(--accent-bg); outline: none; }
+.term-wrap.understood a.term { color: var(--sec-font); }
+.term-pop {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: #1e1e1e;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  color: var(--pri-font);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  max-width: calc(100vw - 16px);
+}
+.term-pop-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.term-pop-actions button { font-size: 12px; padding: 4px 10px; }
+.term-pop-actions a { color: var(--link-blue); }

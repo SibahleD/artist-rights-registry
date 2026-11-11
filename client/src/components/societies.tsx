@@ -324,13 +324,16 @@ export function TrackSocieties({ societies, onViewRegistrations }: { societies: 
           </section>
 
           <section className="card stack">
-            <h3>Step 4: get ready</h3>
-            <p>Have these to hand before you apply anywhere:</p>
-            <ul>{READY_LIST.map((r) => <li key={r}>{r}</li>)}</ul>
-            <p className="muted">
-              The release pages in this app hold the <Term id="legal-name">legal names</Term> and <Term id="ownership-split">ownership splits</Term>.
-              Not confirmed yet? Start from your <Link to="/discography">discography</Link>.
-            </p>
+            <h3>Step 4: get ready for {country.readyFor}</h3>
+            <ul>{country.ready.map((r) => <li key={r}>{r}</li>)}</ul>
+            <details>
+              <summary>What this app already holds for you</summary>
+              <ul>{READY_LIST.map((r) => <li key={r}>{r}</li>)}</ul>
+              <p className="muted">
+                Your release pages hold the <Term id="legal-name">legal names</Term> and <Term id="ownership-split">ownership splits</Term>.
+                Not confirmed yet? Start from your <Link to="/discography">discography</Link>.
+              </p>
+            </details>
           </section>
 
           <section className="card stack">

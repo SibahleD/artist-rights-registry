@@ -23,6 +23,8 @@ export interface CountryGuide {
   headline: string // the one thing to know
   bodies: Body[]
   steps: string[] // what an artist does, in order
+  readyFor: string // who Step 4 is preparing for, e.g. 'UPRS'
+  ready: string[] // what to have ready for that body, taken from what the body asks for
   watchOut: string[]
   sources: { label: string; url: string }[]
   checked: string // YYYY-MM-DD
@@ -43,6 +45,8 @@ export const BODY_LABEL: Record<BodyStatus, string> = {
 export const COUNTRIES: CountryGuide[] = [
   {
     code: 'RW', name: 'Rwanda', status: 'in_flux', checked: CHECKED,
+    readyFor: 'RDB and the new CMO',
+    ready: ['Signed split sheets and the legal name of every writer, for each song.', 'The dates and recordings for each song. A new society will ask for exactly this.', 'Two questions for RDB’s Intellectual Property team: how to register your works, and the name and status of the new CMO.'],
     headline: 'The Rwanda Society of Authors (RSAU) was dissolved in 2025 and its replacement is still being set up, so there is currently no settled national society to join.',
     bodies: [
       { name: 'Rwanda Society of Authors', abbr: 'RSAU', status: 'dissolved',
@@ -73,6 +77,8 @@ export const COUNTRIES: CountryGuide[] = [
   },
   {
     code: 'KE', name: 'Kenya', status: 'in_flux', checked: CHECKED,
+    readyFor: 'PAVRISK and KECOBO',
+    ready: ['A works list: song titles, writers with legal names and shares, and the recording details.', 'Proof that you may manage the rights, since KECOBO now requires CMOs to hold verifiable member and works lists.', 'The current KECOBO list of licensed CMOs, which changes after 4 November 2026.', 'If you are a producer or label: whether KAMP’s suspension has ended.'],
     headline: 'Kenya licenses its collecting societies one year at a time, and the current licences end on 4 November 2026, so the picture may change within weeks.',
     bodies: [
       { name: 'Performing and Audio-Visual Rights Society of Kenya', abbr: 'PAVRISK', status: 'active',
@@ -106,6 +112,8 @@ export const COUNTRIES: CountryGuide[] = [
   },
   {
     code: 'UG', name: 'Uganda', status: 'working', checked: CHECKED,
+    readyFor: 'UPRS',
+    ready: ['A recording of each work, which UPRS usually accepts as proof of authorship.', 'Your details for the UPRS online membership portal. UPRS states joining is free.', 'Titles, writers and shares for each song, to register them in the portal once you are in.', 'Time to read the membership agreement before you sign it.'],
     headline: 'The Uganda Performing Right Society (UPRS) is the licensed music society, regulated by URSB, and you can join online.',
     bodies: [
       { name: 'Uganda Performing Right Society', abbr: 'UPRS', status: 'active',
@@ -133,6 +141,8 @@ export const COUNTRIES: CountryGuide[] = [
   },
   {
     code: 'TZ', name: 'Tanzania', status: 'working', checked: CHECKED,
+    readyFor: 'COSOTA (or COSOZA in Zanzibar)',
+    ready: ['The agreement between co-owners, which COSOTA asks for when you register a work.', 'Titles, writers and shares for each work, for one work declaration form per song.', 'Your annual subscription. Declaring works is free, subject to that subscription.', 'A plan for registering in person at the Dar es Salaam office, which is reported; confirm first.'],
     headline: 'On the mainland COSOTA is both the copyright office and the collecting society; Zanzibar has its own body, COSOZA.',
     bodies: [
       { name: 'Copyright Society of Tanzania', abbr: 'COSOTA', status: 'active',
@@ -161,6 +171,8 @@ export const COUNTRIES: CountryGuide[] = [
   },
   {
     code: 'BI', name: 'Burundi', status: 'in_flux', checked: CHECKED,
+    readyFor: 'OBDA',
+    ready: ['For each work: the author, the work and the production company, as OBDA’s declaration forms ask.', 'A copy of every declaration you submit.', 'Someone who can read French and Kirundi, since the forms use both.'],
     headline: 'The government office OBDA registers artists and collects royalties, but it has reported that it collects more than it can yet distribute.',
     bodies: [
       { name: 'Office Burundais du Droit d’Auteur et des Droits Voisins', abbr: 'OBDA', status: 'active',
@@ -184,6 +196,8 @@ export const COUNTRIES: CountryGuide[] = [
   },
   {
     code: 'CD', name: 'DR Congo', status: 'in_flux', checked: CHECKED,
+    readyFor: 'SOCODA',
+    ready: ['Your membership file, plus a works list with legal names and shares.', 'Confirmation of which organisation is legally recognised, before you pay any fee.'],
     headline: 'SOCODA replaced the old SONECA, but its management has been disputed and the government has discussed a state-run structure.',
     bodies: [
       { name: 'Société Congolaise des Droits d’Auteur et des Droits Voisins', abbr: 'SOCODA', status: 'unclear',
@@ -208,6 +222,8 @@ export const COUNTRIES: CountryGuide[] = [
   },
   {
     code: 'SS', name: 'South Sudan', status: 'none', checked: CHECKED,
+    readyFor: 'a future society',
+    ready: ['Split sheets, dated recordings and a written list of your works.', 'A distributor account for master royalties from streaming.'],
     headline: 'Reporting says South Sudan has not enacted a modern copyright law, and no operating collecting society was found.',
     bodies: [
       { name: 'No collecting society found', status: 'unclear',

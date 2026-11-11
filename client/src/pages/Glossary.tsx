@@ -1,40 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { api } from '../api'
+import { loadProgress, setGlossaryStatus, useGlossaryProgress } from '../lib/glossaryProgress'
 import { byId, CATEGORIES, GLOSSARY, type GlossaryCategory } from '../data/glossary.ts'
 
 type Status = 'understood' | 'learning'
-type Progress = Record<string, Status>
 
 export default function Glossary() {
   const { hash } = useLocation()
   const [q, setQ] = useState('')
   const [cat, setCat] = useState<GlossaryCategory | 'All'>('All')
-  const [progress, setProgress] = useState<Progress>({})
+  const progress = useGlossaryProgress()
   const [err, setErr] = useState('')
 
-  useEffect(() => {
-    api<{ progress: Progress }>('/glossary/progress').then((r) => setProgress(r.progress)).catch(() => {})
-  }, [])
+  useEffect(() => { void loadProgress() }, [])
 
   // Tapping the status a card already has clears it. The card updates first; if saving fails it goes back.
   async function mark(id: string, status: Status) {
-    const before = progress[id]
-    const next = before === status ? null : status
     setErr('')
-    setProgress((p) => {
-      const { [id]: _, ...rest } = p
-      return next ? { ...rest, [id]: next } : rest
-    })
-    try {
-      await api(`/glossary/progress/${id}`, 'PUT', { status: next })
-    } catch (e) {
-      setProgress((p) => {
-        const { [id]: _, ...rest } = p
-        return before ? { ...rest, [id]: before } : rest
-      })
-      setErr((e as Error).message)
-    }
+    try { await setGlossaryStatus(id, progress[id] === status ? null : status) }
+    catch (e) { setErr((e as Error).message) }
   }
 
   const items = useMemo(() => {

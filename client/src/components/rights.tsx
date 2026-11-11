@@ -1,7 +1,9 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { byId } from '../data/glossary'
 import { CHECKED, MONEY_TYPES, type MoneySide } from '../data/societies'
+import { loadProgress, setGlossaryStatus, useGlossaryProgress } from '../lib/glossaryProgress'
+import { MoneyFlowDiagram, RightsDiagram } from './RoyaltyDiagrams'
 import './royaltyInfo.css'
 
 // ---- RoyaltyInfo -----------------------------------------------------------
@@ -26,11 +28,6 @@ const FILTERS: [Filter, string][] = [
 
 const ofSide = (side: MoneySide) => MONEY_TYPES.filter((m) => m.side === side)
 
-// Terms defined at the bottom of the tab: the ones used above, plus every royalty type, without repeats.
-const DEFINED = [
-  ...new Set(['composition', 'sound-recording', 'publisher', 'cmo', 'work-registration', 'ownership-split', 'split-sheet', 'isrc', 'iswc', ...MONEY_TYPES.map((m) => m.term)]),
-].filter((id) => byId(id))
-
 function TermList({ side }: { side: MoneySide }) {
   return (
     <ul>
@@ -47,53 +44,30 @@ export function RoyaltyInfo({ onFindSociety }: { onFindSociety: () => void }) {
     <>
       <section className="card stack">
         <h3>One song, two sets of rights</h3>
-        <p>
-          Every released song is really two things, and each one earns its own money.
-        </p>
+        <RightsDiagram />
         <div className="info-sides">
           <div className="option">
-            <h5>The recording</h5>
-            <p className="muted">
-              The <Term id="sound-recording">sound recording</Term> is one particular performance of the song, captured and finished.
-              It is owned by whoever paid for or made it, which is often you.
-            </p>
-            <strong>Money that belongs here</strong>
+            <h5>The <Term id="sound-recording">recording</Term></h5>
             <TermList side="recording" />
           </div>
           <div className="option">
-            <h5>The song itself</h5>
-            <p className="muted">
-              The <Term id="composition">composition</Term> is the song as written: the melody and the words. It is owned by its writers
-              and often a <Term id="publisher">publisher</Term>.
-            </p>
-            <strong>Money that belongs here</strong>
+            <h5>The <Term id="composition">song itself</Term></h5>
             <TermList side="composition" />
           </div>
         </div>
         <p className="muted">
           {ofSide('either').map((m, i) => <span key={m.term}>{i > 0 && ', '}<Term id={m.term}>{m.name}</Term></span>)}{' '}
-          can involve both sides at once, because a deal needs the owner of the song and the owner of the recording to agree.
+          involve both sides, because a deal needs both owners to agree.
         </p>
       </section>
 
       <section className="card stack">
         <h4>What happens when someone streams your song</h4>
-        <ol className="info-steps">
-          <li>A listener streams your song on a music app.</li>
-          <li>
-            The app pays for the recording. That money goes to your <Term id="distributor">distributor</Term>, who passes it on to you
-            after any fee they charge.
-          </li>
-          <li>
-            The app also has to pay for the song itself. That money is meant for the writers and publishers, and it is normally collected
-            by a <Term id="cmo">collecting society</Term>, not by your distributor.
-          </li>
-          <li>
-            If the song was never registered, or the details do not match, the second payment can be hard to claim.
-            Registering is called <Term id="work-registration">work registration</Term>.
-          </li>
-        </ol>
-        <p className="muted">This is the shape of it, not the numbers. Who pays whom, and how much, varies by platform and by country.</p>
+        <MoneyFlowDiagram />
+        <p className="muted">
+          Your <Term id="distributor">distributor</Term> handles the recording side. A <Term id="cmo">collecting society</Term> handles the song side,
+          and only after <Term id="work-registration">work registration</Term>. Who pays whom, and how much, varies by platform and country.
+        </p>
       </section>
 
       <section className="card stack">
@@ -139,46 +113,24 @@ export function RoyaltyInfo({ onFindSociety }: { onFindSociety: () => void }) {
               <span className={`badge side-${m.side}`}>{SIDE_LABEL[m.side]}</span>
             </div>
             <p>{m.detail}</p>
-            <p><strong>Collected by:</strong> {m.who}. <strong>Paid to:</strong> {m.paidTo}.</p>
-            <p className="muted"><strong>For example:</strong> {m.example}</p>
-            <p className="info-action"><strong>What you do:</strong> {m.action}</p>
+            <details className="info-more">
+              <summary>Example and what you do</summary>
+              <p className="muted"><strong>For example:</strong> {m.example}</p>
+              <p className="info-action"><strong>What you do:</strong> {m.action}</p>
+            </details>
           </div>
         ))}
       </section>
 
       <section className="card stack">
         <h4>Common mix-ups</h4>
-        <p>
-          <strong>Your distributor does not register your songs with a society.</strong> Getting a song onto streaming services and registering it
-          for composition royalties are two separate jobs.
-        </p>
-        <p>
-          <strong>An <Term id="isrc">ISRC</Term> and an <Term id="iswc">ISWC</Term> are not the same.</strong> The first identifies the recording, the
-          second identifies the song.
-        </p>
-        <p>
-          <strong>Splits decide who gets paid.</strong> Agree each writer's share in writing before you register, using a
-          {' '}<Term id="split-sheet">split sheet</Term>, because a wrong split is hard to fix once money is flowing. See also{' '}
-          <Term id="ownership-split">ownership split</Term>.
-        </p>
-        <p>
-          <strong>A cover song is someone else's composition.</strong> Make sure you have the right to use it before you release it
-          (see <Term id="cover-license">cover and mechanical licence</Term>).
-        </p>
-        <p>
-          <strong>Matching details matter.</strong> Titles, writer names and codes need to be the same everywhere a song is registered, or payments can
-          be held up.
-        </p>
-      </section>
-
-      <section className="card stack">
-        <h4>Words used on this page</h4>
-        <dl className="info-defs">
-          {DEFINED.map((id) => {
-            const e = byId(id)!
-            return [<dt key={`${id}-t`}><Term id={id}>{e.term}</Term></dt>, <dd key={`${id}-d`}>{e.short}</dd>]
-          })}
-        </dl>
+        <ul className="info-mixups">
+          <li>Your distributor does not register your songs with a society. Those are two separate jobs.</li>
+          <li>An <Term id="isrc">ISRC</Term> identifies the recording. An <Term id="iswc">ISWC</Term> identifies the song.</li>
+          <li>Agree each writer's share in writing first, on a <Term id="split-sheet">split sheet</Term>. A wrong <Term id="ownership-split">split</Term> is hard to fix later.</li>
+          <li>A cover is someone else's song, so get the <Term id="cover-license">licence</Term> before you release it.</li>
+          <li>Titles, writer names and codes must match everywhere a song is registered, or payments get held up.</li>
+        </ul>
         <p className="muted">Society details last checked {CHECKED}. This changes quickly, so confirm with the body before paying or signing.</p>
         <div className="row actions">
           <button type="button" onClick={onFindSociety}>Find my society</button>
@@ -190,12 +142,53 @@ export function RoyaltyInfo({ onFindSociety }: { onFindSociety: () => void }) {
 }
 
 // ---- Term ------------------------------------------------------------------
+// A glossary word inside running text: a plain coloured link (no underline) that opens a small card on hover or focus
+// with the short meaning and a button to mark it as understood. The card is fixed-position so a table or a scrolling
+// box around the word can never clip it.
+const POP_W = 300
+
 export function Term({ id, children }: { id: string; children?: ReactNode }) {
   const entry = byId(id)
+  const progress = useGlossaryProgress()
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null)
+  const wrap = useRef<HTMLSpanElement>(null)
+  const timer = useRef<number>(0)
+  useEffect(() => { void loadProgress() }, [])
+  useEffect(() => {
+    if (!pos) return
+    const close = () => setPos(null)
+    window.addEventListener('scroll', close, true)
+    return () => window.removeEventListener('scroll', close, true)
+  }, [pos])
+  useEffect(() => () => window.clearTimeout(timer.current), [])
   if (!entry) return <>{children}</>
+
+  const understood = progress[id] === 'understood'
+  const open = () => {
+    window.clearTimeout(timer.current)
+    const r = wrap.current?.getBoundingClientRect()
+    if (!r) return
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - POP_W - 8))
+    setPos(r.bottom > window.innerHeight - 190 ? { left, bottom: window.innerHeight - r.top + 6 } : { left, top: r.bottom + 6 })
+  }
+  const closeSoon = () => { window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setPos(null), 150) }
+
   return (
-    <Link className="term" to={`/glossary#${id}`} title={entry.short} onClick={(e) => e.stopPropagation()}>
-      {children ?? entry.term}
-    </Link>
+    <span ref={wrap} className={`term-wrap${understood ? ' understood' : ''}`} onMouseEnter={open} onMouseLeave={closeSoon} onFocus={open} onBlur={closeSoon}>
+      <Link className="term" to={`/glossary#${id}`} onClick={(e) => e.stopPropagation()}>{children ?? entry.term}</Link>
+      {pos && (
+        <span className="term-pop" role="tooltip" style={{ left: pos.left, top: pos.top, bottom: pos.bottom, width: POP_W }}>
+          <strong>{entry.term}</strong>
+          <span>{entry.short}</span>
+          <span className="term-pop-actions">
+            <button type="button" className={`mark understood${understood ? ' on' : ''}`} aria-pressed={understood}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); void setGlossaryStatus(id, understood ? null : 'understood').catch(() => {}) }}>
+              {understood ? 'Understood ✓' : 'Mark as understood'}
+            </button>
+            <Link to={`/glossary#${id}`} onClick={(e) => e.stopPropagation()}>Read more</Link>
+          </span>
+        </span>
+      )}
+    </span>
   )
 }
