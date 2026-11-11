@@ -4486,3 +4486,89 @@ label > .hint-tip .hint-pop {
 
 /* Performance: Stats and Projections sections */
 .perf-tabs { margin-bottom: 1rem; }
+
+
+/* Sidebar header: logo mark, with the user's icon and username beside it */
+.sb-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+.sidebar a.sb-mark,
+.sidebar a.sb-user {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.sb-mark img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.sidebar a.sb-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--pri-font);
+  text-decoration: none;
+}
+.sb-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--input-bg);
+  border: 1px solid var(--border-mid);
+}
+.sb-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sb-avatar img.nav-icon { width: 16px; height: 16px; }
+.sb-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 701px) {
+  body.sidebar-collapsed .sb-user { display: none !important; }
+  body.sidebar-collapsed .sidebar-header { flex-direction: column; gap: 12px; }
+}
+
+/* Home hero: user icon beside the welcome line and three small counts */
+.home-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.home-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border-mid);
+}
+.home-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.home-avatar img.nav-icon { width: 36px; height: 36px; }
+.home-hero-text { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.home-hero h1 { font-size: 26px; margin: 0; overflow: hidden; text-overflow: ellipsis; }
+.stats.stats-sm {
+  grid-template-columns: repeat(3, minmax(84px, 120px));
+  gap: 0.6rem;
+}
+.stats-sm .stat { padding: 6px 10px; font-size: 12px; }
+.stats-sm .stat b { font-size: 20px; min-height: 0; }
+@media (max-width: 700px) {
+  .home-hero { flex-direction: column; align-items: flex-start; }
+  .stats.stats-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+}

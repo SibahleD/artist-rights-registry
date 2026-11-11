@@ -16,6 +16,7 @@ import moneyIco from '../assets/ico/money.svg'
 import chartIco from '../assets/ico/chart.svg'
 import walletIco from '../assets/ico/wallet.svg'
 import { ConfirmModal, Icon } from './ui'
+import { AuthImage } from './files'
 
 const links = [
   ['/', 'Home', homeIco], ['/discography', 'Discography', discogIco], ['/performance', 'Performance', chartIco], ['/earnings', 'Earnings', walletIco], ['/glossary', 'Glossary', infoIco], ['/royalty-rights', 'Royalties', moneyIco],['/profile', 'Artist Profile', profileIco], ['/settings', 'Settings', settingsIco],
@@ -61,10 +62,14 @@ export default function Layout() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="sidebar-header" >
-          <div className="brand"><img className="brand-logo" src={logoDark} alt="Track Record" /><small>{user?.artist_name}</small></div>
-          {/* Shown instead of the full logo when the sidebar is minimised */}
-          <Link to="/" className="brand-mark" aria-label="Track Record home" title="Track Record home"><img src={logoMark} alt="" /></Link>
+        <div className="sidebar-header">
+          <div className="sb-brand">
+            <Link to="/" className="sb-mark" aria-label="Track Record home" title="Track Record home"><img src={logoMark} alt="" /></Link>
+            <Link to="/profile" className="sb-user" title="Artist Profile">
+              <span className="sb-avatar"><AuthImage mediaId={user?.avatar_id} alt="" fallback={<img className="nav-icon" src={profileIco} alt="" />} /></span>
+              <span className="sb-name">{user?.username || user?.artist_name}</span>
+            </Link>
+          </div>
           <button className="expand" aria-label="Collapse menu" onClick={() => document.body.classList.toggle('sidebar-collapsed')}><img className='nav-icon' src={expandIco} alt="" /></button>
         </div>
         <nav>

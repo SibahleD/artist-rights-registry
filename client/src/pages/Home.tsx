@@ -1,65 +1,53 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { ArtCard } from '../components/files'
+import { ArtCard, AuthImage } from '../components/files'
 import { Badge, Collapsible, fmtDate, Hero } from '../components/ui'
-import { LineChart } from '../components/performance'
-import { fmtCompact, fmtInt, fmtMonth } from '../lib/format'
+import profileIco from '../assets/ico/user.svg'
+import { fmtInt, fmtMonth } from '../lib/format'
 import { groupOf } from '../lib/release'
-import { filterStats, monthOf, monthsBetween, platformLabel, ranked, shiftMonth, sumBy, type PerfData } from '../lib/stats'
+import { monthOf, ranked, sumBy, type PerfData } from '../lib/stats'
 import type { ReadinessCheck, ReadinessReport, Release, SharedTrack } from '../types'
 
-// A short summary of the Performance page: the latest month against the one before, the last 12 months, and what led.
-function PerformanceSummary() {
+// The songs that led in the most recent month with streams. Figures come from imports, so this is the latest month imported, not necessarily this calendar month.
+const MAX_BEST = 5
+
+function BestSongs() {
   const [data, setData] = useState<PerfData | null | undefined>(undefined) // undefined while loading, null if it failed
   useEffect(() => { api<PerfData>('/streams').then(setData).catch(() => setData(null)) }, [])
 
   const v = useMemo(() => {
     if (!data || data.stats.length === 0 || !data.last_period) return null
     const last = monthOf(data.last_period)
-    const months = monthsBetween(shiftMonth(last, -11), last)
-    const rows = filterStats(data.stats, { from: months[0], to: last }, null)
-    const byMonth = sumBy(rows, (r) => monthOf(r.period))
-    const values = months.map((m) => byMonth.get(m) ?? 0)
-    const thisMonth = values[values.length - 1], before = values[values.length - 2] ?? 0
-    const latest = rows.filter((r) => monthOf(r.period) === last)
-    const titleOf = new Map(data.tracks.filter((t) => t.isrc).map((t) => [t.isrc as string, t.title]))
-    const topSong = ranked(sumBy(latest, (r) => r.isrc))[0]
-    const topPlatform = ranked(sumBy(latest, (r) => r.platform))[0]
-    return {
-      last, months, values, thisMonth,
-      change: before > 0 ? (thisMonth - before) / before : null,
-      year: values.reduce((a, n) => a + n, 0),
-      topPlatform: topPlatform ? platformLabel(topPlatform[0]) : '—',
-      topSong: topSong ? titleOf.get(topSong[0]) ?? topSong[0] : '—',
-    }
+    const rows = data.stats.filter((r) => monthOf(r.period) === last)
+    const byIsrc = ranked(sumBy(rows, (r) => r.isrc))
+    const trackOf = new Map(data.tracks.filter((t) => t.isrc).map((t) => [t.isrc as string, t]))
+    const songs = byIsrc.flatMap(([isrc, streams]) => { const t = trackOf.get(isrc); return t ? [{ t, streams }] : [] }).slice(0, MAX_BEST)
+    return { last, songs }
   }, [data])
 
   if (data === undefined || data === null) return null
   const open = <Link className="btn secondary" to="/performance">Open Performance</Link>
 
-  if (!v) {
+  if (!v || v.songs.length === 0) {
     return (
-      <Collapsible title="Performance" level="h2" className="" actions={open}>
-        <p className="muted">No streams yet. Import the streaming report from your distributor on the Performance page and your numbers will show up here.</p>
+      <Collapsible title="Best performing songs" level="h2" className="" actions={open}>
+        <p className="muted">No streams yet. Import the streaming report from your distributor on the Performance page and your best songs will show up here.</p>
       </Collapsible>
     )
   }
   return (
-    <Collapsible title="Performance" level="h2" className="" actions={open}>
+    <Collapsible title={`Best performing songs, ${fmtMonth(`${v.last}-01`)}`} level="h2" className="" actions={open}>
       <div className="stack">
-        <div className="stats">
-          <Link to="/performance" className="option stat">
-            <span>Streams in {fmtMonth(`${v.last}-01`)}</span>
-            <b>{fmtCompact(v.thisMonth)}</b>
-            {v.change !== null && <span className={`perf-delta ${v.change >= 0 ? 'up' : 'down'}`}>{v.change >= 0 ? '▲' : '▼'} {Math.abs(Math.round(v.change * 100))}% vs last month</span>}
-          </Link>
-          <Link to="/performance" className="option stat"><span>Last 12 months</span><b>{fmtCompact(v.year)}</b></Link>
-          <Link to="/performance" className="option stat"><span>Top platform, {fmtMonth(`${v.last}-01`, true)}</span><b className="stat-text">{v.topPlatform}</b></Link>
-          <Link to="/performance" className="option stat"><span>Top song, {fmtMonth(`${v.last}-01`, true)}</span><b className="stat-text">{v.topSong}</b></Link>
-        </div>
-        <LineChart height={180} labels={v.months.map((m) => fmtMonth(`${m}-01`, true))} series={[{ name: 'Streams', values: v.values }]} exact={fmtInt} unit=" streams" label="Streams per month, last 12 months" />
+        {v.songs.map(({ t, streams }, i) => (
+          <ArtCard key={t.id} to={`/releases/${t.release_id}/tracks/${t.id}`} artworkId={t.artwork_id}>
+            <div>
+              <strong>{i + 1}. {t.title}</strong>
+              <div className="muted">{t.release_title} · {fmtInt(streams)} streams</div>
+            </div>
+          </ArtCard>
+        ))}
       </div>
     </Collapsible>
   )
@@ -125,13 +113,17 @@ export default function Home() {
 
   return (
     <div className="stack">
-      <Hero centered>
-        <h1>Welcome, {user?.artist_name}</h1>
-        <div className="stats">
-          <Link to="/discography" className="option stat"><b>{count('released') ?? ''}</b>Released</Link>
-          <Link to="/discography" className="option stat"><b>{count('yet') ?? ''}</b>Yet to release</Link>
-          <Link to="/discography" className="option stat"><b>{drafts ?? ''}</b>Drafts</Link>
-          <Link to="/discography" className="option stat"><b>{shared?.length ?? ''}</b>Collaborations</Link>
+      <Hero style={{ '--hero-min': '0px' } as CSSProperties}>
+        <div className="home-hero">
+          <div className="home-avatar"><AuthImage mediaId={user?.avatar_id} alt="" fallback={<img className="nav-icon" src={profileIco} alt="" />} /></div>
+          <div className="home-hero-text">
+            <h1>Welcome, {user?.username || user?.artist_name}</h1>
+            <div className="stats stats-sm">
+              <Link to="/discography" className="option stat"><span>Released</span><b>{count('released') ?? ''}</b></Link>
+              <Link to="/discography" className="option stat"><span>Drafts</span><b>{drafts ?? ''}</b></Link>
+              <Link to="/discography" className="option stat"><span>Collabs</span><b>{shared?.length ?? ''}</b></Link>
+            </div>
+          </div>
         </div>
       </Hero>
       <div className="row">
@@ -139,7 +131,7 @@ export default function Home() {
         <Link className="btn secondary" to="/new/album">+ New Album / EP</Link>
       </div>
 
-      <PerformanceSummary />
+      <BestSongs />
 
       {toFinish.length > 0 && (
         <Collapsible title="Finish your drafts" level="h2" className="">

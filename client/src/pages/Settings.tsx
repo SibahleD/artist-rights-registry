@@ -4,9 +4,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, fetchBlob, setToken } from '../api'
 import { useAuth } from '../auth'
 import { DirtyProvider, useReportDirty } from '../components/UnsavedGuard'
-import { TagPicker, PasswordInput } from '../components/form'
-import { COLLABORATOR_ROLES, DEFAULT_PREFERENCES, type CollaboratorRole, type Preferences, type User } from '../types'
-import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
+import { PasswordInput } from '../components/form'
+import { DEFAULT_PREFERENCES, type Preferences, type User } from '../types'
 
 type Note = { ok: boolean; text: string } | null
 const Msg = ({ n }: { n: Note }) => (n ? <span className="muted" style={n.ok ? undefined : { color: 'var(--danger)' }} role="status">{n.text}</span> : null)
@@ -90,49 +89,6 @@ function SignInCard() {
           <div className="row actions"><button disabled={pw.busy || !cur || !next}>Change password</button><Msg n={pw.note} /></div>
         </form>
       </div>
-    </Collapsible>
-  )
-}
-
-function CreditDetailsCard() {
-  const { user, setUser } = useAuth()
-  const s = useSection()
-  const [f, setF] = useState({
-    societyName: user?.society_name ?? '',
-    ipi: user?.ipi ?? '',
-    publisherName: user?.publisher_name ?? '',
-    roles: (user?.roles ?? []) as CollaboratorRole[],
-  })
-  const saved = {
-    societyName: user?.society_name ?? '', ipi: user?.ipi ?? '', publisherName: user?.publisher_name ?? '',
-    roles: (user?.roles ?? []) as CollaboratorRole[],
-  }
-  useReportDirty('credit-details', JSON.stringify(f) !== JSON.stringify(saved))
-  const submit = (e: FormEvent) => { e.preventDefault(); void s.run(async () => {
-    const r = await api<{ user: User }>('/users/me', 'PATCH', f)
-    setUser({ ...user!, ...r.user })
-  }) }
-  return (
-    <Collapsible title="Credit details" level="h2" className="">
-      <form className="card stack tight" onSubmit={submit}>
-        <Hint>Used to pre-fill your credits on new songs. Your public artist details stay on the Artist Profile page.</Hint>
-        <div className="stack">
-          <strong>What you do</strong>
-          <TagPicker label="What you do" options={COLLABORATOR_ROLES.filter((r) => r !== 'other')} value={f.roles}
-            onChange={(roles) => setF({ ...f, roles })} />
-        </div>
-        <div className="grid2">
-          <label>Rights society (if you belong to one)
-            <input list="society-names" value={f.societyName} onChange={(e) => setF({ ...f, societyName: e.target.value })} placeholder="Leave blank if none" />
-            <datalist id="society-names">
-              {[...new Set(SOCIETY_COUNTRIES.flatMap((c) => c.bodies.map((b) => b.name)))].map((n) => <option key={n} value={n} />)}
-            </datalist>
-          </label>
-          <label>Your IPI number (optional)<input inputMode="numeric" value={f.ipi} onChange={(e) => setF({ ...f, ipi: e.target.value })} placeholder="9 to 11 digits" /></label>
-          <label>Publisher (optional)<input value={f.publisherName} onChange={(e) => setF({ ...f, publisherName: e.target.value })} placeholder="Publishing company, if any" /></label>
-        </div>
-        <div className="row actions"><button disabled={s.busy}>Save</button><Msg n={s.note} /></div>
-      </form>
     </Collapsible>
   )
 }
@@ -292,12 +248,13 @@ function PreferencesTab() {
         </div>
       </section>
       <div className="row actions"><Msg n={s.note} /></div>
+      <PrivacyCard />
     </div>
   )
 }
 
-type Tab = 'account' | 'credits' | 'preferences'
-const TABS: [Tab, string][] = [['account', 'Account'], ['credits', 'Credits'], ['preferences', 'Preferences']]
+type Tab = 'account' | 'preferences'
+const TABS: [Tab, string][] = [['account', 'Account'], ['preferences', 'Preferences']]
 
 export default function Settings() {
   const [params] = useSearchParams()
@@ -312,9 +269,8 @@ export default function Settings() {
         ))}
       </div>
       <DirtyProvider>
-        {/* All three stay mounted so edits survive a tab switch; the unsaved-changes guard still covers leaving the page. */}
-        <div className="stack" hidden={tab !== 'account'}><SignInCard /><PrivacyCard /><ExtensionCard /><DeleteCard /></div>
-        <div className="stack" hidden={tab !== 'credits'}><CreditDetailsCard /></div>
+        {/* Both stay mounted so edits survive a tab switch; the unsaved-changes guard still covers leaving the page. */}
+        <div className="stack" hidden={tab !== 'account'}><SignInCard /><ExtensionCard /><DeleteCard /></div>
         <div hidden={tab !== 'preferences'}><PreferencesTab /></div>
       </DirtyProvider>
     </div>

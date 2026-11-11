@@ -1,15 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
 import { Hero, Collapsible, Hint } from '../components/ui'
 import { api, upload } from '../api'
 import { ImagePicker, useUsage } from '../components/files'
 import { useBackGuard } from '../components/UnsavedGuard'
 import { useAuth } from '../auth'
-import type { ArtistLink, User } from '../types'
+import { COLLABORATOR_ROLES, type ArtistLink, type CollaboratorRole, type User } from '../types'
 import { LinkRows } from '../components/links'
 import { isBlankRow, OTHER, rowName, withScheme, type LinkRow } from '../data/services'
 import { COUNTRIES, NATIONALITIES } from '../data/options'
-import { SaveBar, SelectOrOther } from '../components/form'
+import { SaveBar, SelectOrOther, TagPicker } from '../components/form'
+import { COUNTRIES as SOCIETY_COUNTRIES } from '../data/societies'
 
 const savedToRow = (l: ArtistLink): LinkRow => ({ id: l.id, service: l.service, label: l.service === OTHER ? l.label : '', kind: l.kind, url: l.url })
 // What counts as "changed": blank rows are ignored, and a typed address without https:// is compared as typed.
@@ -21,9 +21,12 @@ export function Profile() {
     artistName: user?.artist_name ?? '',
     firstName: user?.first_name ?? '',
     lastName: user?.last_name ?? '',
-    contactInfo: user?.contact_info ?? '',
     country: user?.country ?? '',
     nationality: user?.nationality ?? '',
+    societyName: user?.society_name ?? '',
+    ipi: user?.ipi ?? '',
+    publisherName: user?.publisher_name ?? '',
+    roles: (user?.roles ?? []) as CollaboratorRole[],
   })
   const [msg, setMsg] = useState('')
   const [baseline, setBaseline] = useState(() => JSON.stringify(f))
@@ -107,10 +110,6 @@ export function Profile() {
           <label>Last name<input value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} /></label>
         </div>
         <label>Email<input value={user?.email ?? ''} disabled /></label>
-        <label>Contact info
-          <input value={f.contactInfo} onChange={(e) => setF({ ...f, contactInfo: e.target.value })} placeholder="name@example.com or +250 7XX XXX XXX" />
-          <Hint>How people you work with can reach you: an email address or a phone number with country code. One is enough.</Hint>
-        </label>
         <div className="grid2">
           <label>Country
             <select value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })}>
@@ -121,7 +120,6 @@ export function Profile() {
           </label>
           <SelectOrOther label="Nationality" options={NATIONALITIES} value={f.nationality} onChange={(v) => setF({ ...f, nationality: v })} otherPlaceholder="Type your nationality" />
         </div>
-        <small className="hint">Your roles, rights society, IPI and publisher are in <Link to="/settings?tab=credits">Settings, Credits</Link>.</small>
         </div>
         <ImagePicker label="Profile picture" hint="Square JPEG or PNG." shape="round"
           mediaId={avatarCleared ? null : user?.avatar_id} file={avatarFile} maxBytes={usage?.limits.maxAvatarBytes ?? 4 * 1024 * 1024}
@@ -129,6 +127,24 @@ export function Profile() {
           onClear={() => { setAvatarFile(undefined); setAvatarCleared(true) }} />
         </div>
       </form>
+      </Collapsible>
+
+      <Collapsible title="Credits" level="h2" className="">
+      <section className="card stack tight">
+        <Hint>Used to pre-fill your credits on new songs. Saved with the Save button at the top.</Hint>
+        <TagPicker label="What you do" options={COLLABORATOR_ROLES.filter((r) => r !== 'other')} value={f.roles}
+          onChange={(roles) => setF({ ...f, roles })} />
+        <div className="grid2">
+          <label>Rights society (if you belong to one)
+            <input list="society-names" value={f.societyName} onChange={(e) => setF({ ...f, societyName: e.target.value })} placeholder="Leave blank if none" />
+            <datalist id="society-names">
+              {[...new Set(SOCIETY_COUNTRIES.flatMap((c) => c.bodies.map((b) => b.name)))].map((n) => <option key={n} value={n} />)}
+            </datalist>
+          </label>
+          <label>Your IPI number (optional)<input inputMode="numeric" value={f.ipi} onChange={(e) => setF({ ...f, ipi: e.target.value })} placeholder="9 to 11 digits" /></label>
+          <label>Publisher (optional)<input value={f.publisherName} onChange={(e) => setF({ ...f, publisherName: e.target.value })} placeholder="Publishing company, if any" /></label>
+        </div>
+      </section>
       </Collapsible>
 
       <Collapsible title="Links" level="h2" className="">
