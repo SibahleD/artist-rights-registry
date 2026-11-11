@@ -4,7 +4,7 @@ const storage = require('../services/storage');
 
 const RELEASE_COLUMNS = `id, owner_id, title, release_type, album_artist, genre,
     creation_date::text AS creation_date, release_date::text AS release_date,
-    upc, p_line, c_line, label_name, language, status, created_at, ready_at, released_at, unconfirmed_acknowledged_at,
+    upc, p_line, c_line, label_name, language, status, created_at, ready_at, released_at,
     album_version, is_compilation, has_lyrics, has_cover_versions, explicit, secondary_genre,
     originally_released::text AS originally_released, preorder_date::text AS preorder_date, sales_start_date::text AS sales_start_date,
     (SELECT m.id FROM media m WHERE m.release_id = releases.id AND m.kind = 'artwork') AS artwork_id`;
@@ -333,14 +333,6 @@ async function revertToDraft(req, res) {
 
         if (release.released_at) {
             return res.status(409).json({ error: 'This release is marked as released and is locked. Mark it as not released first if you need to change it.' });
-        }
-
-        const disputed = await pool.query(
-            `SELECT 1 FROM disputes d JOIN tracks t ON t.id = d.track_id WHERE t.release_id = $1 LIMIT 1`,
-            [release.id]
-        );
-        if (disputed.rowCount > 0) {
-            return res.status(409).json({ error: 'Ownership cannot be reverted once a dispute has been raised on this release.' });
         }
 
         const { rows } = await pool.query(

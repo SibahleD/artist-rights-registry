@@ -26,7 +26,6 @@ export interface User {
   id: string
   email: string
   artist_name: string
-  contact_info: string | null
   first_name?: string | null
   last_name?: string | null
   username?: string | null
@@ -72,7 +71,6 @@ export interface Release {
   created_at: string
   ready_at: string | null 
   released_at?: string | null 
-  unconfirmed_acknowledged_at?: string | null
   artwork_id?: string | null
   track_count?: number
   pending_notices?: number 

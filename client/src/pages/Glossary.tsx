@@ -3,8 +3,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { loadProgress, setGlossaryStatus, useGlossaryProgress } from '../lib/glossaryProgress'
 import { byId, CATEGORIES, GLOSSARY, type GlossaryCategory } from '../data/glossary.ts'
 
-type Status = 'understood' | 'learning'
-
 export default function Glossary() {
   const { hash } = useLocation()
   const [q, setQ] = useState('')
@@ -14,10 +12,10 @@ export default function Glossary() {
 
   useEffect(() => { void loadProgress() }, [])
 
-  // Tapping the status a card already has clears it. The card updates first; if saving fails it goes back.
-  async function mark(id: string, status: Status) {
+  // Tapping "I understand this" again clears it. The card updates first; if saving fails it goes back.
+  async function mark(id: string) {
     setErr('')
-    try { await setGlossaryStatus(id, progress[id] === status ? null : status) }
+    try { await setGlossaryStatus(id, progress[id] === 'understood' ? null : 'understood') }
     catch (e) { setErr((e as Error).message) }
   }
 
@@ -38,7 +36,7 @@ export default function Glossary() {
   }, [target])
 
   const understood = GLOSSARY.filter((g) => progress[g.id] === 'understood').length
-  const learning = GLOSSARY.filter((g) => progress[g.id] === 'learning').length
+  const learning = GLOSSARY.length - understood
 
   return (
     <div className="stack">
@@ -77,9 +75,10 @@ export default function Glossary() {
                   <span key={r!.id}>{i > 0 && ', '}<Link to={`/glossary#${r!.id}`}>{r!.term}</Link></span>
                 ))}</p>
               )}
-              <div className="glass-actions" role="group" aria-label={`Mark “${g.term}”`}>
-                <button type="button" className={`mark understood${st === 'understood' ? ' on' : ''}`} aria-pressed={st === 'understood'} onClick={() => void mark(g.id, 'understood')}>I understand this</button>
-                <button type="button" className={`mark learning${st === 'learning' ? ' on' : ''}`} aria-pressed={st === 'learning'} onClick={() => void mark(g.id, 'learning')}>Still learning</button>
+              <div className="glass-actions">
+                <button type="button" className={`mark understood${st === 'understood' ? ' on' : ''}`} aria-pressed={st === 'understood'} onClick={() => void mark(g.id)}>
+                  {st === 'understood' ? 'Understood ✓' : 'I understand this'}
+                </button>
               </div>
             </section>
           )

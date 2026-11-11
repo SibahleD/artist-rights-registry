@@ -1,6 +1,6 @@
 const pool = require('../db/pool');
 
-const USER_COLUMNS = `id, email, artist_name, contact_info, first_name, last_name, username, country, nationality, roles,
+const USER_COLUMNS = `id, email, artist_name, first_name, last_name, username, country, nationality, roles,
     society_name, ipi, publisher_name, created_at, email_verified_at, preferences,
     (SELECT new_email FROM email_tokens WHERE user_id = users.id AND kind = 'email_change' AND used_at IS NULL
         AND expires_at > now() ORDER BY created_at DESC LIMIT 1) AS pending_email,
@@ -32,7 +32,6 @@ const VALIDATORS = {
         if (v.trim().length > 100) return { error: 'Artist name must be at most 100 characters.' };
         return { value: v.trim() };
     },
-    contact_info: optionalText('Contact info', 500),
     first_name: optionalText('First name', 100),
     last_name: optionalText('Last name', 100),
     country: optionalCountry('Country'),
@@ -60,7 +59,6 @@ const VALIDATORS = {
 // request body key -> column
 const BODY_TO_COLUMN = {
     artistName: 'artist_name',
-    contactInfo: 'contact_info',
     firstName: 'first_name',
     lastName: 'last_name',
     username: 'username',

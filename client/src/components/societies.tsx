@@ -6,6 +6,7 @@ import { useUnsavedChanges } from './UnsavedGuard'
 import { Badge, ConfirmModal, ErrorBox, Hint, Loading, fmtDate } from './ui'
 import { safeHref } from '../lib/format'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth'
 import { Term } from './rights'
 
 // ---- SocietyTracker --------------------------------------------------------
@@ -140,7 +141,9 @@ function SocietyRow({ s, api: soc, editing, draft, setEditing, setDraft }: {
 function AddForm({ api: soc, onDirty }: { api: Societies; onDirty: (dirty: boolean) => void }) {
   const [pick, setPick] = useState('')
   const [otherName, setOtherName] = useState('')
-  const [otherCountry, setOtherCountry] = useState('')
+  const { user } = useAuth()
+  const home = COUNTRIES.some((c) => c.code === user?.country) ? user!.country! : ''   // the country on the Artist Profile
+  const [otherCountry, setOtherCountry] = useState(home)
   const [status, setStatus] = useState<SocietyStatus>('planned')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -151,9 +154,9 @@ function AddForm({ api: soc, onDirty }: { api: Societies; onDirty: (dirty: boole
   const options = useMemo(() => TRACKABLE.filter((t) => !soc.tracked(t.name, t.country)), [soc])
   const groups = useMemo(() => {
     const m = new Map<string, typeof options>()
-    for (const t of options) m.set(t.countryName, [...(m.get(t.countryName) ?? []), t])
+    for (const t of [...options].sort((a, b) => Number(b.country === home) - Number(a.country === home))) m.set(t.countryName, [...(m.get(t.countryName) ?? []), t])
     return [...m.entries()]
-  }, [options])
+  }, [options, home])
 
   async function submit() {
     setBusy(true); setErr('')
@@ -247,7 +250,9 @@ const write = (v: string) => { try { localStorage.setItem(KEY, v) } catch { /* s
 // A guide for someone who has never registered with a society: pick a country, see where things stand,
 // know what to prepare, then follow the steps. Everything here comes from the country guide in data/societies.ts.
 export function TrackSocieties({ societies, onViewRegistrations }: { societies: Societies; onViewRegistrations: () => void }) {
-  const [code, setCode] = useState(read)
+  const { user } = useAuth()
+  // First visit: start from the country on the Artist Profile (a country we have not researched shows the "another country" note).
+  const [code, setCode] = useState(() => read() || (user?.country ? (COUNTRIES.some((c) => c.code === user.country) ? user.country : 'other') : ''))
   useEffect(() => { write(code) }, [code])
   const [error, setError] = useState('')
   const [added, setAdded] = useState('')

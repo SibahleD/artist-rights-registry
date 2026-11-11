@@ -90,7 +90,7 @@ async function updatePreferences(req, res) {
     } catch (e) { return fail(res, e, 'updatePreferences'); }
 }
 
-const PROFILE_KEYS = ['artist_name', 'first_name', 'last_name', 'username', 'contact_info', 'country', 'nationality',
+const PROFILE_KEYS = ['artist_name', 'first_name', 'last_name', 'username', 'country', 'nationality',
     'roles', 'society_name', 'ipi', 'publisher_name', 'email', 'email_verified_at', 'created_at'];
 
 // Everything the user owns, as JSON. Like the release export, rows are picked by key list and carry no internal ids.
@@ -109,7 +109,7 @@ async function exportMyData(req, res) {
                  FROM collaborators c JOIN tracks t ON t.id = c.track_id JOIN releases r ON r.id = t.release_id
                  WHERE c.user_id = $1 AND r.owner_id <> $1 ORDER BY r.created_at`, [uid]),
             pool.query(`SELECT mime_type, width, height, size_bytes FROM media WHERE owner_id = $1 AND kind = 'avatar'`, [uid]),
-            pool.query('SELECT term_id, status FROM glossary_progress WHERE user_id = $1 ORDER BY term_id', [uid]),
+            pool.query('SELECT term_id FROM glossary_progress WHERE user_id = $1 ORDER BY term_id', [uid]),
             pool.query(
                 `SELECT body_name, country, status, to_char(registered_on, 'YYYY-MM-DD') AS registered_on, member_ref, dashboard_url
                  FROM user_societies WHERE user_id = $1 ORDER BY created_at, id`, [uid]),
@@ -174,7 +174,7 @@ async function deleteAccount(req, res) {
             await client.query('DELETE FROM user_societies WHERE user_id = $1', [uid]);
             await client.query('DELETE FROM email_tokens WHERE user_id = $1', [uid]);
             await client.query(
-                `UPDATE users SET email = $2, password_hash = '!', artist_name = 'Deleted artist', contact_info = NULL,
+                `UPDATE users SET email = $2, password_hash = '!', artist_name = 'Deleted artist',
                     first_name = NULL, last_name = NULL, username = NULL, country = NULL, nationality = NULL,
                     roles = '{}', society_name = NULL, ipi = NULL, publisher_name = NULL, preferences = '{}',
                     email_verified_at = NULL, deleted_at = $3, password_changed_at = $3

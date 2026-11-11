@@ -4,7 +4,8 @@ import { api, getToken } from '../api'
 // One shared copy of the user's glossary marks, so the Glossary page and the hover cards on other pages stay in step
 // and the list is fetched once, not once per term.
 
-export type GlossaryStatus = 'understood' | 'learning'
+// Only understood terms are stored. A term that is not listed counts as still learning.
+export type GlossaryStatus = 'understood'
 export type GlossaryProgress = Record<string, GlossaryStatus>
 
 let state: GlossaryProgress = {}

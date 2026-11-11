@@ -29,7 +29,7 @@ function signToken(user) {
 }
 
 async function register(req, res) {
-    const { password, contactInfo } = req.body;
+    const { password } = req.body;
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     const artistName = typeof req.body.artistName === 'string' ? req.body.artistName.trim() : '';
 
@@ -62,10 +62,10 @@ async function register(req, res) {
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         const result = await pool.query(
-            `INSERT INTO users (email, password_hash, artist_name, contact_info, first_name, last_name, terms_accepted_at, terms_version)
-             VALUES ($1, $2, $3, $4, $5, $6, now(), $7)
-             RETURNING id, email, artist_name, contact_info, first_name, last_name, email_verified_at, created_at`,
-            [email, hashedPassword, artistName, contactInfo ?? null, legal.first, legal.last, TERMS_VERSION]
+            `INSERT INTO users (email, password_hash, artist_name, first_name, last_name, terms_accepted_at, terms_version)
+             VALUES ($1, $2, $3, $4, $5, now(), $6)
+             RETURNING id, email, artist_name, first_name, last_name, email_verified_at, created_at`,
+            [email, hashedPassword, artistName, legal.first, legal.last, TERMS_VERSION]
         );
 
         const user = result.rows[0];
