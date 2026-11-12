@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import { Link, useSearchParams } from 'react-router-dom'
 import { api, fetchBlob } from '../api'
 import { useAuth } from '../auth'
-import { BarList, LineChart, type Series, PlaylistProjections, StreamImport } from '../components/performance'
+import { BarList, LineChart, type Series, PlaylistProjections } from '../components/performance'
+import { SpotifyAudiencePanel, SpotifyImport } from '../components/SpotifyAudience'
 import { AuthImage, vinylFallback, type RGB } from '../components/files'
 import { Collapsible, ConfirmModal, ErrorBox, fmtDateTime, Hero, Loading, Modal, Note } from '../components/ui'
 import { fmtCompact, fmtInt, fmtMonth } from '../lib/format'
@@ -129,8 +130,9 @@ function ImportHistory({ reloadKey, onChanged }: { reloadKey: number; onChanged:
     finally { setBusy(false) }
   }
 
+  if (list && list.length === 0) return null
   return (
-    <Collapsible title="Import history" defaultOpen={false}>
+    <Collapsible title="Earlier per-song imports" defaultOpen={false}>
       {!list ? <Loading /> : list.length === 0 ? <p className="muted">Nothing imported yet.</p> : (
         <div className="table-scroll">
           <table>
@@ -330,7 +332,7 @@ export default function Performance({ embedded = false }: { embedded?: boolean }
       {embedded ? (
         <div className="row actions perf-hero-actions">
           {!noData && <button type="button" className="secondary" onClick={() => setReporting(true)}>Export PDF</button>}
-          <button type="button" onClick={() => setImporting(true)}>Import streams</button>
+          <button type="button" onClick={() => setImporting(true)}>Import Spotify CSV</button>
         </div>
       ) : (
         <Hero>
@@ -338,7 +340,7 @@ export default function Performance({ embedded = false }: { embedded?: boolean }
           <div className="sub">{user?.artist_name ? `Artist: ${user.artist_name}` : 'Your streams across every platform'}</div>
           <div className="row actions perf-hero-actions">
             {!noData && <button type="button" className="secondary" onClick={() => setReporting(true)}>Export PDF</button>}
-            <button type="button" onClick={() => setImporting(true)}>Import streams</button>
+            <button type="button" onClick={() => setImporting(true)}>Import Spotify CSV</button>
           </div>
         </Hero>
       )}
@@ -350,13 +352,9 @@ export default function Performance({ embedded = false }: { embedded?: boolean }
 
       {tab === 'stats' && (
         <div className="stack" role="tabpanel" id="perf-panel-stats" aria-labelledby="perf-tab-stats">
-      {noData ? (
-        <section className="card">
-          <h4>No streams yet</h4>
-          <p className="muted">Import the streaming report from your distributor (a CSV file) and your streams will show up here by song, platform and month. Songs are matched by ISRC, so each song needs its ISRC filled in.</p>
-          <button type="button" onClick={() => setImporting(true)}>Import streams</button>
-        </section>
-      ) : (
+      <SpotifyAudiencePanel reloadKey={reload} onImport={() => setImporting(true)} onChanged={refreshed} />
+
+      {noData ? null : (
         <>
           <p className="perf-scope" role="status">
             Showing <strong>streams</strong> (plays reported by your distributor) for <strong>{sel ? selectedTitle : 'all releases and songs'}</strong>,{' '}
@@ -448,7 +446,7 @@ export default function Performance({ embedded = false }: { embedded?: boolean }
       {tab === 'stats' && <ImportHistory reloadKey={reload} onChanged={refreshed} />}
       {tab === 'stats' && !noData && <PlayCountDownload />}
 
-      {importing && <StreamImport onClose={() => setImporting(false)} onDone={refreshed} />}
+      {importing && <SpotifyImport onClose={() => setImporting(false)} onDone={refreshed} />}
       {reporting && <ReportDialog data={data} range={range} selection={sel} artist={user?.artist_name ?? ''} onClose={() => setReporting(false)} />}
     </div>
   )

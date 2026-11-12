@@ -11,6 +11,7 @@ const publicNoticeRoutes = require('./routes/publicNotices');
 const mediaRoutes = require('./routes/media');
 const glossaryRoutes = require('./routes/glossary');
 const streamRoutes = require('./routes/streams');
+const spotifyAudienceRoutes = require('./routes/spotifyAudience');
 
 const { apiLimiter } = require('./middleware/rateLimits');
 const { mailConfigProblems } = require('./services/mailer');
@@ -36,6 +37,7 @@ if (process.env.TRUST_PROXY) {
 app.use(cors());
 app.use('/api', apiLimiter());
 app.use('/api/streams', express.json({ limit: '4mb' }), streamRoutes);
+app.use('/api/spotify-audience', express.json({ limit: '1mb' }), spotifyAudienceRoutes);
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

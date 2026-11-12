@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth'
-import { BarList, LineChart, StreamImport } from '../components/performance'
+import { BarList, LineChart } from '../components/performance'
 import { Collapsible, ErrorBox, Hero, Loading, Note } from '../components/ui'
 import { EARNINGS_DISCLAIMER, RATES, RATE_CURRENCY, REVIEWED_ON, rateFor } from '../data/rates'
 import { earn, earnBy, rankedEst, unrated, currentMonth, filterStats, monthsBetween, shiftMonth, sumBy, total, type PerfData, type Range, platformLabel } from '../lib/stats'
@@ -18,7 +18,6 @@ export default function Earnings({ embedded = false }: { embedded?: boolean }) {
   const [range, setRange] = useState<Range | null>(null)
   const [busy, setBusy] = useState(false)
   const [pdfError, setPdfError] = useState('')
-  const [importing, setImporting] = useState(false)
 
   const load = useCallback(() => {
     api<PerfData>('/streams').then((d) => {
@@ -77,7 +76,6 @@ export default function Earnings({ embedded = false }: { embedded?: boolean }) {
       {embedded ? (
         <div className="row actions perf-hero-actions">
           {!noData && <button type="button" className="secondary" disabled={busy || !rangeOk} onClick={exportPdf}>{busy ? 'Building…' : 'Export PDF'}</button>}
-          <button type="button" onClick={() => setImporting(true)}>Import streams</button>
         </div>
       ) : (
         <Hero>
@@ -85,11 +83,9 @@ export default function Earnings({ embedded = false }: { embedded?: boolean }) {
           <div className="sub">Estimated from your streams{user?.artist_name ? ` · ${user.artist_name}` : ''}</div>
           <div className="row actions perf-hero-actions">
             {!noData && <button type="button" className="secondary" disabled={busy || !rangeOk} onClick={exportPdf}>{busy ? 'Building…' : 'Export PDF'}</button>}
-            <button type="button" onClick={() => setImporting(true)}>Import streams</button>
-          </div>
+            </div>
         </Hero>
       )}
-      <Note>Importing streams here also updates your Performance stats and projections, because both use the same figures.</Note>
 
       {/* Always visible on the page, never hidden in a tooltip. */}
       <div className="notice" role="note"><strong>Estimate only.</strong> {EARNINGS_DISCLAIMER}</div>
@@ -98,7 +94,7 @@ export default function Earnings({ embedded = false }: { embedded?: boolean }) {
       {noData ? (
         <section className="card">
           <h4>No streams yet</h4>
-          <p className="muted">Estimates are worked out from your streams. Use Import streams above to load your distributor's streaming report. Songs are matched by ISRC, so each song needs its ISRC filled in.</p>
+          <p className="muted">Estimates are worked out from your streams. Per-song streams are not available yet. Spotify's audience file covers your whole catalogue rather than single songs, so it feeds the Performance view only.</p>
         </section>
       ) : (
         <>
@@ -178,7 +174,6 @@ export default function Earnings({ embedded = false }: { embedded?: boolean }) {
           </table>
         </div>
       </Collapsible>
-      {importing && <StreamImport onClose={() => setImporting(false)} onDone={load} />}
     </div>
   )
 }
