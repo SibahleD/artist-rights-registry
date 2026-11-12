@@ -29,3 +29,6 @@ npm-debug.log*
 .idea/
 .DS_Store
 *.local
+
+# Testing artefacts
+reports/

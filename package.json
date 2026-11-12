@@ -8,6 +8,13 @@
   },
   "private": true,
   "scripts": {
-    "build": "cd server && npm install && cd ../client && npm install && npm run build"
+    "build": "cd server && npm install && cd ../client && npm install && npm run build",
+    "test:api": "newman run postman/track-record-core.postman_collection.json -e postman/local.postman_environment.json --reporters cli,htmlextra --reporter-htmlextra-export reports/newman-local.html --delay-request 30"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "lighthouse": "^12.8.2",
+    "newman": "^6.2.3",
+    "newman-reporter-htmlextra": "^1.23.1"
   }
 }

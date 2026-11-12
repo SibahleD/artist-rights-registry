@@ -12,8 +12,6 @@ const useSsl = process.env.DATABASE_SSL !== undefined
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: useSsl ? { rejectUnauthorized: false } : false,
-    // Each serverless instance handles one request at a time, so a small pool is enough and keeps
-    // the total connections to Supabase down when many instances are warm.
     max: Number(process.env.DB_POOL_MAX) || (isProduction ? 3 : 10),
 });
 

@@ -1,45 +1,70 @@
-# Postman / Newman: core workflow tests
+# Lighthouse page-speed tests
 
-58 requests, 117 assertions covering authentication, releases, tracks, splits, readiness and export,
-co-writer notices, the Chrome extension's API calls, access control and cleanup. Later requests use ids
-saved by earlier ones, so run the collection top to bottom.
+`lighthouse.mjs` audits 7 pages (3 public, 4 signed-in) under 3 network profiles, 3 runs each,
+and writes HTML + JSON reports and a summary table.
 
-## One-time setup
+| Profile | What it simulates |
+|---|---|
+| mobile | Lighthouse's standard mobile test: Moto G Power, slow 4G (150 ms latency, 1.6 Mbps), 4x CPU slowdown |
+| desktop | Lighthouse's desktop preset (fast connection) |
+| constrained | A weak mobile connection (400 ms latency, 400 Kbps, 4x CPU slowdown). Use it for the "simulating latency" requirement |
+
+Every run starts from a fresh browser, so it measures a first visit with an empty cache.
+
+## Setup (once, repo root)
 ```bash
-npm install --save-dev newman newman-reporter-htmlextra   # in the repo root or a tools/ folder
+npm install --save-dev lighthouse @playwright/test
+npx playwright install chromium
+```
+Add to `.gitignore`: `reports/`
+
+## Run
+```bash
+# 1. The live site (best: real CDN and real network path from where you are)
+node perf/lighthouse.mjs
+
+# 2. A local production build (never use `npm run dev`: the dev server is not representative)
+cd client && npm run build && npm run preview     # serves on http://localhost:4173
+TARGET=http://localhost:4173 API=http://localhost:4000/api node perf/lighthouse.mjs
 ```
 
-## Run against a local server (the default)
-Start the server with a test database and the dev outbox on (the outbox lets the notice tests read the co-writer's link):
+### Signed-in pages
+Create one dedicated test account on the target by hand (not with the Postman collection), then:
 ```bash
-# server/.env  (local only, never in production)
-DEV_OUTBOX=true
-AUTH_RATE_LIMIT=1000
-NOTICE_RATE_LIMIT=1000
-ACCOUNT_RATE_LIMIT=1000
-API_RATE_LIMIT=10000
+LH_EMAIL=you@example.com LH_PASSWORD='...' node perf/lighthouse.mjs
 ```
-```bash
-cd server && npm run migrate && npm start
-newman run postman/track-record-core.postman_collection.json \
-  -e postman/local.postman_environment.json \
-  --reporters cli,htmlextra \
-  --reporter-htmlextra-export reports/newman-local.html \
-  --reporter-htmlextra-title "Track Record API: core workflows (local)" \
-  --delay-request 30
-```
-Screenshot the terminal summary and the HTML report for section 4.5.4 / 4.5.5.
+The script logs in once and gives the token to each browser run. If a row says "redirected to login, invalid",
+the token was not accepted and that row must not be used.
+Without these variables only the public pages are tested.
 
-## Run against the deployed Netlify site: read-only only
-The full collection creates real users and sends real emails, so do not point it at production.
-Run only the health checks there:
-```bash
-newman run postman/track-record-core.postman_collection.json \
-  -e postman/netlify.postman_environment.json --folder "00 Health"
+Optional settings: `RUNS=5`, `PROFILES=mobile,desktop`, `OUT=reports/lighthouse-local`.
+
+## Output
+```
+reports/lighthouse/
+  summary.md                     medians for every page and profile (paste into the chapter)
+  mobile/home-median.html        the median run per page: open this one and screenshot it
+  mobile/home-run1.html/.json    every individual run
 ```
 
-## Notes
-- Each run registers new accounts (`qa+<timestamp>@example.com`) and deletes its release at the end. Use a throwaway local database.
-- "Mark ready" currently exercises the rejection path (the test release has no audio or artwork). To cover the accept path, add an audio upload and artwork step before it.
-- The 06 folder needs `DEV_OUTBOX=true`; skip it with `--folder` selections if it is off.
-- Rate limits: the production auth limit is 10 requests per 15 minutes per IP, and one run makes about 10 auth calls. Use the relaxed values in `env/server.env` for Newman; a second run within 15 minutes on production limits would return 429s. The limiters-on and relaxed comparison belongs in the k6 load tests (`env/limiters-on.env`).
+## One-off alternative (a single page, with the viewer)
+```bash
+npx lighthouse https://trackrecordrw.netlify.app --preset=desktop --view
+npx lighthouse https://trackrecordrw.netlify.app/app/login --view
+```
+
+## Screenshots for 4.5.6
+1. The terminal while the script runs, then the `summary.md` table.
+2. The median HTML report for: landing, login and home, for mobile and desktop (top section with the four scores and the metrics).
+3. The same pages under `constrained`, to show behaviour on a poor connection.
+4. In one report, expand "Serve static assets with an efficient cache policy" (the caching evidence).
+
+## Reading the results
+- Performance, Accessibility, Best practices and SEO are scored 0 to 100 (90+ is good).
+- Core numbers to discuss: FCP and LCP (when content appears), TBT (how long the page is unresponsive), CLS (layout jumping), Speed Index, and total transfer size.
+- Mobile scores are always lower than desktop. That is expected, so compare each profile with itself, not with each other.
+- Scores vary between runs (network and machine noise). That is why the table uses the median of 3 and the run count is stated. Close other apps while testing.
+
+## What Lighthouse does not cover
+- Graceful failure (offline, 500s, slow API) and repeat-visit caching behaviour: test these in Playwright.
+- Load and resource use: k6.
