@@ -1,4 +1,4 @@
- Secrets: never commit. Commit the .env.example files instead.
+# Secrets: never commit. Commit the .env.example files instead.
 .env
 .env.*
 !.env.example
@@ -11,6 +11,12 @@ dist-ssr/
 # Uploaded audio (keep the folder, not the files)
 server/uploads/*
 !server/uploads/.gitkeep
+
+# Audio files anywhere else (stray copies, exports). The small Playwright test tone is kept.
+*.mp3
+*.flac
+*.wav
+!client/pw_tests/fixtures/*.mp3
 
 # Archives and logs
 *.zip
