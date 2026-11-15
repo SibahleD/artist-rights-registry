@@ -88,11 +88,19 @@ export function userAction(data) {
 }
 
 // Thresholds: latency and errors only matter when the limiters are relaxed. When limited, the point is that 429s appear.
+// Every endpoint gets an always-true threshold so that k6 reports its latency separately in the summary.
+const ENDPOINTS = ['GET /releases', 'GET /releases/:id', 'POST /releases', 'POST /tracks', 'DELETE /releases/:id', 'GET /releases/:id/export', 'GET /health']
+export function reportThresholds() {
+  const t = {}
+  for (const name of ENDPOINTS) t[`http_req_duration{name:${name}}`] = ['max>=0'] // reporting only
+  return t
+}
+
 export function thresholds(p95 = 800) {
-  const t = { http_req_failed: ['rate<0.01'], checks: ['rate>0.99'] }
+  const t = { http_req_failed: ['rate<0.01'], checks: ['rate>0.99'], ...reportThresholds() }
   if (MODE === 'relaxed') {
     t.http_req_duration = [`p(95)<${p95}`]
-    t['http_req_duration{name:GET /releases}'] = ['p(95)<500']
+    t['http_req_duration{name:GET /releases}'] = ['p(95)<500', 'max>=0']
     t.rate_limited = ['rate==0']
   } else {
     t.rate_limited = ['rate>0'] // proves the limiter engaged

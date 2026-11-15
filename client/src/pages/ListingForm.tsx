@@ -248,12 +248,10 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
         releaseType: form.releaseType,
         albumArtist: form.albumArtist,
         releaseDate: form.releaseDate || null,
-        // A single has one genre (the song's). An album has a release genre that songs without their own inherit.
         genre: (isSong ? tracks[0]?.genre : form.genre) || null,
         upc: form.upc || null,
         labelName: form.labelName || null,
         language: form.language || null,
-        // A single has no album-level version or compilation flag, and its lyrics and explicit answers are the song's.
         albumVersion: isSong ? null : form.albumVersion.trim() || null,
         isCompilation: isSong ? false : form.isCompilation,
         hasLyrics: yesNoToBool(isSong ? tracks[0]?.hasLyrics ?? '' : form.hasLyrics),
@@ -344,7 +342,6 @@ export default function ListingForm({ mode }: { mode: 'song' | 'album' }) {
 
       // After the first save go straight to the splits; later saves go back to the release.
       if (notes.length && navigate) {
-        // Something was kept on purpose: stay here so the message is read.
         setForm({ ...form, ...tidy, tracks }); setBaseline(null); setErr({ error: notes.join(' ') })
         return true
       }

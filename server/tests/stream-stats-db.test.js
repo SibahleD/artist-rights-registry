@@ -15,12 +15,12 @@ before(async () => {
   if (skip) return;
   process.env.DATABASE_URL = url;
   pool = require('../src/db/pool');
-  user = (await pool.query(`INSERT INTO users (email, password_hash, artist_name) VALUES ('streams-a@example.com','x','Streams') RETURNING id`)).rows[0];
+  user = (await pool.query(`INSERT INTO users (email, password_hash, artist_name) VALUES ('streams-a@example.com','x','Streams Stats Test') RETURNING id`)).rows[0];
 });
 
 after(async () => {
   if (skip) return;
-  await pool.query('DELETE FROM users WHERE id = $1', [user.id]);
+  await pool.query("DELETE FROM users WHERE email = 'streams-a@example.com'");
   await pool.end();
 });
 

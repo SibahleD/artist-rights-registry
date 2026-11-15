@@ -140,8 +140,6 @@ async function exportMyData(req, res) {
     } catch (e) { return fail(res, e, 'exportMyData'); }
 }
 
-// Anonymise rather than hard-delete: releases.owner_id is RESTRICT and disputes point at users, so the row stays
-// as an empty tombstone while everything personal is removed.
 async function deleteAccount(req, res) {
     const uid = req.user.id;
     try {

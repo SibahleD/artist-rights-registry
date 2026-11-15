@@ -19,17 +19,18 @@ before(async () => {
   process.env.JWT_SECRET ||= 'test-secret';
   pool = require('../src/db/pool');
   sc = require('../src/controllers/streamController');
-  const mk = async (email) => (await pool.query(`INSERT INTO users (email, password_hash, artist_name) VALUES ($1,'x','Streams') RETURNING id`, [email])).rows[0];
-  a = await mk('streams-ctl-a@example.com');
-  b = await mk('streams-ctl-b@example.com');
+  const mk = async (email, name) => (await pool.query(`INSERT INTO users (email, password_hash, artist_name) VALUES ($1,'x',$2) RETURNING id`, [email, name])).rows[0];
+  a = await mk('streams-ctl-a@example.com', 'Streams Ctl A');
+  b = await mk('streams-ctl-b@example.com', 'Streams Ctl B');
   const rel = (await pool.query(`INSERT INTO releases (owner_id, title, album_artist) VALUES ($1,'Head in the Clouds','Me') RETURNING id`, [a.id])).rows[0];
   await pool.query(`INSERT INTO tracks (release_id, track_number, title, isrc) VALUES ($1,1,'Cloud One','KEABC2600001'), ($1,2,'No ISRC yet',NULL)`, [rel.id]);
 });
 
 after(async () => {
   if (skip) return;
-  await pool.query('DELETE FROM releases WHERE owner_id = $1', [a.id]);
-  await pool.query('DELETE FROM users WHERE id = ANY($1)', [[a.id, b.id]]);
+  // Cleans up by email, so it also works when before() stopped halfway.
+  await pool.query("DELETE FROM releases WHERE owner_id IN (SELECT id FROM users WHERE email LIKE 'streams-ctl-%@example.com')");
+  await pool.query("DELETE FROM users WHERE email LIKE 'streams-ctl-%@example.com'");
   await pool.end();
 });
 

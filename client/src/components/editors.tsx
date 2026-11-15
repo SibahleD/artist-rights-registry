@@ -68,7 +68,6 @@ export function PrimaryArtistsEditor({ value, onChange, max = 20 }: {
 
 // ---- FeaturedArtistsEditor -------------------------------------------------
 // Featured artists on one song, as rows (like the primary artists and the credits), one name per row.
-// The saved shape is unchanged: a list of names, kept as 0% performer credits by the form.
 export function FeaturedArtistsEditor({ value, onChange, max = 10 }: {
   value: string[]; onChange: (next: string[]) => void; max?: number
 }) {

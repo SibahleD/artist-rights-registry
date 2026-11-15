@@ -1,9 +1,6 @@
 const pool = require('../db/pool');
 const { parseContributors } = require('../lib/distribution');
 
-// The ordered primary-artist list and the producer-style credits (name + title) for one release.
-// Replaced as a whole on every save, inside one transaction, so the list can never be left half-written.
-
 async function ownedRelease(req, res, { requireDraft }) {
     const { rows } = await pool.query('SELECT id, status FROM releases WHERE id = $1 AND owner_id = $2', [req.params.id, req.user.id]);
     const release = rows[0];

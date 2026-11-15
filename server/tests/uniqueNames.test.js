@@ -63,6 +63,6 @@ test('renaming to a taken artist name answers 409, ignoring case and spaces', { 
 
 test('renaming to a free artist name works, and keeping your own name is fine', { skip }, async () => {
   const mine = await add('un-i@example.com', 'Rename Free Test');
-  assert.equal((await callUpdateMe(mine, { artistName: 'Rename Free Test Two' })).body.user.artistName, 'Rename Free Test Two');
+  assert.equal((await callUpdateMe(mine, { artistName: 'Rename Free Test Two' })).body.user.artist_name, 'Rename Free Test Two');
   assert.equal((await callUpdateMe(mine, { artistName: 'rename free test two' })).status, undefined);   // own name, other case: no conflict
 });
