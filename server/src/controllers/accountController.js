@@ -146,7 +146,6 @@ async function deleteAccount(req, res) {
         if (!(await checkPassword(uid, req.body?.password))) {
             return res.status(403).json({ error: 'Your password is not correct.' });
         }
-        // Ready and released releases are records other people rely on, so they must be taken apart on purpose first.
         const locked = await pool.query(`SELECT count(*)::int AS n FROM releases WHERE owner_id = $1 AND status <> 'draft'`, [uid]);
         if (locked.rows[0].n > 0) {
             return res.status(409).json({
@@ -162,14 +161,16 @@ async function deleteAccount(req, res) {
             keys = (await client.query('SELECT storage_key FROM audio_files WHERE owner_id = $1', [uid])).rows.map((r) => r.storage_key);
 
             await client.query('DELETE FROM collaborator_notices WHERE sent_by = $1', [uid]);
-            await client.query('DELETE FROM releases WHERE owner_id = $1', [uid]);          // drafts; tracks, specs, audio rows cascade
-            // Credits on other people's releases keep the name the owner typed, but lose the link and the address.
+            await client.query('DELETE FROM releases WHERE owner_id = $1', [uid]); 
             await client.query('UPDATE collaborators SET user_id = NULL, invited_email = NULL WHERE user_id = $1', [uid]);
             await client.query('UPDATE collaborator_notices SET email = NULL WHERE email_hash = $1', [emailHash(me.email)]);
             await client.query('DELETE FROM media WHERE owner_id = $1', [uid]);
             await client.query('DELETE FROM artist_links WHERE user_id = $1', [uid]);
             await client.query('DELETE FROM glossary_progress WHERE user_id = $1', [uid]);
             await client.query('DELETE FROM user_societies WHERE user_id = $1', [uid]);
+            await client.query('DELETE FROM stream_stats WHERE user_id = $1', [uid]);
+            await client.query('DELETE FROM stream_imports WHERE user_id = $1', [uid]);
+            await client.query('DELETE FROM spotify_audience_daily WHERE user_id = $1', [uid]);
             await client.query('DELETE FROM email_tokens WHERE user_id = $1', [uid]);
             await client.query(
                 `UPDATE users SET email = $2, password_hash = '!', artist_name = 'Deleted artist',

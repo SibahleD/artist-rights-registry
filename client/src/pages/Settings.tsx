@@ -110,6 +110,7 @@ function PrivacyCard() {
         <ul>
           <li>Your account: email, a scrambled (hashed) password, artist name, and the profile details you fill in.</li>
           <li>Your releases, songs, credits and splits, plus the audio and cover files you upload.</li>
+          <li>The stream and Spotify audience figures you import, and the societies you track.</li>
           <li>Co-writer notices you send, and their status.</li>
         </ul>
         <h4>What others can see</h4>
@@ -121,7 +122,7 @@ function PrivacyCard() {
           <button type="button" className="ghost" disabled={s.busy} onClick={download}>Download my data (JSON)</button>
           <Msg n={s.note} />
         </div>
-        <HelpNote>The file has your profile, links, releases with credits, and notices. Audio, images and co-writer email addresses are not included.</HelpNote>
+        <HelpNote>The file has your profile, links, releases with credits, and notices. Audio, images, co-writer email addresses and imported stream figures are not included. Stream figures can be downloaded from the Metrics page.</HelpNote>
       </section>
     </Collapsible>
   )
@@ -159,7 +160,7 @@ function DeleteCard() {
   return (
     <Collapsible title="Delete account" level="h2" className="" defaultOpen={false}>
       <section className="card stack tight">
-        <p>This permanently removes your profile, links, draft releases and uploaded files, and signs you out everywhere. It cannot be undone.</p>
+        <p>This permanently removes your profile, links, draft releases, uploaded files and imported stream figures, and signs you out everywhere. It cannot be undone.</p>
         <ul>
           <li>Releases marked ready or released must be moved back to draft and deleted first.</li>
           <li>Where you are credited on someone else's song, the name they typed stays, but it is no longer linked to you.</li>
@@ -215,9 +216,9 @@ function PreferencesTab() {
       <section className="card stack tight">
         <h4>Sharing</h4>
         <Toggle label="Include me in play counts" checked={prefs.play_counts_opt_in} onChange={(v) => set({ play_counts_opt_in: v })}
-          hint="Off by default. When on, the number of plays your tracks get is counted and kept with your account. You can download these figures from the Metrics page." />
+          hint="Off by default. Play counts are not collected yet, so this only records your choice for when they are." />
         <Toggle label="Include my activity in platform analytics" checked={prefs.analytics_opt_in} onChange={(v) => set({ analytics_opt_in: v })}
-          hint="Off by default. When on, your activity in this app (for example which pages you use) is included in platform-wide usage statistics. Nothing is shared outside Track Record." />
+          hint="Off by default. Analytics are not collected yet, so this only records your choice for when they are." />
       </section>
 
       <section className="card stack tight">

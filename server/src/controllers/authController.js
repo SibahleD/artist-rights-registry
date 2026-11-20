@@ -13,7 +13,7 @@ const { passwordResetMessage, passwordChangedMessage } = require('../services/pa
 const APP_URL = require('../appUrl');
 
 // Bump when the Terms page changes in a way users must re-accept; stored with each acceptance.
-const TERMS_VERSION = '2026-10-22';
+const TERMS_VERSION = '2026-11-17';
 const SALT_ROUNDS = 10;
 const JWT_EXPIRE = '7d';
 

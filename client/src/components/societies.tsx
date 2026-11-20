@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
-import { COUNTRIES, TRACKABLE, countryNameOf, dashboardOf, websiteOf, BODY_LABEL, CHECKED, INTERNATIONAL, NEXT_STEP, READY_LIST, STATUS_LABEL } from '../data/societies'
+import { COUNTRIES, TRACKABLE, countryNameOf, dashboardOf, websiteOf, BODY_LABEL, CHECKED, ASK_BEFORE_PAYING, FEE_BASIS_LABEL, INTERNATIONAL, NEXT_STEP, READY_LIST, STATUS_LABEL } from '../data/societies'
 import type { SocietyStatus, UserSociety } from '../types'
 import { useUnsavedChanges } from './UnsavedGuard'
 import { Badge, ConfirmModal, ErrorBox, Hint, Loading, fmtDate } from './ui'
@@ -319,7 +319,21 @@ export function TrackSocieties({ societies, onViewRegistrations }: { societies: 
                   </div>
                   <p>{b.does}</p>
                   {b.note && <p className="muted">{b.note}</p>}
+                  {b.fees && (
+                    <div className="stack">
+                      <p><strong>Cost</strong> <span className="muted">({FEE_BASIS_LABEL[b.fees.basis]}, checked {b.fees.checked})</span></p>
+                      <ul>
+                        {b.fees.join && <li>To join: {b.fees.join}</li>}
+                        {b.fees.recurring && <li>Repeating: {b.fees.recurring}</li>}
+                        {b.fees.deduction && <li>Kept from royalties: {b.fees.deduction}</li>}
+                      </ul>
+                      {b.fees.note && <p className="muted">{b.fees.note}</p>}
+                      {b.fees.source && safeHref(b.fees.source.url) && <p className="muted">Source: <a href={safeHref(b.fees.source.url)} target="_blank" rel="noopener noreferrer">{b.fees.source.label}</a></p>}
+                    </div>
+                  )}
+                  {b.payout && <p><strong>Payouts:</strong> {b.payout}</p>}
                   {site && <p><a href={site} target="_blank" rel="noopener noreferrer">{site}</a></p>}
+                  {safeHref(b.apply) && <p><a href={safeHref(b.apply)} target="_blank" rel="noopener noreferrer">Apply or register here</a></p>}
                   {b.status !== 'dissolved' && societies.list && (societies.tracked(b.name, country.code)
                     ? <p className="muted">On your list.</p>
                     : <p><button type="button" className="secondary" onClick={() => track(b.name, country.code)}>Track this body</button></p>)}
@@ -330,7 +344,14 @@ export function TrackSocieties({ societies, onViewRegistrations }: { societies: 
 
           <section className="card stack">
             <h3>Step 4: get ready for {country.readyFor}</h3>
-            <ul>{country.ready.map((r) => <li key={r}>{r}</li>)}</ul>
+            {country.readyGroups
+              ? country.readyGroups.map((g) => (
+                  <div key={g.title} className="stack">
+                    <h4>{g.title}</h4>
+                    <ul>{g.items.map((r) => <li key={r}>{r}</li>)}</ul>
+                  </div>
+                ))
+              : <ul>{country.ready.map((r) => <li key={r}>{r}</li>)}</ul>}
             <details>
               <summary>What this app already holds for you</summary>
               <ul>{READY_LIST.map((r) => <li key={r}>{r}</li>)}</ul>
@@ -346,6 +367,20 @@ export function TrackSocieties({ societies, onViewRegistrations }: { societies: 
             <ol>{country.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
             <h4>Watch out for</h4>
             <ul>{country.watchOut.map((s, i) => <li key={i}>{s}</li>)}</ul>
+            {country.registration && country.registration.length > 0 && (
+              <>
+                <h4>Registering the copyright itself (optional)</h4>
+                <p className="muted">This is separate from joining a society. A national copyright office keeps a record of your work, but you keep your rights without it.</p>
+                <ul>
+                  {country.registration.map((r) => {
+                    const u = safeHref(r.url)
+                    return <li key={r.name}><strong>{r.name}:</strong> {r.fee} <span className="muted">({FEE_BASIS_LABEL[r.basis]})</span>. {r.note}{u && <> <a href={u} target="_blank" rel="noopener noreferrer">Website</a></>}</li>
+                  })}
+                </ul>
+              </>
+            )}
+            <h4>Ask before you pay anyone</h4>
+            <ul>{ASK_BEFORE_PAYING.map((q) => <li key={q}>{q}</li>)}</ul>
           </section>
         </>
       )}
